@@ -64,7 +64,7 @@ bool Hardware::prepareRenderingOfStepVoltage(State state, uint8_t step, uint32_t
   else {
     int16_t voltage = state.voltages[state.currentBank][step][state.currentChannel];
     uint8_t colorValue = static_cast<int>(
-      COLOR_VALUE_MAX * voltage * VOLTAGE_PERCENTAGE_MULTIPLIER
+      COLOR_VALUE_MAX * voltage * PERCENTAGE_MULTIPLIER_10_BIT
     );
     if (color == YELLOW) {
       pixels.setPixelColor(step, colorValue, colorValue, 0);
@@ -274,7 +274,7 @@ bool Hardware::renderRecordChannelSelect(State state) {
       uint16_t voltage = state.voltages[state.currentBank][state.currentStep][channel];
       uint8_t colorValue = isFlashing 
         ? 255
-        : static_cast<uint8_t>(COLOR_VALUE_MAX * voltage * VOLTAGE_PERCENTAGE_MULTIPLIER);
+        : static_cast<uint8_t>(COLOR_VALUE_MAX * voltage * PERCENTAGE_MULTIPLIER_10_BIT);
       pixels.setPixelColor(channel, colorValue, 0, 0); // shade of red
     } 
     else {
@@ -309,7 +309,7 @@ bool Hardware::renderStepSelect(State state) {
   for (uint8_t i = 0; i < 16; i++) {
     if (state.selectedKeyForRecording == i) {
       uint16_t voltage = state.voltages[state.currentBank][state.selectedKeyForRecording][state.currentChannel];
-      uint8_t red = static_cast<uint8_t>(COLOR_VALUE_MAX * voltage * VOLTAGE_PERCENTAGE_MULTIPLIER);
+      uint8_t red = static_cast<uint8_t>(COLOR_VALUE_MAX * voltage * PERCENTAGE_MULTIPLIER_10_BIT);
       pixels.setPixelColor(state.selectedKeyForRecording, red, 0, 0);
     }
     else {

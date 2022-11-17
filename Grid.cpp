@@ -114,7 +114,7 @@ State Grid::handleEditChannelVoltagesKeyEvent(keyEvent evt, State state) {
       else if (state.keyPressesSinceModHold == 2) {
         state.randomSteps[currentBank][evt.bit.NUM][currentChannel] = 0;
         state.gateLengths[currentBank][evt.bit.NUM][currentChannel] = 
-          analogRead(CV_INPUT) * VOLTAGE_PERCENTAGE_MULTIPLIER;
+          analogRead(CV_INPUT) * PERCENTAGE_MULTIPLIER_10_BIT;
       }
       // Recurse
       else if (state.keyPressesSinceModHold == 3) {
@@ -253,7 +253,7 @@ State Grid::handleModeSelectKeyEvent(keyEvent evt, State state) {
         state.initialKeyPressedDuringModHold = evt.bit.NUM;
         bool const writeSuccess = State::writeModuleAndBankToSDCard(state);
         if (!writeSuccess) {
-          state = Nav::goForward(state, MODE.ERROR);
+          state = Nav::goForward(state, MODE.ERROR); // do something else less drastic here?
         } else {
           // TODO: do something visual to confirm the write
         }
@@ -263,7 +263,7 @@ State Grid::handleModeSelectKeyEvent(keyEvent evt, State state) {
       break;
     case QUADRANT.SW:
       if (modButtonIsBeingHeld) {
-        // TODO: Calibration?
+        // TODO: Calibration? Is this needed?
       } else {
         state = Nav::goForward(state, MODE.GLOBAL_EDIT);
       }

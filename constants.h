@@ -32,8 +32,9 @@
 // These are stepped up to 12-bit for output in real time.
 #define VOLTAGE_VALUE_MAX 1023
 #define VOLTAGE_VALUE_MID 511
-#define VOLTAGE_PERCENTAGE_MULTIPLIER 0.000977517106549 // 1/1023 for 10-bit
-#define PERCENTAGE_MULTIPLIER_32_BIT 0.0000000004656613 // 1/2147483647
+#define PERCENTAGE_MULTIPLIER_10_BIT 0.000977517106549 // 1/1023 for 10-bit
+
+#define PERCENTAGE_MULTIPLIER_32_BIT 0.0000000004656613 // 1/2147483647 for 32-bit
 
 #define MOD_DEBOUNCE_TIME 200
 #define FLASH_TIME 120
@@ -109,7 +110,11 @@ uint8_t const TEENSY_LED = 13;
 // Please note that we need pull up resistors of about 2k to 5k Ohms for the i2C bus.
 
 /**
- * Mode constants. Some of these are sometimes referred to as "screens" in user documentation.
+ * Mode constants.
+ * 
+ * Please note: these are referred to as either "sections" or "screens" in the user manual. There 
+ * are five major "sections": step selection, channel editing, recording, global editing, and bank 
+ * selection. Some of these have additional "screens" other than their first.
  */
 typedef struct Mode {
   // Step selection. 
