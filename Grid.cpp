@@ -1,0 +1,313 @@
+/**
+ * Copyright 2022 William Edward Fisher.
+ */
+#include "Grid.h"
+
+#include <Adafruit_NeoTrellis.h>
+#include "Hardware.h"
+#include "Nav.h"
+#include "Utils.h"
+#include "constants.h"
+
+State Grid::copyKey(keyEvent evt, State state) {
+  if (state.selectedKeyForCopying == evt.bit.NUM) {
+    Serial.println("Somehow began copy/paste incorrectly. This should never happen.");
+  }
+  if (state.selectedKeyForCopying < 0) { // No step selected, initiate copy.
+    state.selectedKeyForCopying = evt.bit.NUM;
+    state.pasteTargetKeys[evt.bit.NUM] = 1;
+  } 
+  else { // Pressed step should be added or removed from the set of paste steps.
+    state.pasteTargetKeys[evt.bit.NUM] = !state.pasteTargetKeys[evt.bit.NUM];
+  }
+  return state;
+}
+
+State Grid::handleBankSelectKeyEvent(keyEvent evt, State state) {
+  if (!state.readyForModPress) { // MOD button is being held
+    state = Grid::updateModKeyCombinationTracking(evt, state);
+    if (state.selectedKeyForCopying != evt.bit.NUM) {
+      state = Grid::copyKey(evt, state);
+    } 
+    else { // Pressed the original bank again, quit copy-paste and clear the paste banks.
+      state = State::quitCopyPasteFlow(state);
+    }
+  }
+  else if (evt.bit.NUM != state.currentBank) {
+    state.currentBank = evt.bit.NUM;
+  }
+  return state;
+}
+
+State Grid::handleEditChannelSelectKeyEvent(keyEvent evt, State state) {
+  uint8_t bank = state.currentBank;
+  if (state.readyForModPress) { // MOD button is not being held, select channel and navigate
+    if (evt.bit.NUM > 7) {
+      return state;
+    }
+    state.currentChannel = evt.bit.NUM;
+    state = Nav::goForward(state, MODE.EDIT_CHANNEL_VOLTAGES);
+  }
+  else { // MOD button is being held
+    if (state.initialKeyPressedDuringModHold < 0) { 
+      state.initialKeyPressedDuringModHold = evt.bit.NUM;
+    }
+    if (evt.bit.NUM > 7) {
+      state = State::quitCopyPasteFlow(state);
+      state.readyForRandom = !state.readyForRandom;
+    }
+    else if (state.readyForRandom) {
+      state.randomOutputChannels[state.currentBank][evt.bit.NUM] = 
+        !state.randomOutputChannels[state.currentBank][evt.bit.NUM];
+    }
+    else {
+      state = Grid::updateModKeyCombinationTracking(evt, state);
+      // copy-paste
+      if (state.keyPressesSinceModHold == 1) {
+        state = Grid::copyKey(evt, state);
+      }
+      // toggle gate channel
+      else if (state.keyPressesSinceModHold == 2) {
+        state = State::quitCopyPasteFlow(state);
+        state.gateChannels[bank][evt.bit.NUM] = !state.gateChannels[bank][evt.bit.NUM];
+      }
+      // recurse
+      else if (state.keyPressesSinceModHold == 3) {
+        state.gateChannels[bank][evt.bit.NUM] = !state.gateChannels[bank][evt.bit.NUM];
+        state.keyPressesSinceModHold = 0;
+        return Grid::handleEditChannelSelectKeyEvent(evt, state);
+      }
+    } 
+  }
+
+  return state;
+}
+
+State Grid::handleEditChannelVoltagesKeyEvent(keyEvent evt, State state) {
+  uint8_t currentBank = state.currentBank;
+  uint8_t currentChannel = state.currentChannel;
+
+  // Gate channel
+  if (state.gateChannels[currentBank][state.currentChannel]) {
+    state.activeSteps[currentBank][evt.bit.NUM][currentChannel] = 
+      !state.activeSteps[currentBank][evt.bit.NUM][currentChannel];
+  }
+  // CV channel
+  else {
+    // MOD button is not being held, so edit voltage
+    if (state.readyForModPress) { 
+      state.selectedKeyForRecording = evt.bit.NUM;
+      // See also continual recording in loop().
+      state.voltages[currentBank][evt.bit.NUM][currentChannel] = analogRead(CV_INPUT);
+    }
+    // MOD button is being held
+    else {
+      // Clear states for faster work flow.
+      if (state.keyPressesSinceModHold == 0) {
+        state.lockedVoltages[currentBank][evt.bit.NUM][currentChannel] = 0;
+        state.activeSteps[currentBank][evt.bit.NUM][currentChannel] = 1;
+      }
+      // Update mod + key tracking. This must occur after clearing state because it updates the 
+      // value of keyPressesSinceModHold.
+      state = Grid::updateModKeyCombinationTracking(evt, state);
+      // Copy-paste
+      if (state.keyPressesSinceModHold == 1) {
+        state = Grid::copyKey(evt, state);
+      }      
+      // Toggle locked voltage
+      else if (state.keyPressesSinceModHold == 2) {
+        state = State::quitCopyPasteFlow(state);
+        state.lockedVoltages[currentBank][evt.bit.NUM][currentChannel] = 1;
+      }
+      // Toggle active/inactive step
+      else if (state.keyPressesSinceModHold == 3) {
+        state.lockedVoltages[currentBank][evt.bit.NUM][currentChannel] = 0;
+        state.activeSteps[currentBank][evt.bit.NUM][currentChannel] = 0;
+      }
+      // Recurse
+      else if (state.keyPressesSinceModHold == 4) {
+        state.activeSteps[currentBank][evt.bit.NUM][currentChannel] = 1;
+        state.keyPressesSinceModHold = 0;
+        return Grid::handleEditChannelVoltagesKeyEvent(evt, state);
+      }
+    }
+  }
+
+  return state;
+}
+
+State Grid::handleGlobalEditKeyEvent(keyEvent evt, State state) {
+  uint8_t currentBank = state.currentBank;
+
+  if (state.readyForModPress) { // MOD button is not being held, toggle removed step
+    if (state.removedSteps[evt.bit.NUM]) {
+      state.removedSteps[evt.bit.NUM] = 0;
+    } 
+    else {
+      uint8_t totalRemovedSteps = 0;
+      for (uint8_t i = 0; i < 16; i++) {
+        if (state.removedSteps[i]) {
+          totalRemovedSteps = totalRemovedSteps + 1;
+        }
+      }
+      state.removedSteps[evt.bit.NUM] = totalRemovedSteps < 15 ? 1 : 0;
+    }
+  }
+  // MOD button is being held
+  else { 
+    // Clear states for faster work flow.
+    if (state.keyPressesSinceModHold == 0) {
+      for (uint8_t i = 0; i < 8; i++) {
+        state.lockedVoltages[currentBank][evt.bit.NUM][i] = 0;
+        state.activeSteps[currentBank][evt.bit.NUM][i] = 1;
+      }
+    }
+    // Update mod + key tracking. This must occur after clearing state because it updates the 
+    // value of keyPressesSinceModHold.
+    state = Grid::updateModKeyCombinationTracking(evt, state);
+    // Copy-paste
+    if (state.keyPressesSinceModHold == 1) {
+      state = Grid::copyKey(evt, state);
+    } 
+    // Toggle locked voltage
+    else if (state.keyPressesSinceModHold == 2) {
+      state = State::quitCopyPasteFlow(state);
+      for (uint8_t i = 0; i < 8; i++) {
+        state.lockedVoltages[currentBank][evt.bit.NUM][i] = 1;
+      }
+    }
+    // Toggle active/inactive step
+    else if (state.keyPressesSinceModHold == 3) {
+      for (uint8_t i = 0; i < 8; i++) {
+        state.lockedVoltages[currentBank][evt.bit.NUM][i] = 0;
+        state.activeSteps[currentBank][evt.bit.NUM][i] = 0;
+      }
+    }
+    // Recurse
+    else if (state.keyPressesSinceModHold == 4) {
+      for (uint8_t i = 0; i < 8; i++) {
+        state.activeSteps[currentBank][evt.bit.NUM][i] = 1;
+      }
+      state.keyPressesSinceModHold = 0;
+      return Grid::handleGlobalEditKeyEvent(evt, state);
+    }
+  }
+  return state;
+}
+
+State Grid::handleModeSelectKeyEvent(keyEvent evt, State state) {
+  bool const modButtonIsBeingHeld = !state.readyForModPress;
+  switch (Utils::keyQuadrant(evt.bit.NUM)) {
+    case QUADRANT.INVALID:
+      state.mode = MODE.ERROR;
+      break;
+    case QUADRANT.NW:
+      if (modButtonIsBeingHeld) {
+        // TODO: Load module
+      } else {
+        state = Nav::goForward(state, MODE.EDIT_CHANNEL_SELECT);
+      }
+      break;
+    case QUADRANT.NE:
+      if (modButtonIsBeingHeld) {
+        state.initialKeyPressedDuringModHold = evt.bit.NUM;
+        bool const writeSuccess = State::writeModuleAndBankToSDCard(state);
+        if (!writeSuccess) {
+          state = Nav::goForward(state, MODE.ERROR);
+        } else {
+          // TODO: do something visual to confirm the write
+        }
+      } else {
+        state = Nav::goForward(state, MODE.RECORD_CHANNEL_SELECT);
+      }
+      break;
+    case QUADRANT.SW:
+      if (modButtonIsBeingHeld) {
+        // TODO: Calibration?
+      } else {
+        state = Nav::goForward(state, MODE.GLOBAL_EDIT);
+      }
+      break;
+    case QUADRANT.SE:
+      if (modButtonIsBeingHeld) {
+        // TODO: Custom colors?
+      } else {
+        state = Nav::goForward(state, MODE.BANK_SELECT);
+      }
+      break;
+  }
+  return state;
+}
+
+State Grid::handleRecordChannelSelectKeyEvent(keyEvent evt, State state) {
+  uint8_t currentBank = state.currentBank;
+  if (!state.readyForModPress) { // MOD button is being held
+    state.initialKeyPressedDuringModHold = evt.bit.NUM;
+    if (evt.bit.NUM > 7) { 
+      state.readyForRandom = !state.readyForRandom;
+    } 
+    else {
+      state.currentChannel = evt.bit.NUM;
+      if (state.readyForRandom) {
+        state.randomInputChannels[currentBank][evt.bit.NUM] = 
+          !state.randomInputChannels[currentBank][evt.bit.NUM];
+      }
+      state.autoRecordEnabled = !state.autoRecordEnabled;
+      if (!state.autoRecordEnabled) {
+        state.lastFlashToggle = millis();
+        state.flash = 0;
+      }
+    }
+  }
+  else if (evt.bit.NUM > 7) { 
+    return state;
+  }
+  else if (!state.lockedVoltages[state.currentBank][state.currentStep][evt.bit.NUM]) {
+    state.currentChannel = evt.bit.NUM;
+    state.selectedKeyForRecording = evt.bit.NUM;
+    state.voltages[state.currentBank][state.currentStep][evt.bit.NUM] 
+      = analogRead(CV_INPUT);
+  }
+  return state;
+}
+
+State Grid::handleStepChannelSelectKeyEvent(keyEvent evt, State state) {
+  state.currentChannel = evt.bit.NUM;
+  state = Nav::goBack(state);
+  return state;
+}
+
+State Grid::handleStepSelectKeyEvent(keyEvent evt, State state) {
+  if (!state.readyForModPress) { // MOD button is being held
+    state.initialKeyPressedDuringModHold = evt.bit.NUM;
+    state.selectedKeyForRecording = evt.bit.NUM;
+    state.voltages[state.currentBank][state.currentStep][state.currentChannel] = analogRead(CV_INPUT);
+  } 
+  else {
+    state.currentStep = evt.bit.NUM;
+  }
+  return state;
+}
+
+State Grid::updateModKeyCombinationTracking(keyEvent evt, State state) {
+  // MOD button is being held
+  if (!state.readyForModPress) {
+    // this is the first key to be pressed
+    if (state.initialKeyPressedDuringModHold < 0) { 
+      state.initialKeyPressedDuringModHold = evt.bit.NUM;
+      state.keyPressesSinceModHold = 1;
+    }
+    // initial key is pressed repeatedly
+    else if (state.initialKeyPressedDuringModHold == evt.bit.NUM) {
+      state.keyPressesSinceModHold = state.keyPressesSinceModHold + 1;
+    }
+    // paranoid defensiveness, maybe remove this?
+    uint8_t maxIterations = (
+      state.mode == MODE.EDIT_CHANNEL_SELECT
+    ) ? 3 : 4;
+    if (state.keyPressesSinceModHold > maxIterations) {
+      state.keyPressesSinceModHold = 1;
+    }
+  }
+  return state;
+}
