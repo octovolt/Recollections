@@ -28,6 +28,9 @@ bool Hardware::prepareRenderingOfRandomizedKey(State state, uint8_t key) {
  * @param step Which of the 16 steps/keys is targeted for changing. 
  */
 bool Hardware::prepareRenderingOfStepGate(State state, uint8_t step) {
+  if (state.randomSteps[state.currentBank][step][state.currentChannel]) {
+    return Hardware::prepareRenderingOfRandomizedKey(state, step);
+  }
   state.config.trellis.pixels.setPixelColor(
     step, 
     state.activeSteps[state.currentBank][step][state.currentChannel]

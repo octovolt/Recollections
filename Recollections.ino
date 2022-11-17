@@ -275,7 +275,9 @@ bool setupPeripheralHardware() {
     return false;
   }
 
-  state.config.trellis.pixels.setBrightness(state.config.brightness); // reduce brightness for lower power consumption
+  // Reduce brightness for lower power consumption
+  state.config.trellis.pixels.setBrightness(state.config.brightness); 
+  
   for(uint8_t i = 0; i < NEO_TRELLIS_NUM_KEYS; i++){
     state.config.trellis.activateKey(i, SEESAW_KEYPAD_EDGE_RISING);
     state.config.trellis.activateKey(i, SEESAW_KEYPAD_EDGE_FALLING);
@@ -314,9 +316,9 @@ bool setupState() {
   state.flashesSinceRandomColorChange = 0;
   state.randomColorShouldChange = 1;
   state.timeKeyReleased = 0;
-  state.persistedStateChanged = 0;
   state.selectedKeyForCopying = -1;
   state.selectedKeyForRecording = -1;
+  // state.persistedStateChanged = 0; // TODO: figure this out. clean up?
   for (uint8_t i = 0; i < 16; i++) {
     if (i < 4) {
       state.navHistory[i] = MODE.STEP_SELECT;
@@ -347,12 +349,13 @@ bool setupState() {
   for (uint8_t i = 0; i < 16; i++) {
     for (uint8_t j = 0; j < 16; j++) {
       for (uint8_t k = 0; k < 8; k++) {
-        state.gateChannels[i][k] = 0;
-        state.randomOutputChannels[i][k] = 0;
-        state.randomInputChannels[i][k] = 0;
         state.activeSteps[i][j][k] = 1;
+        state.gateChannels[i][k] = 0;
         state.gateLengths[i][j][k] = 0.5;
         state.lockedVoltages[i][j][k] = 0;
+        state.randomInputChannels[i][k] = 0;
+        state.randomOutputChannels[i][k] = 0;
+        state.randomSteps[i][j][k] = 0;
         state.voltages[i][j][k] = VOLTAGE_VALUE_MID;
       }
     }
@@ -505,16 +508,16 @@ void loop() {
     }
   }
 
-  //------------------------------------ WRITE TO SD CARD ------------------------------------------
-  // TODO -- not sure about this. 
-  if (
-    state.persistedStateChanged && 
-    millis() - state.timeKeyReleased > WRITE_AFTER_KEY_RELEASE_TIME
-  ) {
-    // Should call a function here to save the current state to SD, but on a different thread so we
-    // don't interupt normal operations.
-    state.persistedStateChanged = 0;
-  }
+  //--------------------------- TODO: AUTOMATICALLY WRITE TO SD CARD -------------------------------
+  // Not sure about this. Stay with intentional writing only?
+  // if (
+  //   state.persistedStateChanged && 
+  //   millis() - state.timeKeyReleased > WRITE_AFTER_KEY_RELEASE_TIME
+  // ) {
+  //   // TODO: Call a function here to save the current state to SD, but on a different thread
+  //   // so we don't interupt normal operations.
+  //   state.persistedStateChanged = 0;
+  // }
 
   //------------------------------------- REFLECT STATE --------------------------------------------
   if (initialLoop) {

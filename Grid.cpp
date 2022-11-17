@@ -83,15 +83,48 @@ State Grid::handleEditChannelSelectKeyEvent(keyEvent evt, State state) {
   return state;
 }
 
+// TODO: how to abstract repetitive code?
 State Grid::handleEditChannelVoltagesKeyEvent(keyEvent evt, State state) {
   uint8_t currentBank = state.currentBank;
   uint8_t currentChannel = state.currentChannel;
 
   // Gate channel
   if (state.gateChannels[currentBank][state.currentChannel]) {
-    state.activeSteps[currentBank][evt.bit.NUM][currentChannel] = 
-      !state.activeSteps[currentBank][evt.bit.NUM][currentChannel];
+    // MOD button is not being held, so toggle gate on or off
+    if (state.readyForModPress) { 
+      state.activeSteps[currentBank][evt.bit.NUM][currentChannel] = 
+        !state.activeSteps[currentBank][evt.bit.NUM][currentChannel];
+    }
+    // MOD button is being held
+    else {
+      // Clear states
+      if (state.keyPressesSinceModHold == 0) {
+        state.randomSteps[currentBank][evt.bit.NUM][currentChannel] = 0;
+        state.gateLengths[currentBank][evt.bit.NUM][currentChannel] = 0.5;
+      }
+      // Update mod + key tracking. This must occur after clearing state because it updates the 
+      // value of keyPressesSinceModHold.
+      state = Grid::updateModKeyCombinationTracking(evt, state);
+
+      // Step is a random coin-flip between gate on or gate off
+      if (state.keyPressesSinceModHold == 1) {
+        state.randomSteps[currentBank][evt.bit.NUM][currentChannel] = 1;
+      }
+      // Set gate length to custom value. Note that this is not continually recording, but a sample.
+      else if (state.keyPressesSinceModHold == 2) {
+        state.randomSteps[currentBank][evt.bit.NUM][currentChannel] = 0;
+        state.gateLengths[currentBank][evt.bit.NUM][currentChannel] = 
+          analogRead(CV_INPUT) * VOLTAGE_PERCENTAGE_MULTIPLIER;
+      }
+      // Recurse
+      else if (state.keyPressesSinceModHold == 3) {
+        state.gateLengths[currentBank][evt.bit.NUM][currentChannel] = 0.5; // paranoia
+        state.keyPressesSinceModHold = 0;
+        return Grid::handleEditChannelVoltagesKeyEvent(evt, state);
+      }
+    }
   }
+
   // CV channel
   else {
     // MOD button is not being held, so edit voltage
@@ -102,31 +135,38 @@ State Grid::handleEditChannelVoltagesKeyEvent(keyEvent evt, State state) {
     }
     // MOD button is being held
     else {
-      // Clear states for faster work flow.
+      // Clear states
       if (state.keyPressesSinceModHold == 0) {
         state.lockedVoltages[currentBank][evt.bit.NUM][currentChannel] = 0;
         state.activeSteps[currentBank][evt.bit.NUM][currentChannel] = 1;
+        state.randomSteps[currentBank][evt.bit.NUM][currentChannel] = 0;
       }
       // Update mod + key tracking. This must occur after clearing state because it updates the 
       // value of keyPressesSinceModHold.
       state = Grid::updateModKeyCombinationTracking(evt, state);
-      // Copy-paste
+
+      // Copy-paste voltage value, or restore step to defaults
       if (state.keyPressesSinceModHold == 1) {
         state = Grid::copyKey(evt, state);
       }      
-      // Toggle locked voltage
+      // Step is locked
       else if (state.keyPressesSinceModHold == 2) {
         state = State::quitCopyPasteFlow(state);
         state.lockedVoltages[currentBank][evt.bit.NUM][currentChannel] = 1;
       }
-      // Toggle active/inactive step
+      // Step is inactive
       else if (state.keyPressesSinceModHold == 3) {
         state.lockedVoltages[currentBank][evt.bit.NUM][currentChannel] = 0;
         state.activeSteps[currentBank][evt.bit.NUM][currentChannel] = 0;
       }
-      // Recurse
+      // Step is random
       else if (state.keyPressesSinceModHold == 4) {
         state.activeSteps[currentBank][evt.bit.NUM][currentChannel] = 1;
+        state.randomSteps[currentBank][evt.bit.NUM][currentChannel] = 1;
+      }
+      // Recurse
+      else if (state.keyPressesSinceModHold == 5) {
+        state.randomSteps[currentBank][evt.bit.NUM][currentChannel] = 0; // paranoia
         state.keyPressesSinceModHold = 0;
         return Grid::handleEditChannelVoltagesKeyEvent(evt, state);
       }

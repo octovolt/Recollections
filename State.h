@@ -30,6 +30,12 @@ typedef struct State {
   /** The current index within the navHistory. */
   uint8_t navHistoryIndex;
 
+  /** 
+   * Flag to track whether the persisted state has changed and we need to eventually write to the 
+   * SD card. TODO: clean this up? Not sure about this.
+   */
+  // bool persistedStateChanged;
+
   /** Flag to track if we are waiting for a gate signal on the REC input. */
   bool autoRecordEnabled;
 
@@ -53,23 +59,27 @@ typedef struct State {
 
   /** 
    * Count the number of flashes to determine if enough time has elapsed to where a new random 
-   * color should be rendered. 
+   * color should be rendered. This number will update regardless of whether any step
+   * or channel has been set to utilize randomization.
    */
   uint8_t flashesSinceRandomColorChange;
 
-  /** Flag to track if we should change colors */
+  /** 
+   * Flag to track if we should change colors. This flag will update regardless of whether any step
+   * or channel has been set to utilize randomization.
+   */
   bool randomColorShouldChange;
 
   /** 
-   * Flag to track whether the persisted state has changed and we need to eventually write to the 
-   * SD card 
+   * Flag to track whether we are currently flashing a key on or off. Default is on. This flag will 
+   * update regardless of whether any key is currently required to flash.
    */
-  bool persistedStateChanged;
-
-  /** Flag to track whether we are currently flashing a key on or off. Default is on.*/
   bool flash;
 
-  /** When flashing a key, this is the last time it flashed on or off. */
+  /** 
+   * When flashing a key, this is the last time it flashed on or off. This number will update 
+   * regardless of whether any key is currently required to flash.
+   */
   unsigned long lastFlashToggle;
 
   /** Time in ms since the last time a clock/gate/trigger was received at the ADV input. */
@@ -134,6 +144,13 @@ typedef struct State {
    * Indices are [bank][step][channel].
    */
   bool activeSteps[16][16][8];
+
+  /**
+   * The steps that will produce a random value, either CV or gate.
+   * This is set in EDIT_CHANNEL_VOLTAGES mode.
+   * Indices are [bank][step][channel].
+   */
+  bool randomSteps[16][16][8];
   
   /** 
    * The steps that will be skipped entirely during sequencing. 
