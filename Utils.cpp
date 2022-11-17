@@ -45,15 +45,19 @@ uint16_t Utils::tenBitToTwelveBit(uint16_t n) {
 
 // TODO: create unit tests for this
 uint16_t Utils::voltageValueForStep(State state, uint8_t step, uint8_t channel) {
-  if (state.gateChannels[state.currentBank][channel]) {
+  uint8_t currentBank = state.currentBank;
+
+  // Gate channels
+  if (state.gateChannels[currentBank][channel]) {
     return  
-      state.activeSteps[state.currentBank][step][channel] && 
+      state.activeSteps[currentBank][step][channel] && 
       millis() - state.lastAdvReceived < state.gateMillis
         ? VOLTAGE_VALUE_MAX 
         : 0;
   }
 
-  if (!state.activeSteps[state.currentBank][step][channel]) {
+  // Inactive steps within CV channels
+  if (!state.activeSteps[currentBank][step][channel]) {
     // To get the voltage for an inactive step, we need to find the last active step, even if that
     // means wrapping around the sequence.
     for (uint8_t i = 0; i < 15; i++) {
@@ -62,12 +66,13 @@ uint16_t Utils::voltageValueForStep(State state, uint8_t step, uint8_t channel) 
       if (candidateStep == step) {
         continue;
       } 
-      else if (state.activeSteps[state.currentBank][step][channel]) 
+      else if (state.activeSteps[currentBank][step][channel]) 
       {
-        return state.voltages[state.currentBank][candidateStep][channel];
+        return state.voltages[currentBank][candidateStep][channel];
       }
     }
   }
-  
-  return state.voltages[state.currentBank][step][channel];
+
+  // Default CV channel behavior
+  return state.voltages[currentBank][step][channel];
 }

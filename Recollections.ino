@@ -461,9 +461,21 @@ void loop() {
 
     // set random output voltages of next step before advancing
     for (uint8_t i = 0; i < 7; i++) {
-      if (state.randomOutputChannels[state.currentBank][i]) {
-        state.voltages[state.currentBank][state.currentStep + 1][i] = 
-          floor(Utils::random() / pow(2, 22)); // random, 32-bit converted to 10-bit
+      // random channels, random 32-bit converted to 10-bit
+      if (state.randomOutputChannels[currentBank][i]) {
+        state.voltages[currentBank][currentStep + 1][i] = floor(Utils::random() / pow(2, 22));
+      }
+      
+      if (state.randomSteps[currentBank][step + 1][i]) {
+        // random gate steps
+        if (state.gateChannels[currentBank][i]) {
+          state.voltages[currentBank][currentStep + 1][i] = 
+            (Utils::random() * PERCENTAGE_MULTIPLIER_32_BIT) > 0.5
+              ? VOLTAGE_VALUE_MAX
+              : 0;
+        }
+        // random CV steps, random 32-bit converted to 10-bit
+        state.voltages[currentBank][currentStep + 1][i] = floor(Utils::random() / pow(2, 22));
       }
     }
 
