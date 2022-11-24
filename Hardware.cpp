@@ -4,6 +4,7 @@
 #include "Hardware.h"
 
 #include <Adafruit_MCP4728.h>
+#include <Entropy.h>
 #include "Utils.h"
 #include "constants.h"
 
@@ -11,9 +12,9 @@ bool Hardware::prepareRenderingOfRandomizedKey(State state, uint8_t key) {
   if (state.randomColorShouldChange) {
     state.config.trellis.pixels.setPixelColor(
       key,
-      floor(Utils::random() / pow(2, 24)),
-      floor(Utils::random() / pow(2, 24)),
-      floor(Utils::random() / pow(2, 24))
+      Entropy.random(MAX_UNSIGNED_8_BIT),
+      Entropy.random(MAX_UNSIGNED_8_BIT),
+      Entropy.random(MAX_UNSIGNED_8_BIT)
     );
   }
   // else no op

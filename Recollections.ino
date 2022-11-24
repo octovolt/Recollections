@@ -1,30 +1,30 @@
 /**
  * @file
  * 
- * Recollections, aka Voltage Memory
+ * Recollections: a voltage memory Eurorack module
  * 
  * Copyright 2022 William Edward Fisher.
  * 
- * Target platform: Teensy 3.6 for now, Teensy 4.1 in the near future.
+ * Target platform: Teensy 3.6 and Teensy 4.1.
  */
 
-// for Arduino and similar platforms
-// #include <Wire.h>
-//
+// for Teensy 4.x, Arduino and similar platforms
+#include <Wire.h>
+
 // for Teensy 3.x. Include directives in the following files must be updated in the same way:
 // Adafruit_seesaw.h
 // Adafruit_I2CDevice.h <-- this also needs the following at the top: typedef i2c_t3 TwoWire;
 // Adafruit_MCP4728.h
 // Adafruit_MCP4728.cpp
-#include <i2c_t3.h>
+//
+// #include <i2c_t3.h> // use this instead of Wire.h
 
-// When using a Teensy 3.x, typedefs.h must be included before the Adafruit libraries to define the 
-// TwoWire type as a synonym for i2c_t3.
 #include "typedefs.h"
 
 #include <Adafruit_MCP4728.h>
 #include <Adafruit_NeoTrellis.h>
 #include <ArduinoJson.h>
+#include <Entropy.h>
 #include <SD.h>
 #include <SPI.h>
 
@@ -378,12 +378,7 @@ void setup() {
   Serial.begin(9600);
   // while (!Serial);
 
-  // For random number generation on Teensy 3.6.
-  // See: https://forum.pjrc.com/threads/48745-Teensy-3-6-Random-Number-Generator
-  // See also constants.h and Utils::random().
-  SIM_SCGC6 |= SIM_SCGC6_RNGA; // enable RNG
-  RNG_CR &= ~RNG_CR_SLP_MASK;
-  RNG_CR |= RNG_CR_HA_MASK; // high assurance, not needed
+  Entropy.Initialize();
 
   pinMode(ADV_INPUT, INPUT);
   pinMode(MOD_INPUT, INPUT);
@@ -463,19 +458,18 @@ void loop() {
     for (uint8_t i = 0; i < 7; i++) {
       // random channels, random 32-bit converted to 10-bit
       if (state.randomOutputChannels[currentBank][i]) {
-        state.voltages[currentBank][currentStep + 1][i] = floor(Utils::random() / pow(2, 22));
+        state.voltages[currentBank][currentStep + 1][i] = Entropy.random(MAX_UNSIGNED_10_BIT);
       }
       
-      if (state.randomSteps[currentBank][step + 1][i]) {
+      if (state.randomSteps[currentBank][currentStep + 1][i]) {
         // random gate steps
         if (state.gateChannels[currentBank][i]) {
-          state.voltages[currentBank][currentStep + 1][i] = 
-            (Utils::random() * PERCENTAGE_MULTIPLIER_32_BIT) > 0.5
-              ? VOLTAGE_VALUE_MAX
-              : 0;
+          state.voltages[currentBank][currentStep + 1][i] = Entropy.random(2)
+            ? VOLTAGE_VALUE_MAX
+            : 0;
         }
         // random CV steps, random 32-bit converted to 10-bit
-        state.voltages[currentBank][currentStep + 1][i] = floor(Utils::random() / pow(2, 22));
+        state.voltages[currentBank][currentStep + 1][i] = Entropy.random(MAX_UNSIGNED_10_BIT);
       }
     }
 
@@ -492,12 +486,11 @@ void loop() {
       if (!state.lockedVoltages[currentBank][currentStep][currentChannel]) {
         state.voltages[currentBank][currentStep][currentChannel] = analogRead(CV_INPUT);
       }
-      // Note that random input will overwrite CV input and we are setting random voltages for 
-      // multiple channels. Current channel is irrelevant.
+      // Note that random input may overwrite the value from CV input above, and we are setting 
+      // random voltages for any channels identified in randomInputChannels, not the current channel.
       for (uint8_t i = 0; i < 7; i++) {
         if (state.randomInputChannels[state.currentBank][i]) {
-          state.voltages[currentBank][currentStep][i] =
-            floor(Utils::random() / pow(2, 22)); // random, converted from 32-bit to 10-bit
+          state.voltages[currentBank][currentStep][i] = Entropy.random(MAX_UNSIGNED_10_BIT);
         }
       }
     } 

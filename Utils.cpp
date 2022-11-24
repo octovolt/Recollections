@@ -20,15 +20,6 @@ Quadrant_t Utils::keyQuadrant(uint8_t key) {
   }
 }
 
-uint32_t Utils::random() {
-  // For random number generation on Teensy 3.6.
-  // See: https://forum.pjrc.com/threads/48745-Teensy-3-6-Random-Number-Generator
-  // See also setup() in VoltageMemory.ino and constant.h.
-  RNG_CR |= RNG_CR_GO_MASK;
-  // while((RNG_SR & RNG_SR_OREG_LVL(0xF)) == 0); // wait -- from orignal sketch. just hangs; does not work.
-  return RNG_OR;
-}
-
 uint16_t Utils::tenBitToTwelveBit(uint16_t n) {
   if (n > MAX_UNSIGNED_10_BIT) {
     Serial.println("invalid 10-bit integer");

@@ -16,6 +16,7 @@
 #define MAX_UNSIGNED_32_BIT 4294967295
 #define MAX_UNSIGNED_12_BIT 4095
 #define MAX_UNSIGNED_10_BIT 1023
+#define MAX_UNSIGNED_8_BIT 255
 
 #define WHITE 0xFFFFFF0
 #define RED 0x5500000
@@ -39,7 +40,7 @@
 #define MOD_DEBOUNCE_TIME 200
 #define FLASH_TIME 120
 #define LONG_PRESS_TIME 2000
-#define WRITE_AFTER_KEY_RELEASE_TIME 3000
+// #define WRITE_AFTER_KEY_RELEASE_TIME 3000 // remove?
 
 // Calculated with https://arduinojson.org/v6/assistant
 #define CONFIG_JSON_DOC_DESERIALIZATION_SIZE 768 // 570 required
@@ -48,19 +49,6 @@
 #define CONFIG_JSON_DOC_SERIALIZATION_SIZE 512 // 496 required
 #define MODULE_JSON_DOC_SERIALIZATION_SIZE 384 // 352 required
 #define BANK_JSON_DOC_SERIALIZATION_SIZE 12288 // 9712 required
-
-// For random number generation on Teensy 3.6.
-// See: https://forum.pjrc.com/threads/48745-Teensy-3-6-Random-Number-Generator
-// See also setup() in VoltageMemory.ino and Utils::random().
-#define RNG_CR_GO_MASK 0x1u
-#define RNG_CR_HA_MASK 0x2u
-#define RNG_CR_INTM_MASK 0x4u
-#define RNG_CR_CLRI_MASK 0x8u
-#define RNG_CR_SLP_MASK 0x10u
-#define RNG_SR_OREG_LVL_MASK 0xFF00u
-#define RNG_SR_OREG_LVL_SHIFT 8
-#define RNG_SR_OREG_LVL(x) (((uint32_t)(((uint32_t)(x))<<RNG_SR_OREG_LVL_SHIFT))&RNG_SR_OREG_LVL_MASK)
-#define SIM_SCGC6_RNGA ((uint32_t)0x00000200)
 
 #define CONFIG_SD_PATH "Recollections/Config.txt"
 #define MODULE_SD_PATH_PREFIX "Recollections/Module_"
