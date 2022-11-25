@@ -51,13 +51,13 @@ uint16_t Utils::voltageValueForStep(State state, uint8_t step, uint8_t channel) 
   if (!state.activeSteps[currentBank][step][channel]) {
     // To get the voltage for an inactive step, we need to find the last active step, even if that
     // means wrapping around the sequence.
-    for (uint8_t i = 0; i < 15; i++) {
-      int8_t offset = step - i;
-      uint8_t candidateStep = (offset >= 0) ? offset : (16 + offset);
+    for (uint8_t i = 1; i < 15; i++) {
+      int8_t priorStep = step - i;
+      uint8_t candidateStep = priorStep >= 0 ? priorStep : 16 + priorStep;
       if (candidateStep == step) {
         continue;
       } 
-      else if (state.activeSteps[currentBank][step][channel]) 
+      else if (state.activeSteps[currentBank][candidateStep][channel]) 
       {
         return state.voltages[currentBank][candidateStep][channel];
       }
