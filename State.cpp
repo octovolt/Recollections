@@ -153,6 +153,7 @@ State State::readBankFromSDCard(State state, uint8_t bank) {
       copyArray(doc["activeSteps"], state.activeSteps[bank]);
       copyArray(doc["gateChannels"], state.gateLengths[bank]);
       copyArray(doc["gateLengths"], state.gateLengths[bank]);
+      copyArray(doc["gateSteps"], state.gateSteps[bank]);
       copyArray(doc["lockedVoltages"], state.lockedVoltages[bank]);
       copyArray(doc["randomInputChannels"], state.randomInputChannels[bank]);
       copyArray(doc["randomOutputChannels"], state.randomOutputChannels[bank]);
@@ -252,18 +253,21 @@ bool State::writeModuleAndBankToSDCard(State state) {
   }
   JsonArray activeSteps = bankRoot.createNestedArray("activeSteps");
   JsonArray gateLengths = bankRoot.createNestedArray("gateLengths");
+  JsonArray gateSteps = bankRoot.createNestedArray("gateSteps");
   JsonArray lockedVoltages = bankRoot.createNestedArray("lockedVoltages");
   JsonArray randomSteps = bankRoot.createNestedArray("randomSteps");
   JsonArray voltages = bankRoot.createNestedArray("voltages");
   for (uint8_t i = 0; i < 16; i++) {
     JsonArray activeStepsChannelArray = activeSteps.createNestedArray();
     JsonArray gateLengthsChannelArray = gateLengths.createNestedArray();
+    JsonArray gateStepsChannelArray = gateSteps.createNestedArray();
     JsonArray lockedVoltagesChannelArray = lockedVoltages.createNestedArray();
     JsonArray randomStepsChannelArray = randomSteps.createNestedArray();
     JsonArray voltagesChannelArray = voltages.createNestedArray();
     for (uint8_t j = 0; j < 8; j++) {
       activeStepsChannelArray.add(state.activeSteps[bank][i][j]);
       gateLengthsChannelArray.add(state.gateLengths[bank][i][j]);
+      gateStepsChannelArray.add(state.gateSteps[bank][i][j]);
       lockedVoltagesChannelArray.add(state.lockedVoltages[bank][i][j]);
       randomStepsChannelArray.add(state.randomSteps[bank][i][j]);
       voltagesChannelArray.add(state.voltages[bank][i][j]);

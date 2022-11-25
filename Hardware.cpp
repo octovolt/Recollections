@@ -8,6 +8,16 @@
 #include "Utils.h"
 #include "constants.h"
 
+/**
+ * @brief Set the pixel color of a key to a random color. Note that this only *prepares* the key 
+ * to display a random color. After the key is prepared, trellis.pixels.show() must be called 
+ * afterward.
+ * 
+ * @param state 
+ * @param key 
+ * @return true 
+ * @return false 
+ */
 bool Hardware::prepareRenderingOfRandomizedKey(State state, uint8_t key) {
   if (state.randomColorShouldChange) {
     state.config.trellis.pixels.setPixelColor(
@@ -22,33 +32,40 @@ bool Hardware::prepareRenderingOfRandomizedKey(State state, uint8_t key) {
 }
 
 /**
- * @brief Set color values for a NeoTrellis key as either on or off. Do not yet call 
- * trellis.pixels.show().
+ * @brief Set color values for a NeoTrellis key as either on or off. Note that this only *prepares* 
+ * a key to display the correct color. After the key is prepared, trellis.pixels.show() must be 
+ * called afterward.
  * 
  * @param state Global state object.
  * @param step Which of the 16 steps/keys is targeted for changing. 
  */
-bool Hardware::prepareRenderingOfStepGate(State state, uint8_t step) {
+bool Hardware::prepareRenderingOfChannelEditGateStep(State state, uint8_t step) {
   if (state.randomSteps[state.currentBank][step][state.currentChannel]) {
     return Hardware::prepareRenderingOfRandomizedKey(state, step);
   }
   state.config.trellis.pixels.setPixelColor(
-    step, 
-    state.activeSteps[state.currentBank][step][state.currentChannel]
-      ? YELLOW
-      : PURPLE
+    step,
+    state.currentStep == step
+      ? WHITE
+      : state.gateSteps[state.currentBank][step][state.currentChannel]
+        ? YELLOW
+        : PURPLE
   );
   return 1;
 }
 
 /**
- * @brief Set color values for a NeoTrellis key, but do not yet call trellis.pixels.show().
+ * @brief Set color values for a NeoTrellis key. Note that this only *prepares* a key to display the
+ * correct color. After the key is prepared, trellis.pixels.show() must be called afterward.
  * 
  * @param state Global state object.
  * @param step Which of the 16 steps/keys is targeted for changing.
  */
-bool Hardware::prepareRenderingOfStepVoltage(State state, uint8_t step, uint32_t color) {
+bool Hardware::prepareRenderingOfChannelEditVoltageStep(State state, uint8_t step) {
   seesaw_NeoPixel pixels = state.config.trellis.pixels;
+  uint32_t color = state.currentStep == step
+    ? WHITE
+    : YELLOW;
   if (
     state.selectedKeyForCopying >= 0 &&
     state.flash == 0 &&
@@ -77,6 +94,14 @@ bool Hardware::prepareRenderingOfStepVoltage(State state, uint8_t step, uint32_t
   return 1;
 }
 
+/**
+ * @brief This is the entry point for side effects reflected in the hardware, based on the current 
+ * state: the display of colors in the grid of keys and the production of voltage in the DACs.
+ * 
+ * @param state 
+ * @return true 
+ * @return false 
+ */
 bool Hardware::reflectState(State state) {
   // voltage output
   bool result = Hardware::setOutputsAll(state);
@@ -181,13 +206,10 @@ bool Hardware::renderEditChannelVoltages(State state) {
   seesaw_NeoPixel pixels = state.config.trellis.pixels;
   for (uint8_t i = 0; i < 16; i++) {
     if (state.gateChannels[state.currentBank][state.currentChannel]) {
-      Hardware::prepareRenderingOfStepGate(state, i);
+      Hardware::prepareRenderingOfChannelEditGateStep(state, i);
     }
     else {
-      uint32_t color = state.currentStep == i
-        ? WHITE
-        : YELLOW;
-      Hardware::prepareRenderingOfStepVoltage(state, i, color);
+      Hardware::prepareRenderingOfChannelEditVoltageStep(state, i);
     }
   }
   pixels.show();
@@ -309,7 +331,8 @@ bool Hardware::renderStepSelect(State state) {
   seesaw_NeoPixel pixels = state.config.trellis.pixels;
   for (uint8_t i = 0; i < 16; i++) {
     if (state.selectedKeyForRecording == i) {
-      uint16_t voltage = state.voltages[state.currentBank][state.selectedKeyForRecording][state.currentChannel];
+      uint16_t voltage = 
+        state.voltages[state.currentBank][state.selectedKeyForRecording][state.currentChannel];
       uint8_t red = static_cast<uint8_t>(COLOR_VALUE_MAX * voltage * PERCENTAGE_MULTIPLIER_10_BIT);
       pixels.setPixelColor(state.selectedKeyForRecording, red, 0, 0);
     }

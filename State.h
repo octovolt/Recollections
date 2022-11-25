@@ -136,14 +136,20 @@ typedef struct State {
   bool pasteTargetKeys[16];
 
   /** 
-   * The steps that will play as notes when the steps are sequenced via triggers on the ADV_INPUT 
-   * jack. If a step is not active, it will be a rest. If the channel is set to output gates, an 
-   * inactive step will output 0v. Any other value of voltage will be ignored in favor of the last 
-   * previous active step.
+   * If a step is not active, its voltage value will be ignored in favor of the last previous active
+   * step. There must always be at least one active step.
    * This is set in EDIT_CHANNEL_VOLTAGES screen.
    * Indices are [bank][step][channel].
    */
   bool activeSteps[16][16][8];
+
+  /** 
+   * The steps that will produce gates when the steps are sequenced via triggers on the ADV_INPUT 
+   * jack.
+   * This is set in EDIT_CHANNEL_VOLTAGES screen.
+   * Indices are [bank][step][channel].
+   */
+  bool gateSteps[16][16][8];
 
   /**
    * The steps that will produce a random value, either CV or gate.

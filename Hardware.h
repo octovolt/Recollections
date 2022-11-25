@@ -12,8 +12,8 @@
 
 typedef struct Hardware {
   static bool prepareRenderingOfRandomizedKey(State state, uint8_t key);
-  static bool prepareRenderingOfStepGate(State state, uint8_t step);
-  static bool prepareRenderingOfStepVoltage(State state, uint8_t step, uint32_t color);
+  static bool prepareRenderingOfChannelEditGateStep(State state, uint8_t step);
+  static bool prepareRenderingOfChannelEditVoltageStep(State state, uint8_t step);
   static bool reflectState(State state);
   static bool renderBankSelect(State state);
   static bool renderEditChannelSelect(State state);

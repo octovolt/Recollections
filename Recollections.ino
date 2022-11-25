@@ -352,6 +352,7 @@ bool setupState() {
         state.activeSteps[i][j][k] = 1;
         state.gateChannels[i][k] = 0;
         state.gateLengths[i][j][k] = 0.5;
+        state.gateSteps[i][j][k] = 0;
         state.lockedVoltages[i][j][k] = 0;
         state.randomInputChannels[i][k] = 0;
         state.randomOutputChannels[i][k] = 0;

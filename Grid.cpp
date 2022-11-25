@@ -83,17 +83,18 @@ State Grid::handleEditChannelSelectKeyEvent(keyEvent evt, State state) {
   return state;
 }
 
-// TODO: how to abstract repetitive code?
 State Grid::handleEditChannelVoltagesKeyEvent(keyEvent evt, State state) {
   uint8_t currentBank = state.currentBank;
   uint8_t currentChannel = state.currentChannel;
+
+  // TODO: how to abstract this repetitive code?
 
   // Gate channel
   if (state.gateChannels[currentBank][state.currentChannel]) {
     // MOD button is not being held, so toggle gate on or off
     if (state.readyForModPress) { 
-      state.activeSteps[currentBank][evt.bit.NUM][currentChannel] = 
-        !state.activeSteps[currentBank][evt.bit.NUM][currentChannel];
+      state.gateSteps[currentBank][evt.bit.NUM][currentChannel] = 
+        !state.gateSteps[currentBank][evt.bit.NUM][currentChannel];
     }
     // MOD button is being held
     else {
