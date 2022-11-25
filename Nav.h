@@ -12,7 +12,7 @@
 
 typedef struct Nav {
   static State goBack(State state);
-  static State goForward(State state, Mode_t mode);
+  static State goForward(State state, Screen_t screen);
 } Nav;
 
 #endif

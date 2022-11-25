@@ -52,7 +52,7 @@
 #define CONFIG_SD_PATH "Recollections/Config.txt"
 #define MODULE_SD_PATH_PREFIX "Recollections/Module_"
 
-// Use built-in SD for SPI modes on Teensy 3.5/3.6.
+// Use built-in SD for SPI on Teensy 3.5/3.6/4.1.
 // Teensy 4.0 use first SPI port.
 // SDCARD_SS_PIN is defined for the built-in SD on some boards.
 #ifndef SDCARD_SS_PIN
@@ -65,13 +65,15 @@ const uint8_t SD_CS_PIN = SDCARD_SS_PIN;
 // Different ways to open files on the SD card
 uint8_t const SD_READ_CREATE = (uint8_t)(O_READ | O_CREAT);
 
+// --------------------------- Microcontroller Board Pins ------------------------------------------
+
 // Analog inputs
 /** Control voltage input to be recorded. */
 uint8_t const CV_INPUT = A6; // (originally A0? pin "14" on Teensy 3.6)
 
 // Digital inputs - REMEMBER that pins on the left side of Teensy start with GND and only then begin 
 // counting from 0, so the second pin is 0, the third pin is 1, etc.
-/** Button (gate) that acts as a modifying key for other commands or an escape key to quit the current mode */
+/** Button (gate) that acts as a modifying key for other commands or an escape key to quit the current screen */
 uint8_t const MOD_INPUT = 4; // could be 2 in the future?
 /** Gate to advance the current step to the next step. */ 
 uint8_t const ADV_INPUT = 3;
@@ -96,52 +98,55 @@ uint8_t const TEENSY_LED = 13;
 // SCL is pin 19 on Teensy 3.x and 4.x
 // Please note that we need pull up resistors of about 2k to 5k Ohms for the i2C bus.
 
+// ------------------------------------- Screens ---------------------------------------------------
+
 /**
- * Mode constants.
+ * Screen constants.
  * 
  * Please note: these are referred to as either "sections" or "screens" in the user manual. There 
  * are five major "sections": step selection, channel editing, recording, global editing, and bank 
  * selection. Some of these have additional "screens" other than their first.
  */
-typedef struct Mode {
+typedef struct Screen {
   // Step selection. 
-  // This is the primary, default mode.
   // Color: white
-  Mode_t STEP_SELECT = 0;
+  Screen_t STEP_SELECT = 0;
 
   // Select the channel on which to perform operations, such as recording while in STEP_SELECT.
   // Color: white
-  Mode_t STEP_CHANNEL_SELECT = 1;
+  Screen_t STEP_CHANNEL_SELECT = 1;
 
-  // Intermediary mode allowing navigation to all five major modes.
+  // Intermediary screen allowing navigation to all five major sections.
   // Colors: blue, red, yellow, green
-  Mode_t MODE_SELECT = 2;
+  Screen_t SECTION_SELECT = 2;
 
   // Edit all 16 steps for a single channel, or configure channels for gates or CV.
   // Color: yellow
-  Mode_t EDIT_CHANNEL_SELECT = 3;
-  Mode_t EDIT_CHANNEL_VOLTAGES = 4;
+  Screen_t EDIT_CHANNEL_SELECT = 3;
+  Screen_t EDIT_CHANNEL_VOLTAGES = 4;
 
   // Record voltages, either manually across the 8 channels for a single step, or for 
   // multiple steps on a single channel while the ADV input is receiving a clock/gate/trigger.
-  // This is also the mode where one can set up automatic recording.
+  // This is also the screen where one can set up automatic recording.
   // Color: red
-  Mode_t RECORD_CHANNEL_SELECT = 5;
+  Screen_t RECORD_CHANNEL_SELECT = 5;
 
   // Global editing of steps, including whether steps are addressed at all when a gate/trigger/clock
   // is received at the ADV input.
   // Color: green
-  Mode_t GLOBAL_EDIT = 6;
+  Screen_t GLOBAL_EDIT = 6;
 
   // Select a new bank from memory. Each bank has 16 steps.
   // Color: blue
-  Mode_t BANK_SELECT = 7;
+  Screen_t BANK_SELECT = 7;
 
   // The module has gotten into an error state
   // Color: red
-  Mode_t ERROR = 8;
-} Mode;
-Mode constexpr MODE;
+  Screen_t ERROR = 8;
+} Screen;
+Screen constexpr SCREEN;
+
+// ----------------------------------- Quadrants ---------------------------------------------------
 
 /**
  * Constants for the four quadrants of the 16 buttons.
@@ -154,6 +159,8 @@ typedef struct Quadrant {
   Quadrant_t SE = 4;
 } Quadrant;
 Quadrant constexpr QUADRANT;
+
+// --------------------------------- DAC Channels --------------------------------------------------
 
 /** 
  * The four channels of an MCP4728 DAC arranged as an array for the sake of syntactic sugar. 

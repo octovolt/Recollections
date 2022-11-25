@@ -13,22 +13,22 @@ State Nav::goBack(State state) {
   if (state.navHistoryIndex < 0) {
     Serial.println("Attempting to go back past the earliest step in the navHistory.");
     state.navHistoryIndex = 0;
-    state.mode = MODE.ERROR;
+    state.screen = SCREEN.ERROR;
   } else {
-    state.mode = state.navHistory[state.navHistoryIndex];
+    state.screen = state.navHistory[state.navHistoryIndex];
   }
   return state;
 }
 
-State Nav::goForward(State state, Mode_t mode) {
+State Nav::goForward(State state, Screen_t screen) {
   state.navHistoryIndex = state.navHistoryIndex + 1;
   if (state.navHistoryIndex > 3) {
     Serial.println("Attempting to go forward past the maximum step in the navHistory.");
     state.navHistoryIndex = 3;
-    state.mode = MODE.ERROR;
+    state.screen = SCREEN.ERROR;
   } else {
-    state.mode = mode;
-    state.navHistory[state.navHistoryIndex] = state.mode;
+    state.screen = screen;
+    state.navHistory[state.navHistoryIndex] = state.screen;
   }
   
   return state;

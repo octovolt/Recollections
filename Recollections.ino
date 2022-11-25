@@ -51,32 +51,32 @@ bool initialLoop = 1;
 TrellisCallback handleKeyEvent(keyEvent evt) {
   if (evt.bit.EDGE == SEESAW_KEYPAD_EDGE_RISING && state.readyForKeyPress) {
     state.readyForKeyPress = 0;
-    switch (state.mode) {
-      case MODE.EDIT_CHANNEL_SELECT:
+    switch (state.screen) {
+      case SCREEN.EDIT_CHANNEL_SELECT:
         state = Grid::handleEditChannelSelectKeyEvent(evt, state);
         break;
-      case MODE.EDIT_CHANNEL_VOLTAGES:
+      case SCREEN.EDIT_CHANNEL_VOLTAGES:
         state = Grid::handleEditChannelVoltagesKeyEvent(evt, state);
         break;
-      case MODE.ERROR:
+      case SCREEN.ERROR:
         SCB_AIRCR = 0x05FA0004; // Do a soft reboot of Teensy.
         break;
-      case MODE.GLOBAL_EDIT:
+      case SCREEN.GLOBAL_EDIT:
         state = Grid::handleGlobalEditKeyEvent(evt, state);
         break;
-      case MODE.MODE_SELECT:
-        state = Grid::handleModeSelectKeyEvent(evt, state);
+      case SCREEN.SECTION_SELECT:
+        state = Grid::handleSectionSelectKeyEvent(evt, state);
         break;
-      case MODE.BANK_SELECT:
+      case SCREEN.BANK_SELECT:
         state = Grid::handleBankSelectKeyEvent(evt, state);
         break;
-      case MODE.RECORD_CHANNEL_SELECT:
+      case SCREEN.RECORD_CHANNEL_SELECT:
         state = Grid::handleRecordChannelSelectKeyEvent(evt, state);
         break;
-      case MODE.STEP_CHANNEL_SELECT:
+      case SCREEN.STEP_CHANNEL_SELECT:
         state = Grid::handleStepChannelSelectKeyEvent(evt, state);
         break;
-      case MODE.STEP_SELECT:
+      case SCREEN.STEP_SELECT:
         state = Grid::handleStepSelectKeyEvent(evt, state);
         break;
     }
@@ -118,23 +118,23 @@ void handleModButton() {
         pasteFromCopyAction();
       }
     } 
-    else if (state.mode == MODE.STEP_SELECT) {
-      state = Nav::goForward(state, MODE.MODE_SELECT);
+    else if (state.screen == SCREEN.STEP_SELECT) {
+      state = Nav::goForward(state, SCREEN.SECTION_SELECT);
     }
     else {
       state = Nav::goBack(state);
     }
     state.readyForModPress = 1;
   }
-  // MOD button long press in STEP_SELECT mode navigates to STEP_CHANNEL_SELECT mode.
+  // MOD button long press in STEP_SELECT screen navigates to STEP_CHANNEL_SELECT screen.
   if (
-    state.mode == MODE.STEP_SELECT &&
+    state.screen == SCREEN.STEP_SELECT &&
     state.readyForModPress == 0 &&
     state.initialKeyPressedDuringModHold < 0 &&
     millis() - state.timeModPressed > LONG_PRESS_TIME
   ) {
     state.initialKeyPressedDuringModHold = 69; // faking this to prevent immediate navigation back
-    state = Nav::goForward(state, MODE.STEP_CHANNEL_SELECT);
+    state = Nav::goForward(state, SCREEN.STEP_CHANNEL_SELECT);
   }
 }
 
@@ -143,17 +143,17 @@ void pasteFromCopyAction() {
     Serial.printf("%s %u \n", "selectedKeyForCopying is unexpectedly", state.selectedKeyForCopying);
     return;
   }
-  switch (state.mode) {
-    case MODE.BANK_SELECT:
+  switch (state.screen) {
+    case SCREEN.BANK_SELECT:
       state = State::pasteBanks(state);
       break;
-    case MODE.EDIT_CHANNEL_SELECT:
+    case SCREEN.EDIT_CHANNEL_SELECT:
       state = State::pasteChannels(state);
       break;
-    case MODE.EDIT_CHANNEL_VOLTAGES:
+    case SCREEN.EDIT_CHANNEL_VOLTAGES:
       state = State::pasteChannelSteps(state);
       break;
-    case MODE.GLOBAL_EDIT:
+    case SCREEN.GLOBAL_EDIT:
       state = State::pasteGlobalSteps(state);
       break;
   }
@@ -300,8 +300,8 @@ bool setupState() {
 
   //------------------- transient state ------------------------------------------------------------
 
-  if (state.mode != MODE.ERROR) {
-    state.mode = MODE.STEP_SELECT;
+  if (state.screen != SCREEN.ERROR) {
+    state.screen = SCREEN.STEP_SELECT;
   }
   state.navHistoryIndex = 0;
   state.readyForAdvInput = 1;
@@ -321,7 +321,7 @@ bool setupState() {
   // state.persistedStateChanged = 0; // TODO: figure this out. clean up?
   for (uint8_t i = 0; i < 16; i++) {
     if (i < 4) {
-      state.navHistory[i] = MODE.STEP_SELECT;
+      state.navHistory[i] = SCREEN.STEP_SELECT;
     }
     state.pasteTargetKeys[i] = 0;
   }
@@ -388,22 +388,22 @@ void setup() {
 
   bool setUpSDCardSuccessfully = setupSDCard();
   if (!setUpSDCardSuccessfully) {
-    state.mode = MODE.ERROR;
+    state.screen = SCREEN.ERROR;
   }
 
   bool setUpConfigSuccessfully = setupConfig();
   if (!setUpConfigSuccessfully) {
-    state.mode = MODE.ERROR;
+    state.screen = SCREEN.ERROR;
   }
 
   bool setUpHardwareSuccessfully = setupPeripheralHardware();
   if (!setUpHardwareSuccessfully) {
-    state.mode = MODE.ERROR;
+    state.screen = SCREEN.ERROR;
   }
 
   bool setUpStateSuccessfully = setupState();
   if (!setUpStateSuccessfully) {
-    state.mode = MODE.ERROR;
+    state.screen = SCREEN.ERROR;
   }
 
   digitalWrite(TEENSY_LED, 1); // to indicate that the teensy is alive and well
@@ -441,8 +441,8 @@ void loop() {
     state.lastFlashToggle = ms;
   }
 
-  // ----------------------------- ERROR MODE RETURNS EARLY ----------------------------------------
-  if (state.mode == MODE.ERROR) {
+  // ----------------------------- ERROR SCREEN RETURNS EARLY ----------------------------------------
+  if (state.screen == SCREEN.ERROR) {
     Hardware::reflectState(state);
     return;
   }
@@ -501,11 +501,11 @@ void loop() {
 
   //------------------------ EDITING OR RECORDING VOLTAGE CONTINUOUSLY -----------------------------
   if (state.selectedKeyForRecording >= 0) {
-    if (state.mode == MODE.EDIT_CHANNEL_VOLTAGES || state.mode == MODE.STEP_SELECT) {
+    if (state.screen == SCREEN.EDIT_CHANNEL_VOLTAGES || state.screen == SCREEN.STEP_SELECT) {
       state.voltages[currentBank][state.selectedKeyForRecording][currentChannel] = analogRead(CV_INPUT);
     } 
     else if (
-      state.mode == MODE.RECORD_CHANNEL_SELECT && 
+      state.screen == SCREEN.RECORD_CHANNEL_SELECT && 
       !state.lockedVoltages[currentBank][currentStep][state.selectedKeyForRecording] &&
       !state.autoRecordEnabled // automatic recording acts as a sample and hold
     ) {
@@ -529,7 +529,7 @@ void loop() {
     Serial.println("attempting initial rendering of state");
   }
   if (!Hardware::reflectState(state)) {
-    state.mode = MODE.ERROR;
+    state.screen = SCREEN.ERROR;
   }
 
   //--------------------------------- INITIAL LOOP COMPLETED ---------------------------------------

@@ -86,32 +86,32 @@ bool Hardware::reflectState(State state) {
   }
 
   // rendering of color and brightness in the 16 keys
-  switch (state.mode) {
-    case MODE.BANK_SELECT:
+  switch (state.screen) {
+    case SCREEN.BANK_SELECT:
       result = Hardware::renderBankSelect(state);
       break;
-    case MODE.EDIT_CHANNEL_SELECT:
+    case SCREEN.EDIT_CHANNEL_SELECT:
       result = Hardware::renderEditChannelSelect(state);
       break;
-    case MODE.EDIT_CHANNEL_VOLTAGES:
+    case SCREEN.EDIT_CHANNEL_VOLTAGES:
       result = Hardware::renderEditChannelVoltages(state);
       break;
-    case MODE.ERROR:
+    case SCREEN.ERROR:
       result = Hardware::renderError(state);
       break;
-    case MODE.GLOBAL_EDIT:
+    case SCREEN.GLOBAL_EDIT:
       result = Hardware::renderGlobalEdit(state);
       break;
-    case MODE.MODE_SELECT:
-      result = Hardware::renderModeSelect(state);
+    case SCREEN.SECTION_SELECT:
+      result = Hardware::renderSectionSelect(state);
       break;
-    case MODE.RECORD_CHANNEL_SELECT:
+    case SCREEN.RECORD_CHANNEL_SELECT:
       result = Hardware::renderRecordChannelSelect(state);
       break;
-    case MODE.STEP_CHANNEL_SELECT:
+    case SCREEN.STEP_CHANNEL_SELECT:
       result = Hardware::renderStepChannelSelect(state);
       break;
-    case MODE.STEP_SELECT:
+    case SCREEN.STEP_SELECT:
       result = Hardware::renderStepSelect(state);
       break;
   }
@@ -200,7 +200,7 @@ bool Hardware::renderError(State state) {
     pixels.setPixelColor(key, state.flash ? RED : 0);
   }
   pixels.show();
-  return 0; // stay in error mode
+  return 0; // stay in error screen
 }
 
 bool Hardware::renderGlobalEdit(State state) {
@@ -239,7 +239,7 @@ bool Hardware::renderGlobalEdit(State state) {
   return 1;
 }
 
-bool Hardware::renderModeSelect(State state) {
+bool Hardware::renderSectionSelect(State state) {
   seesaw_NeoPixel pixels = state.config.trellis.pixels;
   for (uint8_t i = 0; i < 16; i++) {
     switch (Utils::keyQuadrant(i)) {

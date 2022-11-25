@@ -16,7 +16,7 @@ typedef struct Grid {
   static State handleEditChannelSelectKeyEvent(keyEvent evt, State state);
   static State handleEditChannelVoltagesKeyEvent(keyEvent evt, State state);
   static State handleGlobalEditKeyEvent(keyEvent evt, State state);
-  static State handleModeSelectKeyEvent(keyEvent evt, State state);
+  static State handleSectionSelectKeyEvent(keyEvent evt, State state);
   static State handleRecordChannelSelectKeyEvent(keyEvent evt, State state);
   static State handleStepChannelSelectKeyEvent(keyEvent evt, State state);
   static State handleStepSelectKeyEvent(keyEvent evt, State state);

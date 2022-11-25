@@ -21,11 +21,11 @@ typedef struct State {
   /** Global config. Values here should very rarely change. Initial values provided in setup(). */
   Config config;
 
-  /** Current operating mode. See constants.h. */
-  Mode_t mode;
+  /** Current operating screen. See constants.h. */
+  Screen_t screen;
 
   /** Array to track navigational history. Used to restore previous step in navigation. */
-  Mode_t navHistory[4];
+  Screen_t navHistory[4];
 
   /** The current index within the navHistory. */
   uint8_t navHistoryIndex;
@@ -125,7 +125,7 @@ typedef struct State {
   /** 
    * Current selected step for recording, 0-15. This is used to continually record while a key is 
    * held down. A value below zero denotes that no step is selected; no key is pressed or we are not
-   * in a recording mode.
+   * in a recording screen.
    */
   int8_t selectedKeyForRecording;
 
@@ -140,21 +140,21 @@ typedef struct State {
    * jack. If a step is not active, it will be a rest. If the channel is set to output gates, an 
    * inactive step will output 0v. Any other value of voltage will be ignored in favor of the last 
    * previous active step.
-   * This is set in EDIT_CHANNEL_VOLTAGES mode.
+   * This is set in EDIT_CHANNEL_VOLTAGES screen.
    * Indices are [bank][step][channel].
    */
   bool activeSteps[16][16][8];
 
   /**
    * The steps that will produce a random value, either CV or gate.
-   * This is set in EDIT_CHANNEL_VOLTAGES mode.
+   * This is set in EDIT_CHANNEL_VOLTAGES screen.
    * Indices are [bank][step][channel].
    */
   bool randomSteps[16][16][8];
   
   /** 
    * The steps that will be skipped entirely during sequencing. 
-   * This is set in GLOBAL_EDIT mode. 
+   * This is set in GLOBAL_EDIT screen. 
    */
   bool removedSteps[16];
 
@@ -185,13 +185,13 @@ typedef struct State {
   uint8_t gateLengths[16][16][8];
 
   /**
-   * Voltages that cannot be changed in RECORD_CHANNEL_SELECT mode or through automatic recording.
+   * Voltages that cannot be changed in RECORD_CHANNEL_SELECT screen or through automatic recording.
    * Indices are [bank][step][channel]. 
    */
   bool lockedVoltages[16][16][8];
   
   /** 
-   * 10-bit stored voltages for channels per step per bank (max 1023).
+   * 10-bit stored voltages for channels per step per bank (max value is 1023).
    * Indices are [bank][step][channel]. 
    */
   uint16_t voltages[16][16][8];

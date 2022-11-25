@@ -46,7 +46,7 @@ State Grid::handleEditChannelSelectKeyEvent(keyEvent evt, State state) {
       return state;
     }
     state.currentChannel = evt.bit.NUM;
-    state = Nav::goForward(state, MODE.EDIT_CHANNEL_VOLTAGES);
+    state = Nav::goForward(state, SCREEN.EDIT_CHANNEL_VOLTAGES);
   }
   else { // MOD button is being held
     if (state.initialKeyPressedDuringModHold < 0) { 
@@ -235,17 +235,17 @@ State Grid::handleGlobalEditKeyEvent(keyEvent evt, State state) {
   return state;
 }
 
-State Grid::handleModeSelectKeyEvent(keyEvent evt, State state) {
+State Grid::handleSectionSelectKeyEvent(keyEvent evt, State state) {
   bool const modButtonIsBeingHeld = !state.readyForModPress;
   switch (Utils::keyQuadrant(evt.bit.NUM)) {
     case QUADRANT.INVALID:
-      state.mode = MODE.ERROR;
+      state.screen = SCREEN.ERROR;
       break;
     case QUADRANT.NW:
       if (modButtonIsBeingHeld) {
         // TODO: Load module
       } else {
-        state = Nav::goForward(state, MODE.EDIT_CHANNEL_SELECT);
+        state = Nav::goForward(state, SCREEN.EDIT_CHANNEL_SELECT);
       }
       break;
     case QUADRANT.NE:
@@ -253,26 +253,26 @@ State Grid::handleModeSelectKeyEvent(keyEvent evt, State state) {
         state.initialKeyPressedDuringModHold = evt.bit.NUM;
         bool const writeSuccess = State::writeModuleAndBankToSDCard(state);
         if (!writeSuccess) {
-          state = Nav::goForward(state, MODE.ERROR); // do something else less drastic here?
+          state = Nav::goForward(state, SCREEN.ERROR); // do something else less drastic here?
         } else {
           // TODO: do something visual to confirm the write
         }
       } else {
-        state = Nav::goForward(state, MODE.RECORD_CHANNEL_SELECT);
+        state = Nav::goForward(state, SCREEN.RECORD_CHANNEL_SELECT);
       }
       break;
     case QUADRANT.SW:
       if (modButtonIsBeingHeld) {
         // TODO: Calibration? Is this needed?
       } else {
-        state = Nav::goForward(state, MODE.GLOBAL_EDIT);
+        state = Nav::goForward(state, SCREEN.GLOBAL_EDIT);
       }
       break;
     case QUADRANT.SE:
       if (modButtonIsBeingHeld) {
         // TODO: Custom colors?
       } else {
-        state = Nav::goForward(state, MODE.BANK_SELECT);
+        state = Nav::goForward(state, SCREEN.BANK_SELECT);
       }
       break;
   }
@@ -343,7 +343,7 @@ State Grid::updateModKeyCombinationTracking(keyEvent evt, State state) {
     }
     // paranoid defensiveness, maybe remove this?
     uint8_t maxIterations = (
-      state.mode == MODE.EDIT_CHANNEL_SELECT
+      state.screen == SCREEN.EDIT_CHANNEL_SELECT
     ) ? 3 : 4;
     if (state.keyPressesSinceModHold > maxIterations) {
       state.keyPressesSinceModHold = 1;

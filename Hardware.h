@@ -20,7 +20,7 @@ typedef struct Hardware {
   static bool renderEditChannelVoltages(State state);
   static bool renderError(State state);
   static bool renderGlobalEdit(State state);
-  static bool renderModeSelect(State state);
+  static bool renderSectionSelect(State state);
   static bool renderRecordChannelSelect(State state);
   static bool renderStepChannelSelect(State state);
   static bool renderStepSelect(State state);

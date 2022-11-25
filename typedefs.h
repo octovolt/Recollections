@@ -10,9 +10,9 @@
 #define VOLTAGE_MEMORY_TYPEDEFS_H_
 
 /**
- * The modes of the module. See constants.h.
+ * The screens of the module. See constants.h.
  */
-typedef uint8_t Mode_t;
+typedef uint8_t Screen_t;
 
 /**
  * The quadrants of the 16 buttons. See constants.h.
