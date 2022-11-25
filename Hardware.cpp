@@ -332,7 +332,7 @@ bool Hardware::setOutput(State state, const int8_t channel, const uint16_t volta
     Serial.printf("%s %u \n", "invalid channel", channel);
     return 0;
   }
-  if (-1023 > voltageValue || voltageValue > 1023) {
+  if (0 > voltageValue || voltageValue > MAX_UNSIGNED_10_BIT) {
     Serial.printf("%s %u \n", "invalid 10-bit voltage value", voltageValue);
     return 0;
   }
