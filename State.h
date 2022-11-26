@@ -243,7 +243,7 @@ typedef struct State {
    * @param state 
    * @return State 
    */
-  static State quitCopyPasteFlow(State state);
+  static State quitCopyPasteFlowPriorToPaste(State state);
 
   /**
    * @brief Read the persisted state values from the SD card that pertain to the entire module and 

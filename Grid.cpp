@@ -9,7 +9,7 @@
 #include "Utils.h"
 #include "constants.h"
 
-State Grid::copyKey(keyEvent evt, State state) {
+State Grid::addKeyToCopyPasteData(keyEvent evt, State state) {
   if (state.selectedKeyForCopying == evt.bit.NUM) {
     Serial.println("Somehow began copy/paste incorrectly. This should never happen.");
   }
@@ -27,10 +27,10 @@ State Grid::handleBankSelectKeyEvent(keyEvent evt, State state) {
   if (!state.readyForModPress) { // MOD button is being held
     state = Grid::updateModKeyCombinationTracking(evt, state);
     if (state.selectedKeyForCopying != evt.bit.NUM) {
-      state = Grid::copyKey(evt, state);
+      state = Grid::addKeyToCopyPasteData(evt, state);
     } 
     else { // Pressed the original bank again, quit copy-paste and clear the paste banks.
-      state = State::quitCopyPasteFlow(state);
+      state = State::quitCopyPasteFlowPriorToPaste(state);
     }
   }
   else if (evt.bit.NUM != state.currentBank) {
@@ -49,35 +49,34 @@ State Grid::handleEditChannelSelectKeyEvent(keyEvent evt, State state) {
     state = Nav::goForward(state, SCREEN.EDIT_CHANNEL_VOLTAGES);
   }
   else { // MOD button is being held
-    if (state.initialKeyPressedDuringModHold < 0) { 
+    if (state.initialKeyPressedDuringModHold < 0) {
       state.initialKeyPressedDuringModHold = evt.bit.NUM;
     }
-    if (evt.bit.NUM > 7) {
-      state = State::quitCopyPasteFlow(state);
-      state.readyForRandom = !state.readyForRandom;
+    state = Grid::updateModKeyCombinationTracking(evt, state);
+    
+    // copy-paste
+    if (state.keyPressesSinceModHold == 1) {
+      state = Grid::addKeyToCopyPasteData(evt, state);
     }
-    else if (state.readyForRandom) {
-      state.randomOutputChannels[state.currentBank][evt.bit.NUM] = 
-        !state.randomOutputChannels[state.currentBank][evt.bit.NUM];
+
+    // toggle as gate channel
+    else if (state.keyPressesSinceModHold == 2) {
+      state = State::quitCopyPasteFlowPriorToPaste(state);
+      state.gateChannels[bank][evt.bit.NUM] = !state.gateChannels[bank][evt.bit.NUM];
     }
-    else {
-      state = Grid::updateModKeyCombinationTracking(evt, state);
-      // copy-paste
-      if (state.keyPressesSinceModHold == 1) {
-        state = Grid::copyKey(evt, state);
-      }
-      // toggle gate channel
-      else if (state.keyPressesSinceModHold == 2) {
-        state = State::quitCopyPasteFlow(state);
-        state.gateChannels[bank][evt.bit.NUM] = !state.gateChannels[bank][evt.bit.NUM];
-      }
-      // recurse
-      else if (state.keyPressesSinceModHold == 3) {
-        state.gateChannels[bank][evt.bit.NUM] = !state.gateChannels[bank][evt.bit.NUM];
-        state.keyPressesSinceModHold = 0;
-        return Grid::handleEditChannelSelectKeyEvent(evt, state);
-      }
-    } 
+
+    // set as random channel
+    else if (state.keyPressesSinceModHold == 3) {
+      state.gateChannels[bank][evt.bit.NUM] = !state.gateChannels[bank][evt.bit.NUM];
+      state.randomOutputChannels[state.currentBank][evt.bit.NUM] = 1;
+    }
+
+    // recurse
+    else if (state.keyPressesSinceModHold == 4) {
+      state.randomOutputChannels[state.currentBank][evt.bit.NUM] = 0;
+      state.keyPressesSinceModHold = 0;
+      return Grid::handleEditChannelSelectKeyEvent(evt, state);
+    }
   }
 
   return state;
@@ -148,11 +147,11 @@ State Grid::handleEditChannelVoltagesKeyEvent(keyEvent evt, State state) {
 
       // Copy-paste voltage value, or restore step to defaults
       if (state.keyPressesSinceModHold == 1) {
-        state = Grid::copyKey(evt, state);
+        state = Grid::addKeyToCopyPasteData(evt, state);
       }      
       // Step is locked
       else if (state.keyPressesSinceModHold == 2) {
-        state = State::quitCopyPasteFlow(state);
+        state = State::quitCopyPasteFlowPriorToPaste(state);
         state.lockedVoltages[currentBank][evt.bit.NUM][currentChannel] = 1;
       }
       // Step is inactive
@@ -208,11 +207,11 @@ State Grid::handleGlobalEditKeyEvent(keyEvent evt, State state) {
     state = Grid::updateModKeyCombinationTracking(evt, state);
     // Copy-paste
     if (state.keyPressesSinceModHold == 1) {
-      state = Grid::copyKey(evt, state);
+      state = Grid::addKeyToCopyPasteData(evt, state);
     } 
     // Toggle locked voltage
     else if (state.keyPressesSinceModHold == 2) {
-      state = State::quitCopyPasteFlow(state);
+      state = State::quitCopyPasteFlowPriorToPaste(state);
       for (uint8_t i = 0; i < 8; i++) {
         state.lockedVoltages[currentBank][evt.bit.NUM][i] = 1;
       }
@@ -330,6 +329,15 @@ State Grid::handleStepSelectKeyEvent(keyEvent evt, State state) {
   return state;
 }
 
+/**
+ * @brief This function updates the keyPressesSinceModHold count only if this is the first key 
+ * pressed or the same key as the first is pressed. If another key other than the first is pressed,
+ * no update of keyPressesSinceModHold occurs.
+ * 
+ * @param evt 
+ * @param state 
+ * @return State 
+ */
 State Grid::updateModKeyCombinationTracking(keyEvent evt, State state) {
   // MOD button is being held
   if (!state.readyForModPress) {
@@ -342,13 +350,14 @@ State Grid::updateModKeyCombinationTracking(keyEvent evt, State state) {
     else if (state.initialKeyPressedDuringModHold == evt.bit.NUM) {
       state.keyPressesSinceModHold = state.keyPressesSinceModHold + 1;
     }
+
     // paranoid defensiveness, maybe remove this?
-    uint8_t maxIterations = (
-      state.screen == SCREEN.EDIT_CHANNEL_SELECT
-    ) ? 3 : 4;
-    if (state.keyPressesSinceModHold > maxIterations) {
-      state.keyPressesSinceModHold = 1;
-    }
+    // uint8_t maxIterations = (
+    //   state.screen == SCREEN.EDIT_CHANNEL_SELECT
+    // ) ? 3 : 4;
+    // if (state.keyPressesSinceModHold > maxIterations) {
+    //   state.keyPressesSinceModHold = 1;
+    // }
   }
   return state;
 }

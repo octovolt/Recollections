@@ -171,30 +171,23 @@ bool Hardware::renderBankSelect(State state) {
 bool Hardware::renderEditChannelSelect(State state) {
   seesaw_NeoPixel pixels = state.config.trellis.pixels;
   for (uint8_t i = 0; i < 16; i++) {
-    if (i > 7) {
-      if (state.readyForRandom) {
-        Hardware::prepareRenderingOfRandomizedKey(state, i);
-      }
-      else {
-        pixels.setPixelColor(i, 0);
-      }
+    // non-illuminated keys
+    if (
+      i > 7 ||
+      (state.flash == 0 && 
+        (i == state.selectedKeyForCopying || 
+        state.pasteTargetKeys[i] || 
+        state.randomOutputChannels[state.currentBank][i]))
+    ) {
+      pixels.setPixelColor(i, 0);
     }
+    // illuminated keys
     else {
       if (state.randomOutputChannels[state.currentBank][i]) {
         Hardware::prepareRenderingOfRandomizedKey(state, i);
       }
       else {
-        pixels.setPixelColor(
-          i, 
-          state.gateChannels[state.currentBank][i]
-            ? PURPLE
-            : state.flash == 0 && 
-              (i == state.selectedKeyForCopying || 
-               state.pasteTargetKeys[i] || 
-               state.randomOutputChannels[state.currentBank][i])
-              ? 0
-              : YELLOW
-        );
+        pixels.setPixelColor(i, state.gateChannels[state.currentBank][i] ? PURPLE : YELLOW);
       }
     }
   }

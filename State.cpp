@@ -67,7 +67,7 @@ State State::pasteGlobalSteps(State state) {
   return state;
 }
 
-State State::quitCopyPasteFlow(State state) {
+State State::quitCopyPasteFlowPriorToPaste(State state) {
   state.selectedKeyForCopying = -1;
   for (uint8_t i = 0; i < 16; i++) {
     state.pasteTargetKeys[i] = 0;

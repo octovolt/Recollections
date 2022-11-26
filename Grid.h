@@ -11,7 +11,7 @@
 #define VOLTAGE_MEMORY_GRID_H_
 
 typedef struct Grid {
-  static State copyKey(keyEvent evt, State state);
+  static State addKeyToCopyPasteData(keyEvent evt, State state);
   static State handleBankSelectKeyEvent(keyEvent evt, State state);
   static State handleEditChannelSelectKeyEvent(keyEvent evt, State state);
   static State handleEditChannelVoltagesKeyEvent(keyEvent evt, State state);
