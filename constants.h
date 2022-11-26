@@ -73,13 +73,13 @@ uint8_t const CV_INPUT = A6; // (originally A0? pin "14" on Teensy 3.6)
 
 // Digital inputs - REMEMBER that pins on the left side of Teensy start with GND and only then begin 
 // counting from 0, so the second pin is 0, the third pin is 1, etc.
-/** Button (gate) that acts as a modifying key for other commands or an escape key to quit the current screen */
+/** Button (gate) that acts as a modifier for keys or as an escape to quit the current screen */
 uint8_t const MOD_INPUT = 4; // could be 2 in the future?
 /** Gate to advance the current step to the next step. */ 
 uint8_t const ADV_INPUT = 3;
-/** Gate to start/stop recording. Recording occurs while the gate is high. This only applies to automatic recording. */
+/** Gate to start/stop automatic recording. Recording occurs when the gate is high. */
 uint8_t const REC_INPUT = 0; // could be 4 in the future ?
-/** Gate that determines if the NeoTrellis is being pressed. This saves cycles by avoiding unnecessary polling. */
+/** Gate that determines if a key is being pressed. Avoids unnecessary polling. */
 uint8_t const TRELLIS_INTERRUPT_INPUT = 5;
 /** [EXPANSION ONLY] Gate to reverse the direction of step advancement. */
 uint8_t const REV_INPUT = 6;
@@ -96,7 +96,7 @@ uint8_t const TEENSY_LED = 13;
 // Digital i2c outputs
 // SDA is pin 18 on Teensy 3.x and 4.x
 // SCL is pin 19 on Teensy 3.x and 4.x
-// Please note that we need pull up resistors of about 2k to 5k Ohms for the i2C bus.
+// Please note that we need pull up resistors of about 2k to 5k Ohms for the i2C bus (usually 2.2k).
 
 // ------------------------------------- Screens ---------------------------------------------------
 
