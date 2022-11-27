@@ -52,15 +52,19 @@
 #define CONFIG_SD_PATH "Recollections/Config.txt"
 #define MODULE_SD_PATH_PREFIX "Recollections/Module_"
 
-// Use built-in SD for SPI on Teensy 3.5/3.6/4.1.
-// Teensy 4.0 use first SPI port.
-// SDCARD_SS_PIN is defined for the built-in SD on some boards.
-#ifndef SDCARD_SS_PIN
-const uint8_t SD_CS_PIN = SS;
-#else  // SDCARD_SS_PIN
-// Assume built-in SD is used.
-const uint8_t SD_CS_PIN = SDCARD_SS_PIN;
-#endif  // SDCARD_SS_PIN
+#ifdef ARDUINO_TEENSY41
+  const uint8_t SD_CS_PIN = BUILTIN_SDCARD;
+  #else
+    // Use built-in SD for SPI on Teensy 3.5/3.6
+    // Teensy 4.0 use first SPI port.
+    // SDCARD_SS_PIN is defined for the built-in SD on some boards.
+    #ifndef SDCARD_SS_PIN
+    const uint8_t SD_CS_PIN = SS;
+    #else  // SDCARD_SS_PIN
+    // Assume built-in SD is used.
+    const uint8_t SD_CS_PIN = SDCARD_SS_PIN;
+    #endif  // SDCARD_SS_PIN
+#endif
 
 // Different ways to open files on the SD card
 uint8_t const SD_READ_CREATE = (uint8_t)(O_READ | O_CREAT);
