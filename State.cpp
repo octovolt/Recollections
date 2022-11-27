@@ -19,6 +19,7 @@ State State::pasteBanks(State state) {
       for (uint8_t j = 0; j < 16; j++) {
         for (uint8_t k = 0; k < 8; k++) {
           state.activeSteps[i][j][k] = state.activeSteps[selectedKeyForCopying][j][k];
+          state.autoRecordChannels[i][k] = state.autoRecordChannels[selectedKeyForCopying][k];
           state.gateChannels[i][k] = state.gateChannels[selectedKeyForCopying][k];
           state.gateLengths[i][j][k] = state.gateLengths[selectedKeyForCopying][j][k];
           state.gateSteps[i][j][k] = state.gateSteps[selectedKeyForCopying][j][k];
