@@ -151,7 +151,7 @@ State State::readBankFromSDCard(State state, uint8_t bank) {
     }
     else {
       copyArray(doc["activeSteps"], state.activeSteps[bank]);
-      copyArray(doc["gateChannels"], state.gateLengths[bank]);
+      copyArray(doc["gateChannels"], state.gateChannels[bank]);
       copyArray(doc["gateLengths"], state.gateLengths[bank]);
       copyArray(doc["gateSteps"], state.gateSteps[bank]);
       copyArray(doc["lockedVoltages"], state.lockedVoltages[bank]);
