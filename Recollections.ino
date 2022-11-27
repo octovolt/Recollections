@@ -305,7 +305,6 @@ bool setupState() {
   }
   state.navHistoryIndex = 0;
   state.readyForAdvInput = 1;
-  state.readyForRandom = 0;
   state.readyForRecInput = 1;
   state.readyForKeyPress = 1;
   state.readyForModPress = 1;

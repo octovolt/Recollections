@@ -281,32 +281,47 @@ State Grid::handleSectionSelectKeyEvent(keyEvent evt, State state) {
 
 State Grid::handleRecordChannelSelectKeyEvent(keyEvent evt, State state) {
   uint8_t currentBank = state.currentBank;
+  if (evt.bit.NUM > 7) {
+    return state;
+  }
+
+  state.currentChannel = evt.bit.NUM;
+
   if (!state.readyForModPress) { // MOD button is being held
-    state.initialKeyPressedDuringModHold = evt.bit.NUM;
-    if (evt.bit.NUM > 7) { 
-      state.readyForRandom = !state.readyForRandom;
-    } 
-    else {
-      state.currentChannel = evt.bit.NUM;
-      if (state.readyForRandom) {
-        state.randomInputChannels[currentBank][evt.bit.NUM] = 
-          !state.randomInputChannels[currentBank][evt.bit.NUM];
-      }
+     if (state.initialKeyPressedDuringModHold < 0) {
+      state.initialKeyPressedDuringModHold = evt.bit.NUM;
+    }
+    state = Grid::updateModKeyCombinationTracking(evt, state);
+
+    // Toggle automatic recording
+    if (state.keyPressesSinceModHold == 1 && state.initialKeyPressedDuringModHold == evt.bit.NUM) {
       state.autoRecordEnabled = !state.autoRecordEnabled;
       if (!state.autoRecordEnabled) {
         state.lastFlashToggle = millis();
         state.flash = 0;
       }
     }
+
+    // Turn on randomly generated input. Note this does not turn off automatic recording, as we want
+    // to use random voltage as part of automatic recording in this case.
+    else if (state.keyPressesSinceModHold == 2) {
+      state.autoRecordEnabled = 1;
+      state.randomInputChannels[currentBank][evt.bit.NUM] = 1;
+    }
+
+    // Recurse, reset state
+    else if (state.keyPressesSinceModHold == 3) {
+      state.randomInputChannels[currentBank][evt.bit.NUM] = 0;
+      state.autoRecordEnabled = 0;
+      return Grid::handleRecordChannelSelectKeyEvent(evt, state);
+    }
   }
-  else if (evt.bit.NUM > 7) { 
-    return state;
-  }
-  else if (!state.lockedVoltages[state.currentBank][state.currentStep][evt.bit.NUM]) {
-    state.currentChannel = evt.bit.NUM;
+  else if ( // MOD button is not being held
+    !state.lockedVoltages[state.currentBank][state.currentStep][evt.bit.NUM] && 
+    !state.randomInputChannels[currentBank][evt.bit.NUM]
+  ) {
     state.selectedKeyForRecording = evt.bit.NUM;
-    state.voltages[state.currentBank][state.currentStep][evt.bit.NUM] 
-      = analogRead(CV_INPUT);
+    state.voltages[state.currentBank][state.currentStep][evt.bit.NUM] = analogRead(CV_INPUT);
   }
   return state;
 }

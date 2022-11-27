@@ -52,12 +52,6 @@ typedef struct State {
   bool readyForModPress;
 
   /** 
-   * Flag to track whether we are waiting for a channel to be selected or deselected for random 
-   * input or output.
-   */
-  bool readyForRandom;
-
-  /** 
    * Count the number of flashes to determine if enough time has elapsed to where a new random 
    * color should be rendered. This number will update regardless of whether any step
    * or channel has been set to utilize randomization.
