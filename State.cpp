@@ -174,6 +174,7 @@ State State::readBankFromSDCard(State state, uint8_t bank) {
     }
     else {
       copyArray(doc["activeSteps"], state.activeSteps[bank]);
+      copyArray(doc["autoRecordChannels"], state.autoRecordChannels[bank]);
       copyArray(doc["gateChannels"], state.gateChannels[bank]);
       copyArray(doc["gateLengths"], state.gateLengths[bank]);
       copyArray(doc["gateSteps"], state.gateSteps[bank]);
@@ -265,10 +266,12 @@ bool State::writeModuleAndBankToSDCard(State state) {
 
   StaticJsonDocument<BANK_JSON_DOC_SERIALIZATION_SIZE> bankDoc;
   JsonObject bankRoot = bankDoc.to<JsonObject>();
+  JsonArray autoRecordChannels = bankRoot.createNestedArray("autoRecordChannels");
   JsonArray gateChannels = bankRoot.createNestedArray("gateChannels");
   JsonArray randomInputChannels = bankRoot.createNestedArray("randomInputChannels");
   JsonArray randomOutputChannels = bankRoot.createNestedArray("randomOutputChannels");
   for (uint8_t i = 0; i < 8; i++) {
+    autoRecordChannels.add(state.autoRecordChannels[bank][i]);
     gateChannels.add(state.gateChannels[bank][i]);
     randomInputChannels.add(state.randomInputChannels[bank][i]);
     randomOutputChannels.add(state.randomOutputChannels[bank][i]);

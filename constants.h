@@ -44,10 +44,10 @@
 // Calculated with https://arduinojson.org/v6/assistant
 #define CONFIG_JSON_DOC_DESERIALIZATION_SIZE 768 // 570 required
 #define MODULE_JSON_DOC_DESERIALIZATION_SIZE 512 // 444 required
-#define BANK_JSON_DOC_DESERIALIZATION_SIZE 12288 // 12144 required
+#define BANK_JSON_DOC_DESERIALIZATION_SIZE 16384 // 12307 required
 #define CONFIG_JSON_DOC_SERIALIZATION_SIZE 512 // 496 required
 #define MODULE_JSON_DOC_SERIALIZATION_SIZE 384 // 352 required
-#define BANK_JSON_DOC_SERIALIZATION_SIZE 12288 // 12032 required
+#define BANK_JSON_DOC_SERIALIZATION_SIZE 12288 // 12176 required
 
 #define CONFIG_SD_PATH "Recollections/Config.txt"
 #define MODULE_SD_PATH_PREFIX "Recollections/Module_"
