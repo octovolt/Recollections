@@ -30,15 +30,6 @@ typedef struct State {
   /** The current index within the navHistory. */
   uint8_t navHistoryIndex;
 
-  /** 
-   * Flag to track whether the persisted state has changed and we need to eventually write to the 
-   * SD card. TODO: clean this up? Not sure about this.
-   */
-  // bool persistedStateChanged;
-
-  /** Flag to track if we are waiting for a gate signal on the REC input. */
-  bool autoRecordEnabled;
-
   /** Flag to track whether we should respond to a clock/gate/trigger on the ADV input. */
   bool readyForAdvInput;
 
@@ -164,6 +155,14 @@ typedef struct State {
    * Indices are [bank][channel]. 
    */
   bool gateChannels[16][8];
+
+  /**
+   * The channels that will sample the incoming voltage when a gate or trigger is received on the 
+   * REC input. The incoming voltage could be from the CV input, the internal voltage source, or if 
+   * the channel is in the list of randomInputChannels, a randomly generated voltage value.
+   * Indices are [bank][channel]. 
+   */
+  bool autoRecordChannels[16][8];
 
   /** 
    * The channels where the output voltage will be random.

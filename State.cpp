@@ -127,7 +127,6 @@ State State::readModuleFromSDCard(State state) {
       Serial.printf("%s %s \n", "deserializeJson() failed during read operation: ", error.c_str());
     }
     else {
-      state.autoRecordEnabled = doc["autoRecordEnabled"];
       state.currentStep = doc["currentStep"];
       state.currentBank = doc["currentBank"];
       state.currentChannel = doc["currentChannel"];
@@ -221,7 +220,6 @@ bool State::writeModuleAndBankToSDCard(State state) {
   moduleFile.truncate();
 
   StaticJsonDocument<MODULE_JSON_DOC_SERIALIZATION_SIZE> moduleDoc;
-  moduleDoc["autoRecordEnabled"] = state.autoRecordEnabled;
   moduleDoc["currentBank"] = state.currentBank;
   moduleDoc["currentChannel"] = state.currentChannel;
   moduleDoc["currentStep"] = state.currentStep;

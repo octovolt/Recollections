@@ -286,20 +286,26 @@ bool Hardware::renderSectionSelect(State state) {
 bool Hardware::renderRecordChannelSelect(State state) {
   seesaw_NeoPixel pixels = state.config.trellis.pixels;
   for (uint8_t key = 0; key < 16; key++) {
-    bool isFlashing = state.currentChannel == key && state.autoRecordEnabled;
-    if (key < 8 && !(isFlashing && state.flash == 0)) {
-      uint8_t channel = key;
-      if (state.lockedVoltages[state.currentBank][state.currentStep][channel]) {
-        pixels.setPixelColor(channel, ORANGE);
-      }
-      uint16_t voltage = state.voltages[state.currentBank][state.currentStep][channel];
-      uint8_t colorValue = isFlashing 
+    if (
+      key > 7 || 
+      (state.flash == 0 && 
+        (state.autoRecordChannels[state.currentBank][key] || 
+        state.randomInputChannels[state.currentBank][key]))
+    ) {
+      pixels.setPixelColor(key, 0); // not illuminated
+    }
+    else if (state.lockedVoltages[state.currentBank][state.currentStep][key]) {
+      pixels.setPixelColor(key, ORANGE);
+    }
+    else if (state.randomInputChannels[state.currentBank][key]) {
+      Hardware::prepareRenderingOfRandomizedKey(state, key);
+    }
+    else {
+      uint16_t voltage = state.voltages[state.currentBank][state.currentStep][key];
+      uint8_t colorValue = state.autoRecordChannels[state.currentBank][key]
         ? 255
         : static_cast<uint8_t>(COLOR_VALUE_MAX * voltage * PERCENTAGE_MULTIPLIER_10_BIT);
-      pixels.setPixelColor(channel, colorValue, 0, 0); // shade of red
-    } 
-    else {
-      pixels.setPixelColor(key, 0); // not illuminated
+      pixels.setPixelColor(key, colorValue, 0, 0); // shade of red
     }
   }
   pixels.show();

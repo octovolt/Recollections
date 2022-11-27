@@ -42,11 +42,11 @@ State Grid::handleBankSelectKeyEvent(keyEvent evt, State state) {
 State Grid::handleEditChannelSelectKeyEvent(keyEvent evt, State state) {
   uint8_t bank = state.currentBank;
   if (state.readyForModPress) { // MOD button is not being held, select channel and navigate
+    state = Nav::goForward(state, SCREEN.EDIT_CHANNEL_VOLTAGES);
     if (evt.bit.NUM > 7) {
       return state;
     }
     state.currentChannel = evt.bit.NUM;
-    state = Nav::goForward(state, SCREEN.EDIT_CHANNEL_VOLTAGES);
   }
   else { // MOD button is being held
     state.randomOutputChannels[state.currentBank][evt.bit.NUM] = 0;
@@ -297,41 +297,65 @@ State Grid::handleRecordChannelSelectKeyEvent(keyEvent evt, State state) {
     return state;
   }
 
-  state.currentChannel = evt.bit.NUM;
-
   if (!state.readyForModPress) { // MOD button is being held
-     if (state.initialKeyPressedDuringModHold < 0) {
+    if (state.initialKeyPressedDuringModHold < 0) {
       state.initialKeyPressedDuringModHold = evt.bit.NUM;
     }
     state = Grid::updateModKeyCombinationTracking(evt, state);
 
-    // Toggle automatic recording
-    if (state.keyPressesSinceModHold == 1 && state.initialKeyPressedDuringModHold == evt.bit.NUM) {
-      state.autoRecordEnabled = !state.autoRecordEnabled;
-      if (!state.autoRecordEnabled) {
-        state.lastFlashToggle = millis();
-        state.flash = 0;
+    // if (state.initialKeyPressedDuringModHold == evt.bit.NUM) {
+      // Toggle automatic recording
+      // If autorecord is already on, turn off both autorecord and random and start the cycle again.
+      if (state.keyPressesSinceModHold == 1) {
+        state.autoRecordChannels[currentBank][evt.bit.NUM] =
+          !state.autoRecordChannels[currentBank][evt.bit.NUM];
+        if (
+          state.randomInputChannels[currentBank][evt.bit.NUM] &&
+          !state.autoRecordChannels[currentBank][evt.bit.NUM]
+        ) {
+          state.randomInputChannels[currentBank][evt.bit.NUM] = 0;
+        }
+      }
+
+      // Turn on randomly generated input. 
+      // Note: this not turn off automatic recording, as we want to use random voltage as part of 
+      // automatic recording in this case.
+      // I got a bit confused here -- maybe there is a way to simplify this?
+      else if (state.keyPressesSinceModHold == 2) {
+        // if we are back to the beginning, recurse
+        if (
+          state.initialKeyPressedDuringModHold == evt.bit.NUM &&
+          !state.autoRecordChannels[currentBank][evt.bit.NUM] &&
+          !state.randomInputChannels[currentBank][evt.bit.NUM]
+        ) {
+          state.keyPressesSinceModHold = 0;
+          return Grid::handleRecordChannelSelectKeyEvent(evt, state);
+        
+        // else if we are pressing a key that is not yet random, make it random.
+        // if this is the first key this will also advance the keyPressesSinceModHold count.
+        } else if (!state.randomInputChannels[currentBank][evt.bit.NUM]) {
+          state.autoRecordChannels[currentBank][evt.bit.NUM] = 1;
+          state.randomInputChannels[currentBank][evt.bit.NUM] = 1;
+        
+        // else if we are pressing any random key other than the first, turn off random and return
+        // the key to the autorecord state.
+        } else if (state.initialKeyPressedDuringModHold != evt.bit.NUM) {
+          state.randomInputChannels[currentBank][evt.bit.NUM] = 0;
+        }
+      }
+
+      // Recurse
+      else if (state.keyPressesSinceModHold == 3) {
+        state.autoRecordChannels[currentBank][evt.bit.NUM] = 0;
+        state.randomInputChannels[currentBank][evt.bit.NUM] = 0;
+        state.keyPressesSinceModHold = 0;
+        return Grid::handleRecordChannelSelectKeyEvent(evt, state);
       }
     }
-
-    // Turn on randomly generated input. Note this does not turn off automatic recording, as we want
-    // to use random voltage as part of automatic recording in this case.
-    else if (state.keyPressesSinceModHold == 2) {
-      state.autoRecordEnabled = 1;
-      state.randomInputChannels[currentBank][evt.bit.NUM] = 1;
-    }
-
-    // Recurse, reset state
-    else if (state.keyPressesSinceModHold == 3) {
-      state.randomInputChannels[currentBank][evt.bit.NUM] = 0;
-      state.autoRecordEnabled = 0;
-      return Grid::handleRecordChannelSelectKeyEvent(evt, state);
-    }
-  }
   else if ( // MOD button is not being held
-    !state.lockedVoltages[state.currentBank][state.currentStep][evt.bit.NUM] && 
-    !state.randomInputChannels[currentBank][evt.bit.NUM]
+    !state.lockedVoltages[state.currentBank][state.currentStep][evt.bit.NUM]
   ) {
+    state.currentChannel = evt.bit.NUM;
     state.selectedKeyForRecording = evt.bit.NUM;
     state.voltages[state.currentBank][state.currentStep][evt.bit.NUM] = analogRead(CV_INPUT);
   }

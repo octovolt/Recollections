@@ -307,21 +307,21 @@ bool setupState() {
   if (state.screen != SCREEN.ERROR) {
     state.screen = SCREEN.STEP_SELECT;
   }
-  state.navHistoryIndex = 0;
-  state.readyForAdvInput = 1;
-  state.readyForRecInput = 1;
-  state.readyForKeyPress = 1;
-  state.readyForModPress = 1;
+
+  state.flash = 1;
+  state.flashesSinceRandomColorChange = 0;
   state.initialKeyPressedDuringModHold = -1;
   state.keyPressesSinceModHold = 0;
-  state.flash = 1;
   state.lastFlashToggle = 0;
-  state.flashesSinceRandomColorChange = 0;
+  state.navHistoryIndex = 0;
   state.randomColorShouldChange = 1;
-  state.timeKeyReleased = 0;
+  state.readyForAdvInput = 1;
+  state.readyForKeyPress = 1;
+  state.readyForModPress = 1;
+  state.readyForRecInput = 1;
   state.selectedKeyForCopying = -1;
   state.selectedKeyForRecording = -1;
-  // state.persistedStateChanged = 0; // TODO: figure this out. clean up?
+  state.timeKeyReleased = 0;
   for (uint8_t i = 0; i < 16; i++) {
     if (i < 4) {
       state.navHistory[i] = SCREEN.STEP_SELECT;
@@ -340,7 +340,6 @@ bool setupState() {
   // Keep this in sync with State::readModuleFromSDCard().
   // If adding or removing anything here, please recalculate the size constants for the JSON
   // documents required for storing the data on the SD card. See constants.h.
-  state.autoRecordEnabled = 0;
   state.currentStep = 0;
   state.currentBank = 0;
   state.currentChannel = 0;
@@ -361,6 +360,7 @@ bool setupState() {
     for (uint8_t j = 0; j < 16; j++) {
       for (uint8_t k = 0; k < 8; k++) {
         state.activeSteps[i][j][k] = 1;
+        state.autoRecordChannels[i][k] = 0;
         state.gateChannels[i][k] = 0;
         state.gateLengths[i][j][k] = 0.5;
         state.gateSteps[i][j][k] = 0;
@@ -492,23 +492,21 @@ void loop() {
   }
 
   //--------------------------------- HANDLE REC INPUT ---------------------------------------------
-  if (state.autoRecordEnabled) {
-    if (state.readyForRecInput && !digitalRead(REC_INPUT)) {
-      state.readyForRecInput = 0;
-      if (!state.lockedVoltages[currentBank][currentStep][currentChannel]) {
-        state.voltages[currentBank][currentStep][currentChannel] = analogRead(CV_INPUT);
+  if (state.readyForRecInput && !digitalRead(REC_INPUT)) {
+    state.readyForRecInput = 0;
+    for (uint8_t i = 0; i < 7; i++) {
+      if (
+        state.autoRecordChannels[currentBank][i] && 
+        !state.lockedVoltages[currentBank][currentStep][i]
+      ) {
+        state.voltages[currentBank][currentStep][i] = state.randomInputChannels[currentBank][i]          
+          ? Entropy.random(MAX_UNSIGNED_10_BIT)
+          : analogRead(CV_INPUT);
       }
-      // Note that random input may overwrite the value from CV input above, and we are setting 
-      // random voltages for any channels identified in randomInputChannels, not the current channel.
-      for (uint8_t i = 0; i < 7; i++) {
-        if (state.randomInputChannels[state.currentBank][i]) {
-          state.voltages[currentBank][currentStep][i] = Entropy.random(MAX_UNSIGNED_10_BIT);
-        }
-      }
-    } 
-    else if (!state.readyForRecInput && digitalRead(REC_INPUT)) {
-      state.readyForRecInput = 1;
     }
+  } 
+  else if (!state.readyForRecInput && digitalRead(REC_INPUT)) {
+    state.readyForRecInput = 1;
   }
 
   //------------------------ EDITING OR RECORDING VOLTAGE CONTINUOUSLY -----------------------------
@@ -519,22 +517,11 @@ void loop() {
     else if (
       state.screen == SCREEN.RECORD_CHANNEL_SELECT && 
       !state.lockedVoltages[currentBank][currentStep][state.selectedKeyForRecording] &&
-      !state.autoRecordEnabled // automatic recording acts as a sample and hold
+      !state.autoRecordChannels[currentBank][currentStep] // automatic recording is sample and hold
     ) {
       state.voltages[currentBank][currentStep][state.selectedKeyForRecording] = analogRead(CV_INPUT);
     }
   }
-
-  //--------------------------- TODO: AUTOMATICALLY WRITE TO SD CARD -------------------------------
-  // Not sure about this. Stay with intentional writing only?
-  // if (
-  //   state.persistedStateChanged && 
-  //   millis() - state.timeKeyReleased > WRITE_AFTER_KEY_RELEASE_TIME
-  // ) {
-  //   // TODO: Call a function here to save the current state to SD, but on a different thread
-  //   // so we don't interupt normal operations.
-  //   state.persistedStateChanged = 0;
-  // }
 
   //------------------------------------- REFLECT STATE --------------------------------------------
   if (initialLoop) {
