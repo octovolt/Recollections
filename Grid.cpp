@@ -241,36 +241,36 @@ State Grid::handleSectionSelectKeyEvent(keyEvent evt, State state) {
     case QUADRANT.INVALID:
       state.screen = SCREEN.ERROR;
       break;
-    case QUADRANT.NW:
+    case QUADRANT.NW: // yellow: navigate to channel editing or configure output voltage
       if (modButtonIsBeingHeld) {
-        // TODO: Load module
+        // TODO: configure output voltage
       } else {
         state = Nav::goForward(state, SCREEN.EDIT_CHANNEL_SELECT);
       }
       break;
-    case QUADRANT.NE:
+    case QUADRANT.NE: // red: navigate to recording or configure input voltage
       if (modButtonIsBeingHeld) {
-        state.initialKeyPressedDuringModHold = evt.bit.NUM;
-        bool const writeSuccess = State::writeModuleAndBankToSDCard(state);
-        if (!writeSuccess) {
-          state = Nav::goForward(state, SCREEN.ERROR); // do something else less drastic here?
-        } else {
-          // TODO: do something visual to confirm the write
-        }
+        // TODO: configure input voltage
       } else {
         state = Nav::goForward(state, SCREEN.RECORD_CHANNEL_SELECT);
       }
       break;
-    case QUADRANT.SW:
+    case QUADRANT.SW: // green: navigate to global edit or load module
       if (modButtonIsBeingHeld) {
-        // TODO: Calibration? Is this needed?
+        // TODO: Load module
       } else {
         state = Nav::goForward(state, SCREEN.GLOBAL_EDIT);
       }
       break;
-    case QUADRANT.SE:
+    case QUADRANT.SE: // blue: navigate to bank select or save bank to SD
       if (modButtonIsBeingHeld) {
-        // TODO: Custom colors?
+        state.initialKeyPressedDuringModHold = evt.bit.NUM;
+        bool const writeSuccess = State::writeModuleAndBankToSDCard(state);
+        if (!writeSuccess) {
+          state = Nav::goForward(state, SCREEN.ERROR);
+        } else {
+          // TODO: do something visual to confirm the write
+        }
       } else {
         state = Nav::goForward(state, SCREEN.BANK_SELECT);
       }
