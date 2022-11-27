@@ -155,7 +155,7 @@ void pasteFromCopyAction() {
       state = State::pasteChannels(state);
       break;
     case SCREEN.EDIT_CHANNEL_VOLTAGES:
-      state = State::pasteChannelSteps(state);
+      state = State::pasteChannelStepVoltages(state);
       break;
     case SCREEN.GLOBAL_EDIT:
       state = State::pasteGlobalSteps(state);
@@ -349,9 +349,13 @@ bool setupState() {
   }
 
   // Bank data -- preserved in Bank_<bank-index>.txt
+  //
   // Keep this in sync with State::readBankFromSDCard().
   // If adding or removing anything here, please recalculate the size constants for the JSON
   // documents required for storing the data on the SD card. See constants.h.
+  //
+  // Also keep this in sync with State::pasteBanks().
+  //
   // Indices are bank, step, channel.
   for (uint8_t i = 0; i < 16; i++) {
     for (uint8_t j = 0; j < 16; j++) {
@@ -449,7 +453,7 @@ void loop() {
     state.lastFlashToggle = ms;
   }
 
-  // ----------------------------- ERROR SCREEN RETURNS EARLY ----------------------------------------
+  // ----------------------------- ERROR SCREEN RETURNS EARLY --------------------------------------
   if (state.screen == SCREEN.ERROR) {
     Hardware::reflectState(state);
     return;

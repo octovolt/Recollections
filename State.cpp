@@ -12,11 +12,21 @@ using namespace Stack;
 
 State State::pasteBanks(State state) {
   Serial.println("pasteBanks()");
-  for (uint8_t i = 0; i < 16; i++) { // banks
+  uint8_t selectedKeyForCopying = state.selectedKeyForCopying;
+  // [banks][steps][channels]
+  for (uint8_t i = 0; i < 16; i++) {
     if (state.pasteTargetKeys[i]) {
-      for (uint8_t j = 0; j < 16; j++) { // steps
-        for (uint8_t k = 0; k < 8; k++) { // channels
-           state.voltages[i][j][k] = state.voltages[state.selectedKeyForCopying][j][k];
+      for (uint8_t j = 0; j < 16; j++) {
+        for (uint8_t k = 0; k < 8; k++) {
+          state.activeSteps[i][j][k] = state.activeSteps[selectedKeyForCopying][j][k];
+          state.gateChannels[i][k] = state.gateChannels[selectedKeyForCopying][k];
+          state.gateLengths[i][j][k] = state.gateLengths[selectedKeyForCopying][j][k];
+          state.gateSteps[i][j][k] = state.gateSteps[selectedKeyForCopying][j][k];
+          state.lockedVoltages[i][j][k] = state.lockedVoltages[selectedKeyForCopying][j][k];
+          state.randomInputChannels[i][k] = state.randomInputChannels[selectedKeyForCopying][k];
+          state.randomOutputChannels[i][k] = state.randomOutputChannels[selectedKeyForCopying][k];
+          state.randomSteps[i][j][k] = state.randomSteps[selectedKeyForCopying][j][k];
+          state.voltages[i][j][k] = state.voltages[selectedKeyForCopying][j][k];
         }
       }
       state.pasteTargetKeys[i] = 0;
@@ -27,12 +37,26 @@ State State::pasteBanks(State state) {
 }
 
 State State::pasteChannels(State state) {
-  // paranoia: go through all 16 keys to make sure any extra keys are cleared. change to 8 keys?
-  for (uint8_t i = 0; i < 16; i++) { // channels
-    if (i < 8 && state.pasteTargetKeys[i]) {
-      for (uint8_t j = 0; j < 16; j++) { // steps
-        state.voltages[state.currentBank][j][i] = 
-          state.voltages[state.currentBank][j][state.selectedKeyForCopying];
+  uint8_t currentBank = state.currentBank;
+  uint8_t selectedKeyForCopying = state.selectedKeyForCopying;
+  for (uint8_t i = 0; i < 8; i++) { // channels
+    if (state.pasteTargetKeys[i]) {
+      if (state.gateChannels[currentBank][selectedKeyForCopying]) {
+        state.gateChannels[state.currentBank][i] = 1;
+        for (uint8_t j = 0; j < 16; j++) {
+          state.gateSteps[currentBank][j][i] = 
+            state.gateSteps[currentBank][j][selectedKeyForCopying];
+          state.gateLengths[currentBank][j][i] = 
+            state.gateLengths[currentBank][j][selectedKeyForCopying];
+        }
+      }
+      else {
+        for (uint8_t j = 0; j < 16; j++) { // steps
+          state.activeSteps[currentBank][j][i] = 
+            state.activeSteps[currentBank][j][state.selectedKeyForCopying];
+          state.voltages[currentBank][j][i] = 
+            state.voltages[currentBank][j][state.selectedKeyForCopying];
+        }
       }
     }
     state.pasteTargetKeys[i] = 0;
@@ -41,7 +65,7 @@ State State::pasteChannels(State state) {
   return state;
 }
 
-State State::pasteChannelSteps(State state) {
+State State::pasteChannelStepVoltages(State state) {
   for (uint8_t i = 0; i < 16; i++) { // steps
     if (state.pasteTargetKeys[i]) {
       state.voltages[state.currentBank][i][state.currentChannel] = 

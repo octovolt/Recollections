@@ -49,6 +49,9 @@ State Grid::handleEditChannelSelectKeyEvent(keyEvent evt, State state) {
     state = Nav::goForward(state, SCREEN.EDIT_CHANNEL_VOLTAGES);
   }
   else { // MOD button is being held
+    state.randomOutputChannels[state.currentBank][evt.bit.NUM] = 0;
+
+    // Update mod + key tracking.
     if (state.initialKeyPressedDuringModHold < 0) {
       state.initialKeyPressedDuringModHold = evt.bit.NUM;
     }
@@ -86,8 +89,6 @@ State Grid::handleEditChannelVoltagesKeyEvent(keyEvent evt, State state) {
   uint8_t currentBank = state.currentBank;
   uint8_t currentChannel = state.currentChannel;
 
-  // TODO: how to abstract this repetitive code?
-
   // Gate channel
   if (state.gateChannels[currentBank][state.currentChannel]) {
     // MOD button is not being held, so toggle gate on or off
@@ -97,28 +98,28 @@ State Grid::handleEditChannelVoltagesKeyEvent(keyEvent evt, State state) {
     }
     // MOD button is being held
     else {
-      // Clear states
-      if (state.keyPressesSinceModHold == 0) {
-        state.randomSteps[currentBank][evt.bit.NUM][currentChannel] = 0;
-        state.gateLengths[currentBank][evt.bit.NUM][currentChannel] = 0.5;
+      // Update mod + key tracking.
+      if (state.initialKeyPressedDuringModHold < 0) {
+        state.initialKeyPressedDuringModHold = evt.bit.NUM;
       }
-      // Update mod + key tracking. This must occur after clearing state because it updates the 
-      // value of keyPressesSinceModHold.
       state = Grid::updateModKeyCombinationTracking(evt, state);
 
       // Step is a random coin-flip between gate on or gate off
       if (state.keyPressesSinceModHold == 1) {
-        state.randomSteps[currentBank][evt.bit.NUM][currentChannel] = 1;
+        state.randomSteps[currentBank][evt.bit.NUM][currentChannel] = 
+          !state.randomSteps[currentBank][evt.bit.NUM][currentChannel];
       }
       // Set gate length to custom value. Note that this is not continually recording, but a sample.
+      // But maybe this should do continuous recording?
       else if (state.keyPressesSinceModHold == 2) {
-        state.randomSteps[currentBank][evt.bit.NUM][currentChannel] = 0;
+        state.randomSteps[currentBank][evt.bit.NUM][currentChannel] =
+          !state.randomSteps[currentBank][evt.bit.NUM][currentChannel];
         state.gateLengths[currentBank][evt.bit.NUM][currentChannel] = 
           analogRead(CV_INPUT) * PERCENTAGE_MULTIPLIER_10_BIT;
       }
       // Recurse
       else if (state.keyPressesSinceModHold == 3) {
-        state.gateLengths[currentBank][evt.bit.NUM][currentChannel] = 0.5; // paranoia
+        // TODO: restore to previous gate length value?
         state.keyPressesSinceModHold = 0;
         return Grid::handleEditChannelVoltagesKeyEvent(evt, state);
       }
@@ -135,14 +136,18 @@ State Grid::handleEditChannelVoltagesKeyEvent(keyEvent evt, State state) {
     }
     // MOD button is being held
     else {
-      // Clear states
+      // Clear states - is this really needed? Should the code below always toggle rather than set
+      // to a value?
       if (state.keyPressesSinceModHold == 0) {
         state.lockedVoltages[currentBank][evt.bit.NUM][currentChannel] = 0;
         state.activeSteps[currentBank][evt.bit.NUM][currentChannel] = 1;
         state.randomSteps[currentBank][evt.bit.NUM][currentChannel] = 0;
       }
-      // Update mod + key tracking. This must occur after clearing state because it updates the 
-      // value of keyPressesSinceModHold.
+
+      // Update mod + key tracking.
+      if (state.initialKeyPressedDuringModHold < 0) {
+        state.initialKeyPressedDuringModHold = evt.bit.NUM;
+      }
       state = Grid::updateModKeyCombinationTracking(evt, state);
 
       // Copy-paste voltage value, or restore step to defaults
@@ -166,7 +171,7 @@ State Grid::handleEditChannelVoltagesKeyEvent(keyEvent evt, State state) {
       }
       // Recurse
       else if (state.keyPressesSinceModHold == 5) {
-        state.randomSteps[currentBank][evt.bit.NUM][currentChannel] = 0; // paranoia
+        state.randomSteps[currentBank][evt.bit.NUM][currentChannel] = 0;
         state.keyPressesSinceModHold = 0;
         return Grid::handleEditChannelVoltagesKeyEvent(evt, state);
       }
@@ -195,20 +200,25 @@ State Grid::handleGlobalEditKeyEvent(keyEvent evt, State state) {
   }
   // MOD button is being held
   else { 
-    // Clear states for faster work flow.
+    // Clear states for faster work flow -- is this actually needed?
     if (state.keyPressesSinceModHold == 0) {
       for (uint8_t i = 0; i < 8; i++) {
         state.lockedVoltages[currentBank][evt.bit.NUM][i] = 0;
         state.activeSteps[currentBank][evt.bit.NUM][i] = 1;
       }
     }
-    // Update mod + key tracking. This must occur after clearing state because it updates the 
-    // value of keyPressesSinceModHold.
+
+    // Update mod + key tracking.
+    if (state.initialKeyPressedDuringModHold < 0) {
+      state.initialKeyPressedDuringModHold = evt.bit.NUM;
+    }
     state = Grid::updateModKeyCombinationTracking(evt, state);
+
     // Copy-paste
     if (state.keyPressesSinceModHold == 1) {
       state = Grid::addKeyToCopyPasteData(evt, state);
-    } 
+    }
+
     // Toggle locked voltage
     else if (state.keyPressesSinceModHold == 2) {
       state = State::quitCopyPasteFlowPriorToPaste(state);
@@ -216,6 +226,7 @@ State Grid::handleGlobalEditKeyEvent(keyEvent evt, State state) {
         state.lockedVoltages[currentBank][evt.bit.NUM][i] = 1;
       }
     }
+
     // Toggle active/inactive step
     else if (state.keyPressesSinceModHold == 3) {
       for (uint8_t i = 0; i < 8; i++) {
@@ -223,6 +234,7 @@ State Grid::handleGlobalEditKeyEvent(keyEvent evt, State state) {
         state.activeSteps[currentBank][evt.bit.NUM][i] = 0;
       }
     }
+
     // Recurse
     else if (state.keyPressesSinceModHold == 4) {
       for (uint8_t i = 0; i < 8; i++) {

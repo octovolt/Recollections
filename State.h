@@ -221,7 +221,7 @@ typedef struct State {
    * @param state 
    * @return State 
    */
-  static State pasteChannelSteps(State state);
+  static State pasteChannelStepVoltages(State state);
 
   /**
    * @brief Paste the voltage from one step to a number of other steps, across all 8 channels.

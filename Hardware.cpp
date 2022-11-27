@@ -69,7 +69,9 @@ bool Hardware::prepareRenderingOfChannelEditVoltageStep(State state, uint8_t ste
   if (
     state.selectedKeyForCopying >= 0 &&
     state.flash == 0 &&
-    (step == state.selectedKeyForCopying || state.pasteTargetKeys[step])
+    (step == state.selectedKeyForCopying || 
+     state.pasteTargetKeys[step] ||
+     state.randomSteps[state.currentBank][step][state.currentChannel])
   ) {
     pixels.setPixelColor(step, 0);
   } 
@@ -78,6 +80,9 @@ bool Hardware::prepareRenderingOfChannelEditVoltageStep(State state, uint8_t ste
   }
   else if (!state.activeSteps[state.currentBank][step][state.currentChannel]) {
     pixels.setPixelColor(step, PURPLE);
+  }
+  else if (state.randomSteps[state.currentBank][step][state.currentChannel]) {
+    Hardware::prepareRenderingOfRandomizedKey(state, step);
   }
   else {
     int16_t voltage = state.voltages[state.currentBank][step][state.currentChannel];
