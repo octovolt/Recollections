@@ -8,16 +8,20 @@
  * Target platform: Teensy 3.6 and Teensy 4.1.
  */
 
-// for Teensy 4.x, Arduino and similar platforms
-#include <Wire.h>
-
-// for Teensy 3.x. Include directives in the following files must be updated in the same way:
+// Teensy 4.x uses Wire.h, but Teensy 3.x uses i2c_t3.h.
+//
+// Include directives in the following files must be updated in the same way as they are handled in
+// the conditional statment below.
+//
 // Adafruit_seesaw.h
-// Adafruit_I2CDevice.h <-- this also needs the following at the top: typedef i2c_t3 TwoWire;
+// Adafruit_I2CDevice.h <- this also needs the following at the top for 3.6: typedef i2c_t3 TwoWire;
 // Adafruit_MCP4728.h
 // Adafruit_MCP4728.cpp
-//
-// #include <i2c_t3.h> // use this instead of Wire.h
+#if defined(ARDUINO_TEENSY32) || defined(ARDUINO_TEENSY35) || defined(ARDUINO_TEENSY36)
+#include <i2c_t3.h> // for Teensy 3.x
+#else
+#include <Wire.h> // for Teensy 4.x (and Arduino)
+#endif
 
 #include "typedefs.h"
 
@@ -334,6 +338,8 @@ bool setupState() {
 
   // Core data -- preserved in Module.txt
   // Keep this in sync with State::readModuleFromSDCard().
+  // If adding or removing anything here, please recalculate the size constants for the JSON
+  // documents required for storing the data on the SD card. See constants.h.
   state.autoRecordEnabled = 0;
   state.currentStep = 0;
   state.currentBank = 0;
@@ -344,6 +350,8 @@ bool setupState() {
 
   // Bank data -- preserved in Bank_<bank-index>.txt
   // Keep this in sync with State::readBankFromSDCard().
+  // If adding or removing anything here, please recalculate the size constants for the JSON
+  // documents required for storing the data on the SD card. See constants.h.
   // Indices are bank, step, channel.
   for (uint8_t i = 0; i < 16; i++) {
     for (uint8_t j = 0; j < 16; j++) {
