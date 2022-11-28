@@ -17,16 +17,9 @@
 #define MAX_UNSIGNED_10_BIT 1023
 #define MAX_UNSIGNED_8_BIT 255
 
-#define WHITE 0xFFFFFF0
-#define RED 0x5500000
-#define GREEN 0x0055000
-#define BLUE 0x0000770
-#define YELLOW 0x7777000
-#define PURPLE 0x3300FF0
-#define ORANGE 0x7733000
-
 #define DEFAULT_BRIGHTNESS 100
 #define COLOR_VALUE_MAX 255 // max brightness, relative to brightness setting
+#define DIMMED_COLOR_MULTIPLIER 0.2
 
 #define GATE_LENGTH_MAX 127
 #define GATE_LENGTH_MID 63
@@ -47,8 +40,8 @@
 // Calculated with https://arduinojson.org/v6/assistant
 #define BANK_JSON_DOC_DESERIALIZATION_SIZE 16384 // 14639 required
 #define BANK_JSON_DOC_SERIALIZATION_SIZE 16384 // 14496 required
-#define CONFIG_JSON_DOC_DESERIALIZATION_SIZE 768 // 686 required
-#define CONFIG_JSON_DOC_SERIALIZATION_SIZE 768 // 576 required
+#define CONFIG_JSON_DOC_DESERIALIZATION_SIZE 768 // 724 required
+#define CONFIG_JSON_DOC_SERIALIZATION_SIZE 768 // 592 required
 #define MODULE_JSON_DOC_DESERIALIZATION_SIZE 512 // 410 required
 #define MODULE_JSON_DOC_SERIALIZATION_SIZE 384 // 336 required
 

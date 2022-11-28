@@ -5,95 +5,11 @@
 
 #include <Adafruit_MCP4728.h>
 #include <Entropy.h>
+#include <string.h> // for memcpy() -- would prefer to remove this if possible
+
 #include "Utils.h"
 #include "constants.h"
 
-/**
- * @brief Set the pixel color of a key to a random color. Note that this only *prepares* the key
- * to display a random color. After the key is prepared, trellis.pixels.show() must be called
- * afterward.
- *
- * @param state
- * @param key
- * @return true
- * @return false
- */
-bool Hardware::prepareRenderingOfRandomizedKey(State state, uint8_t key) {
-  if (state.randomColorShouldChange) {
-    state.config.trellis.pixels.setPixelColor(
-      key,
-      Entropy.random(MAX_UNSIGNED_8_BIT),
-      Entropy.random(MAX_UNSIGNED_8_BIT),
-      Entropy.random(MAX_UNSIGNED_8_BIT)
-    );
-  }
-  // else no op
-  return 1;
-}
-
-/**
- * @brief Set color values for a NeoTrellis key as either on or off. Note that this only *prepares*
- * a key to display the correct color. After the key is prepared, trellis.pixels.show() must be
- * called afterward.
- *
- * @param state Global state object.
- * @param step Which of the 16 steps/keys is targeted for changing.
- */
-bool Hardware::prepareRenderingOfChannelEditGateStep(State state, uint8_t step) {
-  if (state.randomSteps[state.currentBank][step][state.currentChannel]) {
-    return Hardware::prepareRenderingOfRandomizedKey(state, step);
-  }
-  state.config.trellis.pixels.setPixelColor(
-    step,
-    state.currentStep == step
-      ? WHITE
-      : state.gateSteps[state.currentBank][step][state.currentChannel]
-        ? YELLOW
-        : PURPLE
-  );
-  return 1;
-}
-
-/**
- * @brief Set color values for a NeoTrellis key. Note that this only *prepares* a key to display the
- * correct color. After the key is prepared, trellis.pixels.show() must be called afterward.
- *
- * @param state Global state object.
- * @param step Which of the 16 steps/keys is targeted for changing.
- */
-bool Hardware::prepareRenderingOfChannelEditVoltageStep(State state, uint8_t step) {
-  seesaw_NeoPixel pixels = state.config.trellis.pixels;
-  if (
-    state.selectedKeyForCopying >= 0 &&
-    state.flash == 0 &&
-    (step == state.selectedKeyForCopying ||
-     state.pasteTargetKeys[step])
-  ) {
-    pixels.setPixelColor(step, 0);
-  }
-  else if (state.lockedVoltages[state.currentBank][step][state.currentChannel]) {
-    pixels.setPixelColor(step, ORANGE);
-  }
-  else if (!state.activeSteps[state.currentBank][step][state.currentChannel]) {
-    pixels.setPixelColor(step, PURPLE);
-  }
-  else if (state.randomSteps[state.currentBank][step][state.currentChannel]) {
-    Hardware::prepareRenderingOfRandomizedKey(state, step);
-  }
-  else {
-    int16_t voltage = state.voltages[state.currentBank][step][state.currentChannel];
-    uint8_t colorValue = static_cast<int>(
-      COLOR_VALUE_MAX * voltage * PERCENTAGE_MULTIPLIER_10_BIT
-    );
-    if (state.currentStep == step) { // WHITE
-      pixels.setPixelColor(step, colorValue, colorValue, colorValue);
-    }
-    else { // YELLOW
-      pixels.setPixelColor(step, colorValue, colorValue, 0);
-    }
-  }
-  return 1;
-}
 
 /**
  * @brief This is the entry point for side effects reflected in the hardware, based on the current
@@ -145,38 +61,157 @@ bool Hardware::reflectState(State state) {
   return result;
 }
 
+//--------------------------------------- PRIVATE --------------------------------------------------
+
+/**
+ * @brief Set color values for a NeoTrellis key as either on or off. Note that this only *prepares*
+ * a key to display the correct color. After the key is prepared, trellis.pixels.show() must be
+ * called afterward.
+ *
+ * @param state Global state object.
+ * @param step Which of the 16 steps/keys is targeted for changing.
+ */
+bool Hardware::prepareRenderingOfChannelEditGateStep(State state, uint8_t step) {
+  if (state.randomSteps[state.currentBank][step][state.currentChannel]) {
+    return Hardware::prepareRenderingOfRandomizedKey(state, step);
+  }
+
+  uint8_t color[3] = {};
+  if (state.currentStep == step) {
+    memcpy(color, state.config.colors.white, 3);
+  } else if (state.gateSteps[state.currentBank][step][state.currentChannel]) {
+    memcpy(color, state.config.colors.yellow, 3);
+  } else {
+    memcpy(color, state.config.colors.purple, 3);
+  }
+
+  return Hardware::prepareRenderingOfKey(state, step, color);
+}
+
+/**
+ * @brief Set color values for a NeoTrellis key. Note that this only *prepares* a key to display the
+ * correct color. After the key is prepared, trellis.pixels.show() must be called afterward.
+ *
+ * @param state Global state object.
+ * @param step Which of the 16 steps/keys is targeted for changing.
+ */
+bool Hardware::prepareRenderingOfChannelEditVoltageStep(State state, uint8_t step) {
+  uint8_t color[3] = {};
+  if (
+    state.selectedKeyForCopying >= 0 &&
+    state.flash == 0 &&
+    (step == state.selectedKeyForCopying ||
+     state.pasteTargetKeys[step])
+  ) {
+    return Hardware::prepareRenderingOfKey(state, step, color);
+  }
+
+  if (state.randomSteps[state.currentBank][step][state.currentChannel]) {
+    return Hardware::prepareRenderingOfRandomizedKey(state, step);
+  }
+
+  if (state.lockedVoltages[state.currentBank][step][state.currentChannel]) {
+    memcpy(color, state.config.colors.orange, 3);
+  }
+  else if (!state.activeSteps[state.currentBank][step][state.currentChannel]) {
+    memcpy(color, state.config.colors.purple, 3);
+  }
+  else if (state.currentStep == step) {
+    memcpy(color, state.config.colors.white, 3);
+  }
+  else { // yellow
+    int16_t voltage = state.voltages[state.currentBank][step][state.currentChannel];
+    uint8_t colorValue = static_cast<int>(
+      COLOR_VALUE_MAX * voltage * PERCENTAGE_MULTIPLIER_10_BIT
+    );
+    uint8_t yellowShade[3] = {colorValue, colorValue, 0};
+    memcpy(color, yellowShade, 3);
+  }
+  return Hardware::prepareRenderingOfKey(state, step, color);
+}
+
+/**
+ * @brief Set the pixel color of a single key. This method should be used in all cases to ensure
+ * that the inverted orientation renders correctly. This method only *prepares* a key to display the
+ * correct color. After the key is prepared, trellis.pixels.show() must be called afterward.
+ * NOTE: No other method should call trellis.pixels.setPixelColor().
+ *
+ * @param state
+ * @param key
+ * @param rgbColor
+ * @return true
+ * @return false
+ */
+bool Hardware::prepareRenderingOfKey(State state, uint8_t key, uint8_t rgbColor[]) {
+  // uint8_t rgbColorSize = sizeof(rgbColor)/sizeof(rgbColor[0]);
+  // if (rgbColorSize != 3) {
+  //   Serial.printf("%s %u %s \n", "RGB color provided with", rgbColorSize, "values instead of 3.");
+  //   return 0;
+  // }
+  uint8_t displayKey = state.config.controllerOrientation
+    ? key
+    : 15 - key;
+  state.config.trellis.pixels.setPixelColor(displayKey, rgbColor[0], rgbColor[1], rgbColor[2]);
+  return 1;
+}
+
+/**
+ * @brief Set the pixel color of a key to a random color. Note that this only *prepares* the key
+ * to display a random color. After the key is prepared, trellis.pixels.show() must be called
+ * afterward.
+ *
+ * @param state
+ * @param key
+ * @return true
+ * @return false
+ */
+bool Hardware::prepareRenderingOfRandomizedKey(State state, uint8_t key) {
+  if (state.randomColorShouldChange) {
+    uint8_t red = Entropy.random(MAX_UNSIGNED_8_BIT);
+    uint8_t green = Entropy.random(MAX_UNSIGNED_8_BIT);
+    uint8_t blue = Entropy.random(MAX_UNSIGNED_8_BIT);
+    uint8_t color[3] = {red, green, blue};
+    return Hardware::prepareRenderingOfKey(state, key, color);
+  }
+  // else no op
+  return 1;
+}
+
 bool Hardware::renderBankSelect(State state) {
-  seesaw_NeoPixel pixels = state.config.trellis.pixels;
+  uint8_t nonilluminated[3] = {};
+  uint8_t blue[3];
+  memcpy(blue, state.config.colors.blue, 3);
   if (state.selectedKeyForCopying < 0) {
     for (uint8_t i = 0; i < 16; i++) {
       if (i != state.currentBank) {
-        pixels.setPixelColor(i, 0);
+        Hardware::prepareRenderingOfKey(state, i, nonilluminated);
       }
     }
-    pixels.setPixelColor(state.currentBank, BLUE);
+    Hardware::prepareRenderingOfKey(state, state.currentBank, blue);
   }
   else {
     for (int8_t step = 0; step < 16; step++) {
-      pixels.setPixelColor(
+      Hardware::prepareRenderingOfKey(
+        state,
         step,
         state.flash && (step == state.selectedKeyForCopying || state.pasteTargetKeys[step])
-          ? BLUE
-          : 0
+          ? blue
+          : nonilluminated
       );
     }
   }
-  pixels.show();
+  state.config.trellis.pixels.show();
   return 1;
 }
 
 bool Hardware::renderEditChannelSelect(State state) {
-  seesaw_NeoPixel pixels = state.config.trellis.pixels;
   for (uint8_t i = 0; i < 16; i++) {
     // non-illuminated keys
     if (
       i > 7 || (state.flash == 0 && (i == state.selectedKeyForCopying || state.pasteTargetKeys[i]))
     ) {
-      pixels.setPixelColor(i, 0);
+      uint8_t nonilluminated[3] = {};
+      Hardware::prepareRenderingOfKey(state, i, nonilluminated);
     }
     // illuminated keys
     else {
@@ -184,11 +219,19 @@ bool Hardware::renderEditChannelSelect(State state) {
         Hardware::prepareRenderingOfRandomizedKey(state, i);
       }
       else {
-        pixels.setPixelColor(i, state.gateChannels[state.currentBank][i] ? PURPLE : YELLOW);
+        uint8_t color[3] = {};
+        memcpy(
+          color,
+          state.gateChannels[state.currentBank][i]
+            ? state.config.colors.purple
+            : state.config.colors.yellow,
+          3
+        );
+        Hardware::prepareRenderingOfKey(state, i, color);
       }
     }
   }
-  pixels.show();
+  state.config.trellis.pixels.show();
   return 1;
 }
 
@@ -207,16 +250,19 @@ bool Hardware::renderEditChannelVoltages(State state) {
 }
 
 bool Hardware::renderError(State state) {
-  seesaw_NeoPixel pixels = state.config.trellis.pixels;
   for (uint8_t key = 0; key < 16; key++) {
-    pixels.setPixelColor(key, state.flash ? RED : 0);
+    uint8_t color[3] = {};
+    if (state.flash) {
+      memcpy(color, state.config.colors.red, 3);
+    }
+    Hardware::prepareRenderingOfKey(state, key, color);
   }
-  pixels.show();
+  state.config.trellis.pixels.show();
   return 0; // stay in error screen
 }
 
 bool Hardware::renderGlobalEdit(State state) {
-  seesaw_NeoPixel pixels = state.config.trellis.pixels;
+  uint8_t color[3] = {};
   for (uint8_t i = 0; i < 16; i++) {
     bool allChannelVoltagesLocked = 1;
     bool allChannelStepsInactive = 1;
@@ -235,48 +281,58 @@ bool Hardware::renderGlobalEdit(State state) {
         (state.selectedKeyForCopying == i || state.pasteTargetKeys[i])
       )
     ) {
-      pixels.setPixelColor(i, 0);
+      Hardware::prepareRenderingOfKey(state, i, color);
     }
     else if (allChannelVoltagesLocked) {
-      pixels.setPixelColor(i, ORANGE);
+      memcpy(color, state.config.colors.orange, 3);
+      Hardware::prepareRenderingOfKey(state, i, color);
     }
     else if (allChannelStepsInactive) {
-      pixels.setPixelColor(i, PURPLE);
+      memcpy(color, state.config.colors.purple, 3);
+      Hardware::prepareRenderingOfKey(state, i, color);
     }
     else {
-      pixels.setPixelColor(i, state.currentStep == i ? WHITE : GREEN);
+      memcpy(
+        color,
+        state.currentStep == i
+          ? state.config.colors.white
+          : state.config.colors.green,
+        3
+      );
+      Hardware::prepareRenderingOfKey(state, i, color);
     }
   }
-  pixels.show();
+  state.config.trellis.pixels.show();
   return 1;
 }
 
 bool Hardware::renderSectionSelect(State state) {
-  seesaw_NeoPixel pixels = state.config.trellis.pixels;
+  uint8_t color[3] = {};
   for (uint8_t i = 0; i < 16; i++) {
     switch (Utils::keyQuadrant(i)) {
       case QUADRANT.INVALID:
         return 0;
-      case QUADRANT.NW:
-        pixels.setPixelColor(i, YELLOW); // EDIT_CHANNEL_SELECT
+      case QUADRANT.NW: // EDIT_CHANNEL_SELECT
+        memcpy(color, state.config.colors.yellow, 3);
         break;
-      case QUADRANT.NE:
-        pixels.setPixelColor(i, RED); // RECORD_CHANNEL_SELECT
+      case QUADRANT.NE: // RECORD_CHANNEL_SELECT
+        memcpy(color, state.config.colors.red, 3);
         break;
-      case QUADRANT.SW:
-        pixels.setPixelColor(i, GREEN); // GLOBAL_EDIT
+      case QUADRANT.SW: // GLOBAL_EDIT
+        memcpy(color, state.config.colors.green, 3);
         break;
-      case QUADRANT.SE:
-        pixels.setPixelColor(i, BLUE); // BANK_SELECT
+      case QUADRANT.SE: // BANK_SELECT
+        memcpy(color, state.config.colors.blue, 3);
         break;
     }
+    Hardware::prepareRenderingOfKey(state, i, color);
   }
-  pixels.show();
+  state.config.trellis.pixels.show();
   return 1;
 }
 
 bool Hardware::renderRecordChannelSelect(State state) {
-  seesaw_NeoPixel pixels = state.config.trellis.pixels;
+  uint8_t color[3] = {};
   for (uint8_t key = 0; key < 16; key++) {
     if (
       key > 7 ||
@@ -285,10 +341,11 @@ bool Hardware::renderRecordChannelSelect(State state) {
         (state.autoRecordChannels[state.currentBank][key] ||
         state.randomInputChannels[state.currentBank][key]))
     ) {
-      pixels.setPixelColor(key, 0); // not illuminated
+      Hardware::prepareRenderingOfKey(state, key, color); // not illuminated
     }
     else if (state.lockedVoltages[state.currentBank][state.currentStep][key]) {
-      pixels.setPixelColor(key, ORANGE);
+      memcpy(color, state.config.colors.orange, 3);
+      Hardware::prepareRenderingOfKey(state, key, color);
     }
     else if (state.randomInputChannels[state.currentBank][key]) {
       Hardware::prepareRenderingOfRandomizedKey(state, key);
@@ -298,46 +355,60 @@ bool Hardware::renderRecordChannelSelect(State state) {
       uint8_t colorValue = state.autoRecordChannels[state.currentBank][key]
         ? 255
         : static_cast<uint8_t>(COLOR_VALUE_MAX * voltage * PERCENTAGE_MULTIPLIER_10_BIT);
-      pixels.setPixelColor(key, colorValue, 0, 0); // shade of red
+      uint8_t redShade[3] = {colorValue, 0, 0};
+      Hardware::prepareRenderingOfKey(state, key, redShade);
     }
   }
-  pixels.show();
+  state.config.trellis.pixels.show();
   return 1;
 }
 
 bool Hardware::renderStepChannelSelect(State state) {
-  seesaw_NeoPixel pixels = state.config.trellis.pixels;
+  uint8_t color[3];
+  uint8_t dimmed[3] = {
+    static_cast<uint8_t>(state.config.colors.white[0] * DIMMED_COLOR_MULTIPLIER),
+    static_cast<uint8_t>(state.config.colors.white[1] * DIMMED_COLOR_MULTIPLIER),
+    static_cast<uint8_t>(state.config.colors.white[2] * DIMMED_COLOR_MULTIPLIER),
+  };
+  uint8_t nonilluminated[3] = {};
   for (uint8_t i = 0; i < 16; i++) {
     if (i < 8) {
-      if (state.currentChannel == 1) {
-        pixels.setPixelColor(i, WHITE);
+      if (state.currentChannel == i) {
+        memcpy(color, state.config.colors.white, 3);
       }
       else {
-        pixels.setPixelColor(i, 60, 60, 60); // dimmed white
+        memcpy(color, dimmed, 3);
       }
     }
     else {
-      pixels.setPixelColor(i, 0);
+      memcpy(color, nonilluminated, 3);
     }
+    Hardware::prepareRenderingOfKey(state, i, color);
   }
-  pixels.show();
+  state.config.trellis.pixels.show();
   return 1;
 }
 
 bool Hardware::renderStepSelect(State state) {
-  seesaw_NeoPixel pixels = state.config.trellis.pixels;
+  uint8_t color[3] = {};
   for (uint8_t i = 0; i < 16; i++) {
     if (state.selectedKeyForRecording == i) {
       uint16_t voltage =
         state.voltages[state.currentBank][state.selectedKeyForRecording][state.currentChannel];
-      uint8_t red = static_cast<uint8_t>(COLOR_VALUE_MAX * voltage * PERCENTAGE_MULTIPLIER_10_BIT);
-      pixels.setPixelColor(state.selectedKeyForRecording, red, 0, 0);
+      uint8_t redShade[3] = {
+        static_cast<uint8_t>(COLOR_VALUE_MAX * voltage * PERCENTAGE_MULTIPLIER_10_BIT),
+        0,
+        0
+      };
+      Hardware::prepareRenderingOfKey(state, state.selectedKeyForRecording, redShade);
     }
     else {
-      pixels.setPixelColor(i, state.currentStep == i ? WHITE : 0);
+      uint8_t nonilluminated[3] = {};
+      memcpy(color, state.currentStep == i ? state.config.colors.white : nonilluminated, 3);
+      Hardware::prepareRenderingOfKey(state, i, color);
     }
   }
-  pixels.show();
+  state.config.trellis.pixels.show();
   return 1;
 }
 

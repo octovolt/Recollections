@@ -22,6 +22,7 @@ typedef struct Colors {
   uint8_t green[3];
   uint8_t purple[3];
   uint8_t orange[3];
+  uint8_t magenta[3];
 } Colors;
 
 /**
@@ -72,8 +73,27 @@ typedef struct Config {
    */
   bool randomOutputOverwritesSteps;
 
+  /**
+   * The default orientation of Recollections has the keys at the bottom and the jacks at the top.
+   * We refer to this as the "controller layout", and assume that Recollections would be located in
+   * the row of modules closest to the musician with no other modules immediately beneath it. This
+   * makes the keys easy to access as a type of controller. However, many people prefer to have all
+   * of their modules conform to the more "standard" Eurorack orientation, where jacks are at the
+   * bottom and all the buttons and knobs are at the top. Or perhaps a person might want to put
+   * Recollections in a different location, and the more "standard" orientation makes more sense for
+   * them in this case. An inverted, non-controller panel for Recollections is available, so
+   * rearranging it in this way is quite possible. However, in this case, the display of steps will
+   * also need to be inverted, and this flag controls whether to display the steps in this inverted
+   * way.
+   */
+  bool controllerOrientation;
+
   /** Get the config data from the config file */
-  static Config readConfigFromSDCard();
+  static Config readConfigFromSDCard(Config config);
+
+  private:
+
+  static Config readConfigFromFile(Config config, File configFile);
 
 } Config;
 

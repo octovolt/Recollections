@@ -6,98 +6,85 @@
 #include <ArduinoJson.h>
 #include <SD.h>
 #include <SPI.h>
-#include <string.h> // for memcpy() -- would prefer to remove this if possible
+// #include <string.h> // for memcpy() -- would prefer to remove this if possible
 
 #include "constants.h"
 
-Config Config::readConfigFromSDCard() {
-  Config configData;
-
+Config Config::readConfigFromSDCard(Config config) {
   // Constants from SdFat.h
   // open file for reading, create it if it doesn't exist
   File configFile = SD.open(CONFIG_SD_PATH, SD_READ_CREATE);
 
   if (!configFile) {
     Serial.println("Could not open Config.txt");
-    return configData;
+    return config;
   } else {
     Serial.println("Successfully opened Config.txt");
   }
 
+  config = Config::readConfigFromFile(config, configFile);
+
+  configFile.close();
+
+  return config;
+}
+
+//--------------------------------------- PRIVATE --------------------------------------------------
+
+Config Config::readConfigFromFile(Config config, File configFile) {
+  // If the file is not available, recurse until it is.
+  if (!configFile.available()) {
+    Serial.println("Config.txt was opened but is not yet available.");
+    delay(500);
+    // return Config::readConfigFromFile(config, configFile);
+  }
+
   if (configFile.available()) {
+    Serial.println("config file available");
     StaticJsonDocument<CONFIG_JSON_DOC_DESERIALIZATION_SIZE> doc;
     DeserializationError error = deserializeJson(doc, configFile);
 
     if (error == DeserializationError::EmptyInput) {
       Serial.println("Config.txt is an empty file");
+      return config;
     }
     else if (error) {
       Serial.printf("%s %s \n", "deserializeJson() failed during read operation: ", error.c_str());
+      return config;
     }
     else {
-      configData.currentModule = doc["currentModule"] | 0;
-      configData.brightness = doc["brightness"] | DEFAULT_BRIGHTNESS;
-      configData.randomOutputOverwritesSteps = doc["randomOutputOverwritesSteps"] | 1;
+      Serial.println("getting config data from file");
 
-      Colors defaultColors = (Colors){
-        .white = {255,255,255},
-        .red = {85,0,0},
-        .blue = {0,0,119},
-        .yellow = {119,119,0},
-        .green = {0,85,0},
-        .purple = {51,0,255},
-        .orange = {119,51,0},
-      };
-
-      // How can I not repeat myself here? It would be nice if I could use the pipe operator,
-      // similar to how it used above for currentModule and brightness. Or if C++ would allow
-      // struct member access with the [] operator.  TODO: come back to this and figure it out.
-      // Also TODO: use these colors, particularly in Hardware.cpp.
-
-      if (doc["colors"]["white"] == nullptr) {
-        memcpy(configData.colors.white, defaultColors.white, 3);
-      } else {
-        copyArray(doc["colors"]["white"], configData.colors.white);
+      if (doc["brightness"] != nullptr) {
+        Serial.println("brightness from Config.txt");
+        config.brightness = doc["brightness"];
       }
-
-      if (doc["colors"]["red"] == nullptr) {
-        memcpy(configData.colors.red, defaultColors.red, 3);
-      } else {
-        copyArray(doc["colors"]["red"], configData.colors.red);
+      if (doc["colors"] != nullptr) {
+        Serial.println("colors from Config.txt");
+        copyArray(doc["colors"]["white"], config.colors.white);
+        copyArray(doc["colors"]["red"], config.colors.red);
+        copyArray(doc["colors"]["blue"], config.colors.blue);
+        copyArray(doc["colors"]["yellow"], config.colors.yellow);
+        copyArray(doc["colors"]["green"], config.colors.green);
+        copyArray(doc["colors"]["purple"], config.colors.purple);
+        copyArray(doc["colors"]["orange"], config.colors.orange);
+        copyArray(doc["colors"]["magenta"], config.colors.magenta);
       }
-
-      if (doc["colors"]["blue"] == nullptr) {
-        memcpy(configData.colors.blue, defaultColors.blue, 3);
-      } else {
-        copyArray(doc["colors"]["blue"], configData.colors.blue);
+      if (doc["controllerOrientation"] != nullptr) {
+        Serial.println("controllerOrientation from Config.txt");
+        config.controllerOrientation = doc["controllerOrientation"];
       }
-
-      if (doc["colors"]["yellow"] == nullptr) {
-        memcpy(configData.colors.yellow, defaultColors.yellow, 3);
-      } else {
-        copyArray(doc["colors"]["yellow"], configData.colors.yellow);
+      if (doc["currentModule"] != nullptr) {
+        Serial.println("controllerOrientation from Config.txt");
+        config.currentModule = doc["currentModule"];
       }
-
-      if (doc["colors"]["green"] == nullptr) {
-        memcpy(configData.colors.green, defaultColors.green, 3);
-      } else {
-        copyArray(doc["colors"]["green"], configData.colors.green);
-      }
-
-      if (doc["colors"]["purple"] == nullptr) {
-        memcpy(configData.colors.purple, defaultColors.purple, 3);
-      } else {
-        copyArray(doc["colors"]["purple"], configData.colors.purple);
-      }
-
-      if (doc["colors"]["orange"] == nullptr) {
-        memcpy(configData.colors.orange, defaultColors.orange, 3);
-      } else {
-        copyArray(doc["colors"]["orange"], configData.colors.orange);
+      if (doc["randomOutputOverwritesSteps"] != nullptr) {
+        Serial.println("controllerOrientation from Config.txt");
+        config.randomOutputOverwritesSteps = doc["randomOutputOverwritesSteps"];
       }
     }
   }
-  configFile.close();
 
-  return configData;
+  return config;
 }
+

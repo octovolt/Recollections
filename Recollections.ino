@@ -53,43 +53,7 @@ bool initialLoop = 1;
  * @param evt The key event, a struct.
  */
 TrellisCallback handleKeyEvent(keyEvent evt) {
-  if (evt.bit.EDGE == SEESAW_KEYPAD_EDGE_RISING && state.readyForKeyPress) {
-    state.readyForKeyPress = 0;
-    switch (state.screen) {
-      case SCREEN.EDIT_CHANNEL_SELECT:
-        state = Grid::handleEditChannelSelectKeyEvent(evt, state);
-        break;
-      case SCREEN.EDIT_CHANNEL_VOLTAGES:
-        state = Grid::handleEditChannelVoltagesKeyEvent(evt, state);
-        break;
-      case SCREEN.ERROR:
-        SCB_AIRCR = 0x05FA0004; // Do a soft reboot of Teensy.
-        break;
-      case SCREEN.GLOBAL_EDIT:
-        state = Grid::handleGlobalEditKeyEvent(evt, state);
-        break;
-      case SCREEN.SECTION_SELECT:
-        state = Grid::handleSectionSelectKeyEvent(evt, state);
-        break;
-      case SCREEN.BANK_SELECT:
-        state = Grid::handleBankSelectKeyEvent(evt, state);
-        break;
-      case SCREEN.RECORD_CHANNEL_SELECT:
-        state = Grid::handleRecordChannelSelectKeyEvent(evt, state);
-        break;
-      case SCREEN.STEP_CHANNEL_SELECT:
-        state = Grid::handleStepChannelSelectKeyEvent(evt, state);
-        break;
-      case SCREEN.STEP_SELECT:
-        state = Grid::handleStepSelectKeyEvent(evt, state);
-        break;
-    }
-  }
-  else if (evt.bit.EDGE == SEESAW_KEYPAD_EDGE_FALLING && !state.readyForKeyPress) {
-    state.readyForKeyPress = 1;
-    state.selectedKeyForRecording = -1;
-  }
-
+  state = Grid::handleKeyEvent(evt, state);
   return 0;
 }
 
@@ -241,7 +205,24 @@ bool setupSDCard() {
  * @return false
  */
 bool setupConfig() {
-  state.config = Config::readConfigFromSDCard();
+  // default values
+  state.config.brightness = DEFAULT_BRIGHTNESS;
+  state.config.colors = {
+    .white = {255,255,255},
+    .red = {85,0,0},
+    .blue = {0,0,119},
+    .yellow = {119,119,0},
+    .green = {0,85,0},
+    .purple = {51,0,255},
+    .orange = {119,51,0},
+    .magenta = {119,0,119},
+  };
+  state.config.controllerOrientation = 1;
+  state.config.currentModule = 0;
+  state.config.randomOutputOverwritesSteps = 1;
+
+  // overwrite defaults if anything is in the Config.txt file
+  state.config = Config::readConfigFromSDCard(state.config);
   return true;
 }
 

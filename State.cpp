@@ -119,6 +119,7 @@ State State::readModuleFromSDCard(State state) {
   }
 
   if (moduleFile.available()) {
+    Serial.println("Module file is available");
     StaticJsonDocument<MODULE_JSON_DOC_DESERIALIZATION_SIZE> doc;
     DeserializationError error = deserializeJson(doc, moduleFile);
     if (error == DeserializationError::EmptyInput) {
@@ -165,6 +166,7 @@ State State::readBankFromSDCard(State state, uint8_t bank) {
   }
 
   if (bankFile.available()) {
+    Serial.println("Bank file is available");
     StaticJsonDocument<BANK_JSON_DOC_DESERIALIZATION_SIZE> doc;
     DeserializationError error = deserializeJson(doc, bankFile);
     if (error == DeserializationError::EmptyInput) {

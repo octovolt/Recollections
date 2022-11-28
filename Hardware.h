@@ -11,10 +11,13 @@
 #define VOLTAGE_MEMORY_HARDWARE_H_
 
 typedef struct Hardware {
-  static bool prepareRenderingOfRandomizedKey(State state, uint8_t key);
+  static bool reflectState(State state);
+
+  private:
   static bool prepareRenderingOfChannelEditGateStep(State state, uint8_t step);
   static bool prepareRenderingOfChannelEditVoltageStep(State state, uint8_t step);
-  static bool reflectState(State state);
+  static bool prepareRenderingOfKey(State state, uint8_t key, uint8_t rgbColor[]);
+  static bool prepareRenderingOfRandomizedKey(State state, uint8_t key);
   static bool renderBankSelect(State state);
   static bool renderEditChannelSelect(State state);
   static bool renderEditChannelVoltages(State state);
