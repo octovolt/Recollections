@@ -74,12 +74,6 @@ typedef struct State {
   unsigned long timeModPressed;
 
   /**
-   * Time in ms since last key release. We track the time of key release and write to SD after no
-   * key has been released for WRITE_AFTER_KEY_RELEASE_TIME.
-   */
-  unsigned long timeKeyReleased;
-
-  /**
    * Which key was initially pressed while holding the MOD button.
    * This is also how we track whether *any* key was pressed while holding the MOD button.
    * A negative number indicates no key was pressed, or has been pressed yet.

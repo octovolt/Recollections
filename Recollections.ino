@@ -88,7 +88,6 @@ TrellisCallback handleKeyEvent(keyEvent evt) {
   else if (evt.bit.EDGE == SEESAW_KEYPAD_EDGE_FALLING && !state.readyForKeyPress) {
     state.readyForKeyPress = 1;
     state.selectedKeyForRecording = -1;
-    state.timeKeyReleased = millis();
   }
 
   return 0;
@@ -321,7 +320,6 @@ bool setupState() {
   state.readyForRecInput = 1;
   state.selectedKeyForCopying = -1;
   state.selectedKeyForRecording = -1;
-  state.timeKeyReleased = 0;
   for (uint8_t i = 0; i < 16; i++) {
     if (i < 4) {
       state.navHistory[i] = SCREEN.STEP_SELECT;

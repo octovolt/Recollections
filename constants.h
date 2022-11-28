@@ -43,7 +43,6 @@
 #define MOD_DEBOUNCE_TIME 200
 #define FLASH_TIME 120
 #define LONG_PRESS_TIME 2000
-// #define WRITE_AFTER_KEY_RELEASE_TIME 3000 // remove?
 
 // Calculated with https://arduinojson.org/v6/assistant
 #define BANK_JSON_DOC_DESERIALIZATION_SIZE 16384 // 14639 required
