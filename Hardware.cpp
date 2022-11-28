@@ -63,15 +63,11 @@ bool Hardware::prepareRenderingOfChannelEditGateStep(State state, uint8_t step) 
  */
 bool Hardware::prepareRenderingOfChannelEditVoltageStep(State state, uint8_t step) {
   seesaw_NeoPixel pixels = state.config.trellis.pixels;
-  uint32_t color = state.currentStep == step
-    ? WHITE
-    : YELLOW;
   if (
     state.selectedKeyForCopying >= 0 &&
     state.flash == 0 &&
     (step == state.selectedKeyForCopying ||
-     state.pasteTargetKeys[step] ||
-     state.randomSteps[state.currentBank][step][state.currentChannel])
+     state.pasteTargetKeys[step])
   ) {
     pixels.setPixelColor(step, 0);
   }
@@ -89,11 +85,11 @@ bool Hardware::prepareRenderingOfChannelEditVoltageStep(State state, uint8_t ste
     uint8_t colorValue = static_cast<int>(
       COLOR_VALUE_MAX * voltage * PERCENTAGE_MULTIPLIER_10_BIT
     );
-    if (color == YELLOW) {
-      pixels.setPixelColor(step, colorValue, colorValue, 0);
-    }
-    else { // WHITE
+    if (state.currentStep == step) { // WHITE
       pixels.setPixelColor(step, colorValue, colorValue, colorValue);
+    }
+    else { // YELLOW
+      pixels.setPixelColor(step, colorValue, colorValue, 0);
     }
   }
   return 1;
