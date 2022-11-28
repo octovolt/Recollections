@@ -28,6 +28,10 @@
 #define DEFAULT_BRIGHTNESS 100
 #define COLOR_VALUE_MAX 255 // max brightness, relative to brightness setting 
 
+#define GATE_LENGTH_MAX 127
+#define GATE_LENGTH_MID 63
+#define PERCENTAGE_MULTIPLIER_7_BIT 0.0078740157480315 // 1/127 for 7-bit
+
 // All of these value are based on 10-bit, because the resolution of the ADC is 10-bit. 
 // These are stepped up to 12-bit for output in real time.
 #define VOLTAGE_VALUE_MAX 1023
@@ -42,12 +46,12 @@
 // #define WRITE_AFTER_KEY_RELEASE_TIME 3000 // remove?
 
 // Calculated with https://arduinojson.org/v6/assistant
-#define CONFIG_JSON_DOC_DESERIALIZATION_SIZE 768 // 570 required
-#define MODULE_JSON_DOC_DESERIALIZATION_SIZE 512 // 444 required
-#define BANK_JSON_DOC_DESERIALIZATION_SIZE 16384 // 12307 required
-#define CONFIG_JSON_DOC_SERIALIZATION_SIZE 512 // 496 required
-#define MODULE_JSON_DOC_SERIALIZATION_SIZE 384 // 352 required
-#define BANK_JSON_DOC_SERIALIZATION_SIZE 12288 // 12176 required
+#define BANK_JSON_DOC_DESERIALIZATION_SIZE 16384 // 14639 required
+#define BANK_JSON_DOC_SERIALIZATION_SIZE 16384 // 14496 required
+#define CONFIG_JSON_DOC_DESERIALIZATION_SIZE 768 // 642 required
+#define CONFIG_JSON_DOC_SERIALIZATION_SIZE 768 // 560 required
+#define MODULE_JSON_DOC_DESERIALIZATION_SIZE 512 // 410 required
+#define MODULE_JSON_DOC_SERIALIZATION_SIZE 384 // 336 required
 
 #define CONFIG_SD_PATH "Recollections/Config.txt"
 #define MODULE_SD_PATH_PREFIX "Recollections/Module_"
