@@ -64,6 +64,14 @@ typedef struct Config {
    */
   Colors colors;
 
+  /**
+   * Flag to determine whether we should overwrite steps when using randomized output set up in the
+   * Edit Channel Selection or Edit Channel Voltages screens. It can be useful to do this overwrite,
+   * as no external gate or trigger is required here to get random values into memory, which is the
+   * case when using randomized input on the Recording screen.
+   */
+  bool randomOutputOverwritesSteps;
+
   /** Get the config data from the config file */
   static Config readConfigFromSDCard();
 

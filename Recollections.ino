@@ -466,22 +466,24 @@ void loop() {
   if (state.readyForAdvInput && !digitalRead(ADV_INPUT)) {
     state.readyForAdvInput = 0;
 
-    // set random output voltages of next step before advancing
-    for (uint8_t i = 0; i < 7; i++) {
-      // random channels, random 32-bit converted to 10-bit
-      if (state.randomOutputChannels[currentBank][i]) {
-        state.voltages[currentBank][currentStep + 1][i] = Entropy.random(MAX_UNSIGNED_10_BIT);
-      }
-
-      if (state.randomSteps[currentBank][currentStep + 1][i]) {
-        // random gate steps
-        if (state.gateChannels[currentBank][i]) {
-          state.voltages[currentBank][currentStep + 1][i] = Entropy.random(2)
-            ? VOLTAGE_VALUE_MAX
-            : 0;
+    if (state.config.randomOutputOverwritesSteps) {
+      // set random output voltages of next step before advancing
+      for (uint8_t i = 0; i < 7; i++) {
+        // random channels, random 32-bit converted to 10-bit
+        if (state.randomOutputChannels[currentBank][i]) {
+          state.voltages[currentBank][currentStep + 1][i] = Entropy.random(MAX_UNSIGNED_10_BIT);
         }
-        // random CV steps, random 32-bit converted to 10-bit
-        state.voltages[currentBank][currentStep + 1][i] = Entropy.random(MAX_UNSIGNED_10_BIT);
+
+        if (state.randomSteps[currentBank][currentStep + 1][i]) {
+          // random gate steps
+          if (state.gateChannels[currentBank][i]) {
+            state.voltages[currentBank][currentStep + 1][i] = Entropy.random(2)
+              ? VOLTAGE_VALUE_MAX
+              : 0;
+          }
+          // random CV steps, random 32-bit converted to 10-bit
+          state.voltages[currentBank][currentStep + 1][i] = Entropy.random(MAX_UNSIGNED_10_BIT);
+        }
       }
     }
 

@@ -37,6 +37,7 @@ Config Config::readConfigFromSDCard() {
     else {
       configData.currentModule = doc["currentModule"] | 0;
       configData.brightness = doc["brightness"] | DEFAULT_BRIGHTNESS;
+      configData.randomOutputOverwritesSteps = doc["randomOutputOverwritesSteps"] | 1;
 
       Colors defaultColors = (Colors){
         .white = {255,255,255},

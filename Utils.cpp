@@ -3,6 +3,8 @@
  */
 #include "Utils.h"
 
+#include <Entropy.h>
+
 #include "constants.h"
 
 Quadrant_t Utils::keyQuadrant(uint8_t key) {
@@ -40,6 +42,13 @@ uint16_t Utils::voltageValueForStep(State state, uint8_t step, uint8_t channel) 
 
   // Gate channels
   if (state.gateChannels[currentBank][channel]) {
+    if (!state.config.randomOutputOverwritesSteps && state.randomSteps[currentBank][step][channel]) {
+      return
+        Entropy.random(2) &&
+        millis() - state.lastAdvReceived < state.gateMillis
+        ? VOLTAGE_VALUE_MAX
+        : 0;
+    }
     return
       state.gateSteps[currentBank][step][channel] &&
       millis() - state.lastAdvReceived < state.gateMillis
@@ -59,11 +68,25 @@ uint16_t Utils::voltageValueForStep(State state, uint8_t step, uint8_t channel) 
       }
       else if (state.activeSteps[currentBank][candidateStep][channel])
       {
-        return state.voltages[currentBank][candidateStep][channel];
+        return Utils::outputControlVoltageValueForStep(state, candidateStep, channel);
       }
     }
   }
 
   // Default CV channel behavior
+  return Utils::outputControlVoltageValueForStep(state, step, channel);
+}
+
+//--------------------------------------- PRIVATE --------------------------------------------------
+
+uint16_t Utils::outputControlVoltageValueForStep(State state, uint8_t step, uint8_t channel) {
+  uint8_t currentBank = state.currentBank;
+  if (
+    !state.config.randomOutputOverwritesSteps &&
+    (state.randomOutputChannels[currentBank][channel] ||
+      state.randomSteps[currentBank][step][channel])
+  ) {
+    return Entropy.random(MAX_UNSIGNED_10_BIT);
+  }
   return state.voltages[currentBank][step][channel];
 }
