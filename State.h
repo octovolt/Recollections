@@ -233,24 +233,33 @@ typedef struct State {
   static State quitCopyPasteFlowPriorToPaste(State state);
 
   /**
-   * @brief Read the persisted state values from the SD card that pertain to the entire module and
-   * copy them into the returned state struct.
+   * @brief Read an entirely new module from the SD card, reading from both Module.txt and all the
+   * Bank_n.txt files within a new Module_n directory, so an entirely new set of 16 banks becomes
+   * available. Creat the directory structure and files if they do not yet exist.
    *
    * @param state
-   * @param moduleFile
    * @return State
    */
   static State readModuleFromSDCard(State state);
 
-    /**
-   * @brief Read the persisted state values from the SD card that pertain to a specified bank and
-   * copy them into the returned state struct.
+  /**
+   * @brief Read the persisted state values from the Module.txt file on the SD card. Create the
+   * file if it does not yet exist.
    *
    * @param state
-   * @param bankFile
    * @return State
    */
-  static State readBankFromSDCard(State state, uint8_t bank);
+  static State readModuleFileFromSDCard(State state);
+
+  /**
+   * @brief Read the persisted state values from one of the Bank_n.txt fils the SD card. Create the
+   * file if it does not yet exist.
+   *
+   * @param state
+   * @param bank
+   * @return State
+   */
+  static State readBankFileFromSDCard(State state, uint8_t bank);
 
   /**
    * @brief Get the persisted state values from the state struct and write them to the SD card.
@@ -260,7 +269,7 @@ typedef struct State {
    * @return true
    * @return false
    */
-  static bool writeModuleAndBankToSDCard(State state);
+  static bool writeCurrentModuleAndBankToSDCard(State state);
  } State;
 
  #endif

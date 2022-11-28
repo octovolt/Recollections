@@ -282,12 +282,10 @@ bool setupPeripheralHardware() {
 bool setupState() {
   Serial.println("set up state");
 
-  //------------------- transient state ------------------------------------------------------------
-
+  // ephemeral state
   if (state.screen != SCREEN.ERROR) {
     state.screen = SCREEN.STEP_SELECT;
   }
-
   state.flash = 1;
   state.flashesSinceRandomColorChange = 0;
   state.initialKeyPressedDuringModHold = -1;
@@ -307,56 +305,10 @@ bool setupState() {
     }
     state.pasteTargetKeys[i] = 0;
   }
-
   Serial.println("Successfully set up transient state");
 
-  //---------------- persisted state ---------------------------------------------------------------
-
-  // First we establish defaults to make sure the data is populated, then we attempt to get data
-  // from the SD card.
-
-  // Core data -- preserved in Module.txt
-  // Keep this in sync with State::readModuleFromSDCard().
-  // If adding or removing anything here, please recalculate the size constants for the JSON
-  // documents required for storing the data on the SD card. See constants.h.
-  state.currentStep = 0;
-  state.currentBank = 0;
-  state.currentChannel = 0;
-  for (uint8_t i = 0; i < 16; i++) {
-    state.removedSteps[i] = 0;
-  }
-
-  // Bank data -- preserved in Bank_<bank-index>.txt
-  //
-  // Keep this in sync with State::readBankFromSDCard().
-  // If adding or removing anything here, please recalculate the size constants for the JSON
-  // documents required for storing the data on the SD card. See constants.h.
-  //
-  // Also keep this in sync with State::pasteBanks().
-  //
-  // Indices are bank, step, channel.
-  for (uint8_t i = 0; i < 16; i++) {
-    for (uint8_t j = 0; j < 16; j++) {
-      for (uint8_t k = 0; k < 8; k++) {
-        state.activeSteps[i][j][k] = 1;
-        state.autoRecordChannels[i][k] = 0;
-        state.gateChannels[i][k] = 0;
-        state.gateLengths[i][j][k] = 0.5;
-        state.gateSteps[i][j][k] = 0;
-        state.lockedVoltages[i][j][k] = 0;
-        state.randomInputChannels[i][k] = 0;
-        state.randomOutputChannels[i][k] = 0;
-        state.randomSteps[i][j][k] = 0;
-        state.voltages[i][j][k] = VOLTAGE_VALUE_MID;
-      }
-    }
-  }
-
+  // persisted state
   state = State::readModuleFromSDCard(state);
-  for (uint8_t bank = 0; bank < 16; bank++) {
-    state = State::readBankFromSDCard(state, bank);
-  }
-
   Serial.println("Successfully set up persisted state");
 
   return true;

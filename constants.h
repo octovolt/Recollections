@@ -19,7 +19,7 @@
 
 #define DEFAULT_BRIGHTNESS 100
 #define COLOR_VALUE_MAX 255 // max brightness, relative to brightness setting
-#define DIMMED_COLOR_MULTIPLIER 0.2
+#define DIMMED_COLOR_MULTIPLIER 0.15
 
 #define GATE_LENGTH_MAX 127
 #define GATE_LENGTH_MID 63
@@ -140,9 +140,13 @@ typedef struct Screen {
   // Color: blue
   Screen_t BANK_SELECT = 7;
 
-  // The module has gotten into an error state
+  // Load an entirely new module (banks, steps, channels) from the SD card.
+  // Colors: green, magenta
+  Screen_t MODULE_SELECT = 8;
+
+  // The module has entered an error state
   // Color: red
-  Screen_t ERROR = 8;
+  Screen_t ERROR = 9;
 } Screen;
 Screen constexpr SCREEN;
 

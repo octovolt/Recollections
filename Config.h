@@ -36,13 +36,13 @@ typedef struct Config {
    * We refer to this when loading the initial module's state at start up. This should be updated
    * whenever we load a new module to replace all banks, steps, and channels in State.
    *
-   * TODO: Create a "Load Module" flow. This would allow the user to dynamically load modules 0-15.
+   * TODO: Create a "Load Module" flow. This would allow the user to load modules 0-15 dynamically.
    *
    * Note that it will be possible to go beyond 0-15 by directly editing this value on the SD card.
    * That is, if a person changes this value to 16, we will save/load bank files to/from a folder
    * associated with the index 16. However, this module 16 will be inaccessible in the "Load Module"
-   * flow as we will have only 16 keys to choose from. Perhaps in the future it will be possible to
-   * dynamically load higher index modules via i2c or MIDI.
+   * flow as we will have only 16 keys to choose from. In the near future it will be possible to
+   * load higher index modules via i2c or MIDI.
    */
   uint8_t currentModule;
 

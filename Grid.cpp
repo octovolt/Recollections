@@ -16,6 +16,9 @@ State Grid::handleKeyEvent(keyEvent evt, State state) {
       : 15 - evt.bit.NUM;
     state.readyForKeyPress = 0;
     switch (state.screen) {
+      case SCREEN.BANK_SELECT:
+        state = Grid::handleBankSelectKeyEvent(key, state);
+        break;
       case SCREEN.EDIT_CHANNEL_SELECT:
         state = Grid::handleEditChannelSelectKeyEvent(key, state);
         break;
@@ -28,14 +31,14 @@ State Grid::handleKeyEvent(keyEvent evt, State state) {
       case SCREEN.GLOBAL_EDIT:
         state = Grid::handleGlobalEditKeyEvent(key, state);
         break;
-      case SCREEN.SECTION_SELECT:
-        state = Grid::handleSectionSelectKeyEvent(key, state);
-        break;
-      case SCREEN.BANK_SELECT:
-        state = Grid::handleBankSelectKeyEvent(key, state);
+      case SCREEN.MODULE_SELECT:
+        state = Grid::handleModuleSelectKeyEvent(key, state);
         break;
       case SCREEN.RECORD_CHANNEL_SELECT:
         state = Grid::handleRecordChannelSelectKeyEvent(key, state);
+        break;
+      case SCREEN.SECTION_SELECT:
+        state = Grid::handleSectionSelectKeyEvent(key, state);
         break;
       case SCREEN.STEP_CHANNEL_SELECT:
         state = Grid::handleStepChannelSelectKeyEvent(key, state);
@@ -293,47 +296,9 @@ State Grid::handleGlobalEditKeyEvent(uint8_t key, State state) {
   return state;
 }
 
-State Grid::handleSectionSelectKeyEvent(uint8_t key, State state) {
-  bool const modButtonIsBeingHeld = !state.readyForModPress;
-  switch (Utils::keyQuadrant(key)) {
-    case QUADRANT.INVALID:
-      state.screen = SCREEN.ERROR;
-      break;
-    case QUADRANT.NW: // yellow: navigate to channel editing or configure output voltage
-      if (modButtonIsBeingHeld) {
-        // TODO: configure output voltage
-      } else {
-        state = Nav::goForward(state, SCREEN.EDIT_CHANNEL_SELECT);
-      }
-      break;
-    case QUADRANT.NE: // red: navigate to recording or configure input voltage
-      if (modButtonIsBeingHeld) {
-        // TODO: configure input voltage
-      } else {
-        state = Nav::goForward(state, SCREEN.RECORD_CHANNEL_SELECT);
-      }
-      break;
-    case QUADRANT.SW: // green: navigate to global edit or load module
-      if (modButtonIsBeingHeld) {
-        // TODO: Load module
-      } else {
-        state = Nav::goForward(state, SCREEN.GLOBAL_EDIT);
-      }
-      break;
-    case QUADRANT.SE: // blue: navigate to bank select or save bank to SD
-      if (modButtonIsBeingHeld) {
-        state.initialKeyPressedDuringModHold = key;
-        bool const writeSuccess = State::writeModuleAndBankToSDCard(state);
-        if (!writeSuccess) {
-          state = Nav::goForward(state, SCREEN.ERROR);
-        } else {
-          // TODO: do something visual to confirm the write
-        }
-      } else {
-        state = Nav::goForward(state, SCREEN.BANK_SELECT);
-      }
-      break;
-  }
+State Grid::handleModuleSelectKeyEvent(uint8_t key, State state) {
+  state.config.currentModule = key;
+  state = State::readModuleFromSDCard(state);
   return state;
 }
 
@@ -404,6 +369,51 @@ State Grid::handleRecordChannelSelectKeyEvent(uint8_t key, State state) {
     state.currentChannel = key;
     state.selectedKeyForRecording = key;
     state.voltages[state.currentBank][state.currentStep][key] = analogRead(CV_INPUT);
+  }
+  return state;
+}
+
+State Grid::handleSectionSelectKeyEvent(uint8_t key, State state) {
+  bool const modButtonIsBeingHeld = !state.readyForModPress;
+  switch (Utils::keyQuadrant(key)) {
+    case QUADRANT.INVALID:
+      state.screen = SCREEN.ERROR;
+      break;
+    case QUADRANT.NW: // yellow: navigate to channel editing or configure output voltage
+      if (modButtonIsBeingHeld) {
+        // TODO: configure output voltage
+      } else {
+        state = Nav::goForward(state, SCREEN.EDIT_CHANNEL_SELECT);
+      }
+      break;
+    case QUADRANT.NE: // red: navigate to recording or configure input voltage
+      if (modButtonIsBeingHeld) {
+        // TODO: configure input voltage
+      } else {
+        state = Nav::goForward(state, SCREEN.RECORD_CHANNEL_SELECT);
+      }
+      break;
+    case QUADRANT.SW: // green: navigate to global edit or load module
+      if (modButtonIsBeingHeld) {
+        state.initialKeyPressedDuringModHold = key;
+        state = Nav::goForward(state, SCREEN.MODULE_SELECT);
+      } else {
+        state = Nav::goForward(state, SCREEN.GLOBAL_EDIT);
+      }
+      break;
+    case QUADRANT.SE: // blue: navigate to bank select or save bank to SD
+      if (modButtonIsBeingHeld) {
+        state.initialKeyPressedDuringModHold = key;
+        bool const writeSuccess = State::writeCurrentModuleAndBankToSDCard(state);
+        if (!writeSuccess) {
+          state = Nav::goForward(state, SCREEN.ERROR);
+        } else {
+          // TODO: do something visual to confirm the write
+        }
+      } else {
+        state = Nav::goForward(state, SCREEN.BANK_SELECT);
+      }
+      break;
   }
   return state;
 }

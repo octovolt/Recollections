@@ -44,11 +44,14 @@ bool Hardware::reflectState(State state) {
     case SCREEN.GLOBAL_EDIT:
       result = Hardware::renderGlobalEdit(state);
       break;
-    case SCREEN.SECTION_SELECT:
-      result = Hardware::renderSectionSelect(state);
+    case SCREEN.MODULE_SELECT:
+      result = Hardware::renderModuleSelect(state);
       break;
     case SCREEN.RECORD_CHANNEL_SELECT:
       result = Hardware::renderRecordChannelSelect(state);
+      break;
+    case SCREEN.SECTION_SELECT:
+      result = Hardware::renderSectionSelect(state);
       break;
     case SCREEN.STEP_CHANNEL_SELECT:
       result = Hardware::renderStepChannelSelect(state);
@@ -301,6 +304,26 @@ bool Hardware::renderGlobalEdit(State state) {
       );
       Hardware::prepareRenderingOfKey(state, i, color);
     }
+  }
+  state.config.trellis.pixels.show();
+  return 1;
+}
+
+bool Hardware::renderModuleSelect(State state) {
+  uint8_t color[3] = {};
+  uint8_t dimmedGreen[3] = {
+    static_cast<uint8_t>(state.config.colors.green[0] * DIMMED_COLOR_MULTIPLIER),
+    static_cast<uint8_t>(state.config.colors.green[1] * DIMMED_COLOR_MULTIPLIER),
+    static_cast<uint8_t>(state.config.colors.green[2] * DIMMED_COLOR_MULTIPLIER),
+  };
+  for (uint8_t i = 0; i < 16; i++) {
+    if (state.config.currentModule == i) {
+      memcpy(color, state.config.colors.magenta, 3);
+    }
+    else {
+      memcpy(color, dimmedGreen, 3);
+    }
+    Hardware::prepareRenderingOfKey(state, i, color);
   }
   state.config.trellis.pixels.show();
   return 1;

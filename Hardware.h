@@ -23,8 +23,9 @@ typedef struct Hardware {
   static bool renderEditChannelVoltages(State state);
   static bool renderError(State state);
   static bool renderGlobalEdit(State state);
-  static bool renderSectionSelect(State state);
+  static bool renderModuleSelect(State state);
   static bool renderRecordChannelSelect(State state);
+  static bool renderSectionSelect(State state);
   static bool renderStepChannelSelect(State state);
   static bool renderStepSelect(State state);
   static bool setOutput(State state, const int8_t channel, const uint16_t voltageValue);

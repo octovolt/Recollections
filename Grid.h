@@ -18,8 +18,9 @@ typedef struct Grid {
   static State handleEditChannelSelectKeyEvent(uint8_t key, State state);
   static State handleEditChannelVoltagesKeyEvent(uint8_t key, State state);
   static State handleGlobalEditKeyEvent(uint8_t key, State state);
-  static State handleSectionSelectKeyEvent(uint8_t key, State state);
+  static State handleModuleSelectKeyEvent(uint8_t key, State state);
   static State handleRecordChannelSelectKeyEvent(uint8_t key, State state);
+  static State handleSectionSelectKeyEvent(uint8_t key, State state);
   static State handleStepChannelSelectKeyEvent(uint8_t key, State state);
   static State handleStepSelectKeyEvent(uint8_t key, State state);
   static State updateModKeyCombinationTracking(uint8_t key, State state);
