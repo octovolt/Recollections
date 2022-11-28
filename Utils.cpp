@@ -40,10 +40,10 @@ uint16_t Utils::voltageValueForStep(State state, uint8_t step, uint8_t channel) 
 
   // Gate channels
   if (state.gateChannels[currentBank][channel]) {
-    return  
-      state.gateSteps[currentBank][step][channel] && 
+    return
+      state.gateSteps[currentBank][step][channel] &&
       millis() - state.lastAdvReceived < state.gateMillis
-        ? VOLTAGE_VALUE_MAX 
+        ? VOLTAGE_VALUE_MAX
         : 0;
   }
 
@@ -56,8 +56,8 @@ uint16_t Utils::voltageValueForStep(State state, uint8_t step, uint8_t channel) 
       uint8_t candidateStep = priorStep >= 0 ? priorStep : 16 + priorStep;
       if (candidateStep == step) {
         continue;
-      } 
-      else if (state.activeSteps[currentBank][candidateStep][channel]) 
+      }
+      else if (state.activeSteps[currentBank][candidateStep][channel])
       {
         return state.voltages[currentBank][candidateStep][channel];
       }

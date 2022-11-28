@@ -1,6 +1,6 @@
 /**
  * Recollections: Config
- * 
+ *
  * Copyright 2022 William Edward Fisher.
  */
 
@@ -25,22 +25,22 @@ typedef struct Colors {
 } Colors;
 
 /**
- * Config is slightly different from most members of State, in that these values should be updated 
- * only very rarely, if at all. More probably, the user would only be able to change these by 
+ * Config is slightly different from most members of State, in that these values should be updated
+ * only very rarely, if at all. More probably, the user would only be able to change these by
  * directly editing the SD card, and the values will never change after populating them in setup().
  */
 typedef struct Config {
-  /** 
-   * The current module. A module consists of 16 banks. 
-   * We refer to this when loading the initial module's state at start up. This should be updated 
+  /**
+   * The current module. A module consists of 16 banks.
+   * We refer to this when loading the initial module's state at start up. This should be updated
    * whenever we load a new module to replace all banks, steps, and channels in State.
-   * 
+   *
    * TODO: Create a "Load Module" flow. This would allow the user to dynamically load modules 0-15.
-   * 
-   * Note that it will be possible to go beyond 0-15 by directly editing this value on the SD card. 
-   * That is, if a person changes this value to 16, we will save/load bank files to/from a folder 
-   * associated with the index 16. However, this module 16 will be inaccessible in the "Load Module" 
-   * flow as we will have only 16 keys to choose from. Perhaps in the future it will be possible to 
+   *
+   * Note that it will be possible to go beyond 0-15 by directly editing this value on the SD card.
+   * That is, if a person changes this value to 16, we will save/load bank files to/from a folder
+   * associated with the index 16. However, this module 16 will be inaccessible in the "Load Module"
+   * flow as we will have only 16 keys to choose from. Perhaps in the future it will be possible to
    * dynamically load higher index modules via i2c or MIDI.
    */
   uint8_t currentModule;
@@ -52,14 +52,14 @@ typedef struct Config {
   Adafruit_MCP4728 dac2;
   Adafruit_NeoTrellis trellis;
 
-  /** 
+  /**
    * Overall brightness level, up to 255. Brightness above 120 may consume too much power. Default
    * in setup() is 100.
    */
   uint8_t brightness;
 
   /**
-   * Colors may be changed by directly editing the SD card. The intent here is to provide an 
+   * Colors may be changed by directly editing the SD card. The intent here is to provide an
    * affordance for accessibility, as people may not see colors the same way.
    */
   Colors colors;

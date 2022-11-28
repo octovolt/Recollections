@@ -1,10 +1,10 @@
 /**
  * @file
- * 
+ *
  * Recollections: a voltage memory Eurorack module
- * 
+ *
  * Copyright 2022 William Edward Fisher.
- * 
+ *
  * Target platform: Teensy 3.6 and Teensy 4.1.
  */
 
@@ -49,7 +49,7 @@ bool initialLoop = 1;
 
 /**
  * @brief Callback for key presses
- * 
+ *
  * @param evt The key event, a struct.
  */
 TrellisCallback handleKeyEvent(keyEvent evt) {
@@ -84,11 +84,11 @@ TrellisCallback handleKeyEvent(keyEvent evt) {
         state = Grid::handleStepSelectKeyEvent(evt, state);
         break;
     }
-  } 
+  }
   else if (evt.bit.EDGE == SEESAW_KEYPAD_EDGE_FALLING && !state.readyForKeyPress) {
     state.readyForKeyPress = 1;
     state.selectedKeyForRecording = -1;
-    state.timeKeyReleased = millis();    
+    state.timeKeyReleased = millis();
   }
 
   return 0;
@@ -103,15 +103,15 @@ void handleModButton() {
   if (state.readyForModPress && !digitalRead(MOD_INPUT)) {
     state.readyForModPress = 0;
     state.timeModPressed = millis();
-  } 
+  }
   // When MOD_INPUT is high, the button is no longer being pressed.
-  // When the button is not being pressed, but we are still not ready for a new press, and the 
-  // debounce time has elapsed, we then clear the readyForModPress state to become ready for a new 
-  // button press. Note that if millis() overflows and starts over at zero, this will be treated as 
-  // if the debounce time has elapsed. In theory, this would only happen if the program was running 
+  // When the button is not being pressed, but we are still not ready for a new press, and the
+  // debounce time has elapsed, we then clear the readyForModPress state to become ready for a new
+  // button press. Note that if millis() overflows and starts over at zero, this will be treated as
+  // if the debounce time has elapsed. In theory, this would only happen if the program was running
   // for over 50 days.
   else if (
-    !state.readyForModPress && digitalRead(MOD_INPUT) && 
+    !state.readyForModPress && digitalRead(MOD_INPUT) &&
     ((millis() - state.timeModPressed > MOD_DEBOUNCE_TIME) ||
      millis() < state.timeModPressed)
   ) {
@@ -121,7 +121,7 @@ void handleModButton() {
       if (state.selectedKeyForCopying >= 0) {
         pasteFromCopyAction();
       }
-    } 
+    }
     else if (state.screen == SCREEN.STEP_SELECT) {
       state = Nav::goForward(state, SCREEN.SECTION_SELECT);
     }
@@ -168,19 +168,19 @@ void pasteFromCopyAction() {
 
 /**
  * @brief Change the current step to the provided step index.
- * 
+ *
  * @param newStep Index of the new step.
  */
 void changeStep(uint8_t newStep) {
   if (newStep > 15) {
     state.currentStep = 0; // to do: error handling
-    return; 
+    return;
   }
   state.currentStep = newStep;
 
   // Below we handle skipping the current step, if needed.
   //
-  // WARNING! ACHTUNG! PELIGRO! 
+  // WARNING! ACHTUNG! PELIGRO!
   //
   // Make sure to prevent an infinite loop before calling advanceStep()! We cannot allow all steps
   // to be removed, but if somehow they are, do not call advanceStep().
@@ -193,7 +193,7 @@ void changeStep(uint8_t newStep) {
   }
   if (!allStepsRemoved && state.removedSteps[state.currentStep]) {
     advanceStep();
-  } 
+  }
 }
 
 /**
@@ -209,7 +209,7 @@ void advanceStep() {
 
   if (state.currentStep == 15) {
     changeStep(0);
-  } 
+  }
   else {
     changeStep(state.currentStep + 1);
   }
@@ -219,12 +219,12 @@ void advanceStep() {
 
 /**
  * @brief Initializes and begins communication with the SD card.
- * 
- * @return true 
- * @return false 
+ *
+ * @return true
+ * @return false
  */
 bool setupSDCard() {
-  delay(200); // Seems to work better, not sure why 
+  delay(200); // Seems to work better, not sure why
   Serial.println("Attempting to open SD card");
   if (!SD.begin(SD_CS_PIN)) { // update if not using a built-in SD card on a Teensy
     Serial.println("SD card failed, or not present");
@@ -237,9 +237,9 @@ bool setupSDCard() {
 
 /**
  * @brief Initializes the config struct, based on the config file in the SD card.
- * 
- * @return true 
- * @return false 
+ *
+ * @return true
+ * @return false
  */
 bool setupConfig() {
   state.config = Config::readConfigFromSDCard();
@@ -248,13 +248,13 @@ bool setupConfig() {
 
 /**
  * @brief Initializes and begins communication with the DACs and the NeoTrellis.
- * 
- * @return true 
- * @return false 
+ *
+ * @return true
+ * @return false
  */
 bool setupPeripheralHardware() {
   // Make sure peripherals are powered up fully before attempting to talk to them.
-  delay(100); 
+  delay(100);
 
   // DACs
   Serial.println("set up hardware");
@@ -280,8 +280,8 @@ bool setupPeripheralHardware() {
   }
 
   // Reduce brightness for lower power consumption
-  state.config.trellis.pixels.setBrightness(state.config.brightness); 
-  
+  state.config.trellis.pixels.setBrightness(state.config.brightness);
+
   for(uint8_t i = 0; i < NEO_TRELLIS_NUM_KEYS; i++){
     state.config.trellis.activateKey(i, SEESAW_KEYPAD_EDGE_RISING);
     state.config.trellis.activateKey(i, SEESAW_KEYPAD_EDGE_FALLING);
@@ -293,11 +293,11 @@ bool setupPeripheralHardware() {
 }
 
 /**
- * @brief Sets up the state object, where all application state is stored. This method also reads 
+ * @brief Sets up the state object, where all application state is stored. This method also reads
  * from the SD card to recreate that state the module was using prior to the last power down.
- * 
- * @return true 
- * @return false 
+ *
+ * @return true
+ * @return false
  */
 bool setupState() {
   Serial.println("set up state");
@@ -333,7 +333,7 @@ bool setupState() {
 
   //---------------- persisted state ---------------------------------------------------------------
 
-  // First we establish defaults to make sure the data is populated, then we attempt to get data 
+  // First we establish defaults to make sure the data is populated, then we attempt to get data
   // from the SD card.
 
   // Core data -- preserved in Module.txt
@@ -343,7 +343,7 @@ bool setupState() {
   state.currentStep = 0;
   state.currentBank = 0;
   state.currentChannel = 0;
-  for (uint8_t i = 0; i < 16; i++) { 
+  for (uint8_t i = 0; i < 16; i++) {
     state.removedSteps[i] = 0;
   }
 
@@ -425,7 +425,7 @@ void setup() {
 
 /**
  * @brief Runs repeatedly; main execution loop of the entire program.
- * 
+ *
  * Please note that the order of operations here is important.
  */
 void loop() {
@@ -438,10 +438,10 @@ void loop() {
   if (!digitalRead(TRELLIS_INTERRUPT_INPUT)) {
     state.config.trellis.read(false);
   }
-  
+
   //------------------------------------ FLASH TIMING ----------------------------------------------
   state.randomColorShouldChange = 0;
-  if ( 
+  if (
     ms - state.lastFlashToggle > FLASH_TIME
   ) {
     state.flashesSinceRandomColorChange += 1;
@@ -472,7 +472,7 @@ void loop() {
       if (state.randomOutputChannels[currentBank][i]) {
         state.voltages[currentBank][currentStep + 1][i] = Entropy.random(MAX_UNSIGNED_10_BIT);
       }
-      
+
       if (state.randomSteps[currentBank][currentStep + 1][i]) {
         // random gate steps
         if (state.gateChannels[currentBank][i]) {
@@ -486,7 +486,7 @@ void loop() {
     }
 
     advanceStep();
-  } 
+  }
   else if (!state.readyForAdvInput && digitalRead(ADV_INPUT)) {
     state.readyForAdvInput = 1;
   }
@@ -496,15 +496,15 @@ void loop() {
     state.readyForRecInput = 0;
     for (uint8_t i = 0; i < 7; i++) {
       if (
-        state.autoRecordChannels[currentBank][i] && 
+        state.autoRecordChannels[currentBank][i] &&
         !state.lockedVoltages[currentBank][currentStep][i]
       ) {
-        state.voltages[currentBank][currentStep][i] = state.randomInputChannels[currentBank][i]          
+        state.voltages[currentBank][currentStep][i] = state.randomInputChannels[currentBank][i]
           ? Entropy.random(MAX_UNSIGNED_10_BIT)
           : analogRead(CV_INPUT);
       }
     }
-  } 
+  }
   else if (!state.readyForRecInput && digitalRead(REC_INPUT)) {
     state.readyForRecInput = 1;
   }
@@ -513,9 +513,9 @@ void loop() {
   if (state.selectedKeyForRecording >= 0) {
     if (state.screen == SCREEN.EDIT_CHANNEL_VOLTAGES || state.screen == SCREEN.STEP_SELECT) {
       state.voltages[currentBank][state.selectedKeyForRecording][currentChannel] = analogRead(CV_INPUT);
-    } 
+    }
     else if (
-      state.screen == SCREEN.RECORD_CHANNEL_SELECT && 
+      state.screen == SCREEN.RECORD_CHANNEL_SELECT &&
       !state.lockedVoltages[currentBank][currentStep][state.selectedKeyForRecording] &&
       !state.autoRecordChannels[currentBank][currentStep] // automatic recording is sample and hold
     ) {

@@ -45,17 +45,17 @@ State State::pasteChannels(State state) {
       if (state.gateChannels[currentBank][selectedKeyForCopying]) {
         state.gateChannels[state.currentBank][i] = 1;
         for (uint8_t j = 0; j < 16; j++) {
-          state.gateSteps[currentBank][j][i] = 
+          state.gateSteps[currentBank][j][i] =
             state.gateSteps[currentBank][j][selectedKeyForCopying];
-          state.gateLengths[currentBank][j][i] = 
+          state.gateLengths[currentBank][j][i] =
             state.gateLengths[currentBank][j][selectedKeyForCopying];
         }
       }
       else {
         for (uint8_t j = 0; j < 16; j++) { // steps
-          state.activeSteps[currentBank][j][i] = 
+          state.activeSteps[currentBank][j][i] =
             state.activeSteps[currentBank][j][state.selectedKeyForCopying];
-          state.voltages[currentBank][j][i] = 
+          state.voltages[currentBank][j][i] =
             state.voltages[currentBank][j][state.selectedKeyForCopying];
         }
       }
@@ -69,7 +69,7 @@ State State::pasteChannels(State state) {
 State State::pasteChannelStepVoltages(State state) {
   for (uint8_t i = 0; i < 16; i++) { // steps
     if (state.pasteTargetKeys[i]) {
-      state.voltages[state.currentBank][i][state.currentChannel] = 
+      state.voltages[state.currentBank][i][state.currentChannel] =
         state.voltages[state.currentBank][state.selectedKeyForCopying][state.currentChannel];
     }
     state.pasteTargetKeys[i] = 0;
@@ -82,7 +82,7 @@ State State::pasteGlobalSteps(State state) {
   for (uint8_t i = 0; i < 16; i++) { // steps
     if (state.pasteTargetKeys[i]) {
       for (uint8_t j = 0; j < 8; j++) { // channels
-        state.voltages[state.currentBank][i][j] = 
+        state.voltages[state.currentBank][i][j] =
           state.voltages[state.currentBank][state.selectedKeyForCopying][j];
       }
     }
@@ -135,7 +135,7 @@ State State::readModuleFromSDCard(State state) {
     }
     moduleFile.close();
   }
-  
+
   return state;
 }
 
@@ -194,9 +194,9 @@ State State::readBankFromSDCard(State state, uint8_t bank) {
 bool State::writeModuleAndBankToSDCard(State state) {
   Serial.println("writing to SD card");
 
-  // TODO: I would like to abstract a lot of this into a function, since a lot of lines are repeated 
-  // twice here and in the other SD card functions, but I am having trouble figuring out how to do 
-  // this with cstrings in a way that makes sense and actually saves lines of code. Something to 
+  // TODO: I would like to abstract a lot of this into a function, since a lot of lines are repeated
+  // twice here and in the other SD card functions, but I am having trouble figuring out how to do
+  // this with cstrings in a way that makes sense and actually saves lines of code. Something to
   // improve upon later.
 
   // --------------------------- Module file ---------------------------------

@@ -30,7 +30,7 @@ State Nav::goForward(State state, Screen_t screen) {
     state.screen = screen;
     state.navHistory[state.navHistoryIndex] = state.screen;
   }
-  
+
   return state;
 }
 

@@ -1,6 +1,6 @@
 /**
  * Recollections: Grid
- * 
+ *
  * Copyright 2022 William Edward Fisher.
  */
 

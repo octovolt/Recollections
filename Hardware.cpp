@@ -9,14 +9,14 @@
 #include "constants.h"
 
 /**
- * @brief Set the pixel color of a key to a random color. Note that this only *prepares* the key 
- * to display a random color. After the key is prepared, trellis.pixels.show() must be called 
+ * @brief Set the pixel color of a key to a random color. Note that this only *prepares* the key
+ * to display a random color. After the key is prepared, trellis.pixels.show() must be called
  * afterward.
- * 
- * @param state 
- * @param key 
- * @return true 
- * @return false 
+ *
+ * @param state
+ * @param key
+ * @return true
+ * @return false
  */
 bool Hardware::prepareRenderingOfRandomizedKey(State state, uint8_t key) {
   if (state.randomColorShouldChange) {
@@ -32,12 +32,12 @@ bool Hardware::prepareRenderingOfRandomizedKey(State state, uint8_t key) {
 }
 
 /**
- * @brief Set color values for a NeoTrellis key as either on or off. Note that this only *prepares* 
- * a key to display the correct color. After the key is prepared, trellis.pixels.show() must be 
+ * @brief Set color values for a NeoTrellis key as either on or off. Note that this only *prepares*
+ * a key to display the correct color. After the key is prepared, trellis.pixels.show() must be
  * called afterward.
- * 
+ *
  * @param state Global state object.
- * @param step Which of the 16 steps/keys is targeted for changing. 
+ * @param step Which of the 16 steps/keys is targeted for changing.
  */
 bool Hardware::prepareRenderingOfChannelEditGateStep(State state, uint8_t step) {
   if (state.randomSteps[state.currentBank][step][state.currentChannel]) {
@@ -57,7 +57,7 @@ bool Hardware::prepareRenderingOfChannelEditGateStep(State state, uint8_t step) 
 /**
  * @brief Set color values for a NeoTrellis key. Note that this only *prepares* a key to display the
  * correct color. After the key is prepared, trellis.pixels.show() must be called afterward.
- * 
+ *
  * @param state Global state object.
  * @param step Which of the 16 steps/keys is targeted for changing.
  */
@@ -69,12 +69,12 @@ bool Hardware::prepareRenderingOfChannelEditVoltageStep(State state, uint8_t ste
   if (
     state.selectedKeyForCopying >= 0 &&
     state.flash == 0 &&
-    (step == state.selectedKeyForCopying || 
+    (step == state.selectedKeyForCopying ||
      state.pasteTargetKeys[step] ||
      state.randomSteps[state.currentBank][step][state.currentChannel])
   ) {
     pixels.setPixelColor(step, 0);
-  } 
+  }
   else if (state.lockedVoltages[state.currentBank][step][state.currentChannel]) {
     pixels.setPixelColor(step, ORANGE);
   }
@@ -100,12 +100,12 @@ bool Hardware::prepareRenderingOfChannelEditVoltageStep(State state, uint8_t ste
 }
 
 /**
- * @brief This is the entry point for side effects reflected in the hardware, based on the current 
+ * @brief This is the entry point for side effects reflected in the hardware, based on the current
  * state: the display of colors in the grid of keys and the production of voltage in the DACs.
- * 
- * @param state 
- * @return true 
- * @return false 
+ *
+ * @param state
+ * @return true
+ * @return false
  */
 bool Hardware::reflectState(State state) {
   // voltage output
@@ -162,7 +162,7 @@ bool Hardware::renderBankSelect(State state) {
   else {
     for (int8_t step = 0; step < 16; step++) {
       pixels.setPixelColor(
-        step, 
+        step,
         state.flash && (step == state.selectedKeyForCopying || state.pasteTargetKeys[step])
           ? BLUE
           : 0
@@ -240,7 +240,7 @@ bool Hardware::renderGlobalEdit(State state) {
       )
     ) {
       pixels.setPixelColor(i, 0);
-    } 
+    }
     else if (allChannelVoltagesLocked) {
       pixels.setPixelColor(i, ORANGE);
     }
@@ -283,9 +283,9 @@ bool Hardware::renderRecordChannelSelect(State state) {
   seesaw_NeoPixel pixels = state.config.trellis.pixels;
   for (uint8_t key = 0; key < 16; key++) {
     if (
-      key > 7 || 
-      (state.flash == 0 && 
-        (state.autoRecordChannels[state.currentBank][key] || 
+      key > 7 ||
+      (state.flash == 0 &&
+        (state.autoRecordChannels[state.currentBank][key] ||
         state.randomInputChannels[state.currentBank][key]))
     ) {
       pixels.setPixelColor(key, 0); // not illuminated
@@ -331,7 +331,7 @@ bool Hardware::renderStepSelect(State state) {
   seesaw_NeoPixel pixels = state.config.trellis.pixels;
   for (uint8_t i = 0; i < 16; i++) {
     if (state.selectedKeyForRecording == i) {
-      uint16_t voltage = 
+      uint16_t voltage =
         state.voltages[state.currentBank][state.selectedKeyForRecording][state.currentChannel];
       uint8_t red = static_cast<uint8_t>(COLOR_VALUE_MAX * voltage * PERCENTAGE_MULTIPLIER_10_BIT);
       pixels.setPixelColor(state.selectedKeyForRecording, red, 0, 0);
@@ -374,7 +374,7 @@ bool Hardware::setOutput(State state, const int8_t channel, const uint16_t volta
  * @param state The app-wide state struct. See State.h.
  */
 bool Hardware::setOutputsAll(State state) {
-  // TODO: revise to use dac.fastWrite(). 
+  // TODO: revise to use dac.fastWrite().
   // See https://adafruit.github.io/Adafruit_MCP4728/html/class_adafruit___m_c_p4728.html
   for (uint8_t channel = 0; channel < 8; channel++) {
     uint16_t voltageValue = Utils::voltageValueForStep(state, state.currentStep, channel);

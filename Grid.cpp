@@ -16,7 +16,7 @@ State Grid::addKeyToCopyPasteData(keyEvent evt, State state) {
   if (state.selectedKeyForCopying < 0) { // No step selected, initiate copy.
     state.selectedKeyForCopying = evt.bit.NUM;
     state.pasteTargetKeys[evt.bit.NUM] = 1;
-  } 
+  }
   else { // Pressed step should be added or removed from the set of paste steps.
     state.pasteTargetKeys[evt.bit.NUM] = !state.pasteTargetKeys[evt.bit.NUM];
   }
@@ -28,7 +28,7 @@ State Grid::handleBankSelectKeyEvent(keyEvent evt, State state) {
     state = Grid::updateModKeyCombinationTracking(evt, state);
     if (state.selectedKeyForCopying != evt.bit.NUM) {
       state = Grid::addKeyToCopyPasteData(evt, state);
-    } 
+    }
     else { // Pressed the original bank again, quit copy-paste and clear the paste banks.
       state = State::quitCopyPasteFlowPriorToPaste(state);
     }
@@ -56,7 +56,7 @@ State Grid::handleEditChannelSelectKeyEvent(keyEvent evt, State state) {
       state.initialKeyPressedDuringModHold = evt.bit.NUM;
     }
     state = Grid::updateModKeyCombinationTracking(evt, state);
-    
+
     // copy-paste
     if (state.keyPressesSinceModHold == 1) {
       state = Grid::addKeyToCopyPasteData(evt, state);
@@ -92,8 +92,8 @@ State Grid::handleEditChannelVoltagesKeyEvent(keyEvent evt, State state) {
   // Gate channel
   if (state.gateChannels[currentBank][state.currentChannel]) {
     // MOD button is not being held, so toggle gate on or off
-    if (state.readyForModPress) { 
-      state.gateSteps[currentBank][evt.bit.NUM][currentChannel] = 
+    if (state.readyForModPress) {
+      state.gateSteps[currentBank][evt.bit.NUM][currentChannel] =
         !state.gateSteps[currentBank][evt.bit.NUM][currentChannel];
     }
     // MOD button is being held
@@ -106,7 +106,7 @@ State Grid::handleEditChannelVoltagesKeyEvent(keyEvent evt, State state) {
 
       // Step is a random coin-flip between gate on or gate off
       if (state.keyPressesSinceModHold == 1) {
-        state.randomSteps[currentBank][evt.bit.NUM][currentChannel] = 
+        state.randomSteps[currentBank][evt.bit.NUM][currentChannel] =
           !state.randomSteps[currentBank][evt.bit.NUM][currentChannel];
       }
       // Set gate length to custom value. Note that this is not continually recording, but a sample.
@@ -114,7 +114,7 @@ State Grid::handleEditChannelVoltagesKeyEvent(keyEvent evt, State state) {
       else if (state.keyPressesSinceModHold == 2) {
         state.randomSteps[currentBank][evt.bit.NUM][currentChannel] =
           !state.randomSteps[currentBank][evt.bit.NUM][currentChannel];
-        state.gateLengths[currentBank][evt.bit.NUM][currentChannel] = 
+        state.gateLengths[currentBank][evt.bit.NUM][currentChannel] =
           analogRead(CV_INPUT) * PERCENTAGE_MULTIPLIER_10_BIT;
       }
       // Recurse
@@ -129,7 +129,7 @@ State Grid::handleEditChannelVoltagesKeyEvent(keyEvent evt, State state) {
   // CV channel
   else {
     // MOD button is not being held, so edit voltage
-    if (state.readyForModPress) { 
+    if (state.readyForModPress) {
       state.selectedKeyForRecording = evt.bit.NUM;
       // See also continual recording in loop().
       state.voltages[currentBank][evt.bit.NUM][currentChannel] = analogRead(CV_INPUT);
@@ -153,7 +153,7 @@ State Grid::handleEditChannelVoltagesKeyEvent(keyEvent evt, State state) {
       // Copy-paste voltage value, or restore step to defaults
       if (state.keyPressesSinceModHold == 1) {
         state = Grid::addKeyToCopyPasteData(evt, state);
-      }      
+      }
       // Step is locked
       else if (state.keyPressesSinceModHold == 2) {
         state = State::quitCopyPasteFlowPriorToPaste(state);
@@ -187,7 +187,7 @@ State Grid::handleGlobalEditKeyEvent(keyEvent evt, State state) {
   if (state.readyForModPress) { // MOD button is not being held, toggle removed step
     if (state.removedSteps[evt.bit.NUM]) {
       state.removedSteps[evt.bit.NUM] = 0;
-    } 
+    }
     else {
       uint8_t totalRemovedSteps = 0;
       for (uint8_t i = 0; i < 16; i++) {
@@ -199,7 +199,7 @@ State Grid::handleGlobalEditKeyEvent(keyEvent evt, State state) {
     }
   }
   // MOD button is being held
-  else { 
+  else {
     // Clear states for faster work flow -- is this actually needed?
     if (state.keyPressesSinceModHold == 0) {
       for (uint8_t i = 0; i < 8; i++) {
@@ -317,8 +317,8 @@ State Grid::handleRecordChannelSelectKeyEvent(keyEvent evt, State state) {
         }
       }
 
-      // Turn on randomly generated input. 
-      // Note: this not turn off automatic recording, as we want to use random voltage as part of 
+      // Turn on randomly generated input.
+      // Note: this not turn off automatic recording, as we want to use random voltage as part of
       // automatic recording in this case.
       // I got a bit confused here -- maybe there is a way to simplify this?
       else if (state.keyPressesSinceModHold == 2) {
@@ -330,13 +330,13 @@ State Grid::handleRecordChannelSelectKeyEvent(keyEvent evt, State state) {
         ) {
           state.keyPressesSinceModHold = 0;
           return Grid::handleRecordChannelSelectKeyEvent(evt, state);
-        
+
         // else if we are pressing a key that is not yet random, make it random.
         // if this is the first key this will also advance the keyPressesSinceModHold count.
         } else if (!state.randomInputChannels[currentBank][evt.bit.NUM]) {
           state.autoRecordChannels[currentBank][evt.bit.NUM] = 1;
           state.randomInputChannels[currentBank][evt.bit.NUM] = 1;
-        
+
         // else if we are pressing any random key other than the first, turn off random and return
         // the key to the autorecord state.
         } else if (state.initialKeyPressedDuringModHold != evt.bit.NUM) {
@@ -373,7 +373,7 @@ State Grid::handleStepSelectKeyEvent(keyEvent evt, State state) {
     state.initialKeyPressedDuringModHold = evt.bit.NUM;
     state.selectedKeyForRecording = evt.bit.NUM;
     state.voltages[state.currentBank][state.currentStep][state.currentChannel] = analogRead(CV_INPUT);
-  } 
+  }
   else {
     state.currentStep = evt.bit.NUM;
   }
@@ -381,19 +381,19 @@ State Grid::handleStepSelectKeyEvent(keyEvent evt, State state) {
 }
 
 /**
- * @brief This function updates the keyPressesSinceModHold count only if this is the first key 
+ * @brief This function updates the keyPressesSinceModHold count only if this is the first key
  * pressed or the same key as the first is pressed. If another key other than the first is pressed,
  * no update of keyPressesSinceModHold occurs.
- * 
- * @param evt 
- * @param state 
- * @return State 
+ *
+ * @param evt
+ * @param state
+ * @return State
  */
 State Grid::updateModKeyCombinationTracking(keyEvent evt, State state) {
   // MOD button is being held
   if (!state.readyForModPress) {
     // this is the first key to be pressed
-    if (state.initialKeyPressedDuringModHold < 0) { 
+    if (state.initialKeyPressedDuringModHold < 0) {
       state.initialKeyPressedDuringModHold = evt.bit.NUM;
       state.keyPressesSinceModHold = 1;
     }

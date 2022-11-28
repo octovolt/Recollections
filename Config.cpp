@@ -49,7 +49,7 @@ Config Config::readConfigFromSDCard() {
       };
 
       // How can I not repeat myself here? It would be nice if I could use the pipe operator,
-      // similar to how it used above for currentModule and brightness. Or if C++ would allow 
+      // similar to how it used above for currentModule and brightness. Or if C++ would allow
       // struct member access with the [] operator.  TODO: come back to this and figure it out.
       // Also TODO: use these colors, particularly in Hardware.cpp.
 

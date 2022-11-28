@@ -1,6 +1,6 @@
 /**
  * Recollections: Hardware
- * 
+ *
  * Copyright 2022 William Edward Fisher.
  */
 

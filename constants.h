@@ -26,13 +26,13 @@
 #define ORANGE 0x7733000
 
 #define DEFAULT_BRIGHTNESS 100
-#define COLOR_VALUE_MAX 255 // max brightness, relative to brightness setting 
+#define COLOR_VALUE_MAX 255 // max brightness, relative to brightness setting
 
 #define GATE_LENGTH_MAX 127
 #define GATE_LENGTH_MID 63
 #define PERCENTAGE_MULTIPLIER_7_BIT 0.0078740157480315 // 1/127 for 7-bit
 
-// All of these value are based on 10-bit, because the resolution of the ADC is 10-bit. 
+// All of these value are based on 10-bit, because the resolution of the ADC is 10-bit.
 // These are stepped up to 12-bit for output in real time.
 #define VOLTAGE_VALUE_MAX 1023
 #define VOLTAGE_VALUE_MID 511
@@ -79,11 +79,11 @@ uint8_t const SD_READ_CREATE = (uint8_t)(O_READ | O_CREAT);
 /** Control voltage input to be recorded. */
 uint8_t const CV_INPUT = A6; // (originally A0? pin "14" on Teensy 3.6)
 
-// Digital inputs - REMEMBER that pins on the left side of Teensy start with GND and only then begin 
+// Digital inputs - REMEMBER that pins on the left side of Teensy start with GND and only then begin
 // counting from 0, so the second pin is 0, the third pin is 1, etc.
 /** Button (gate) that acts as a modifier for keys or as an escape to quit the current screen */
 uint8_t const MOD_INPUT = 4; // could be 2 in the future?
-/** Gate to advance the current step to the next step. */ 
+/** Gate to advance the current step to the next step. */
 uint8_t const ADV_INPUT = 3;
 /** Gate to start/stop automatic recording. Recording occurs when the gate is high. */
 uint8_t const REC_INPUT = 0; // could be 4 in the future ?
@@ -110,13 +110,13 @@ uint8_t const TEENSY_LED = 13;
 
 /**
  * Screen constants.
- * 
- * Please note: these are referred to as either "sections" or "screens" in the user manual. There 
- * are five major "sections": step selection, channel editing, recording, global editing, and bank 
+ *
+ * Please note: these are referred to as either "sections" or "screens" in the user manual. There
+ * are five major "sections": step selection, channel editing, recording, global editing, and bank
  * selection. Some of these have additional "screens" other than their first.
  */
 typedef struct Screen {
-  // Step selection. 
+  // Step selection.
   // Color: white
   Screen_t STEP_SELECT = 0;
 
@@ -133,7 +133,7 @@ typedef struct Screen {
   Screen_t EDIT_CHANNEL_SELECT = 3;
   Screen_t EDIT_CHANNEL_VOLTAGES = 4;
 
-  // Record voltages, either manually across the 8 channels for a single step, or for 
+  // Record voltages, either manually across the 8 channels for a single step, or for
   // multiple steps on a single channel while the ADV input is receiving a clock/gate/trigger.
   // This is also the screen where one can set up automatic recording.
   // Color: red
@@ -170,9 +170,9 @@ Quadrant constexpr QUADRANT;
 
 // --------------------------------- DAC Channels --------------------------------------------------
 
-/** 
- * The four channels of an MCP4728 DAC arranged as an array for the sake of syntactic sugar. 
- * Do not use this array directly. Use setChannel() instead. 
+/**
+ * The four channels of an MCP4728 DAC arranged as an array for the sake of syntactic sugar.
+ * Do not use this array directly. Use setChannel() instead.
  * Worth noting that these are just constants that are reused across the two DAC instqnces.
  */
 MCP4728_channel_t const DAC_CHANNELS[] = {
