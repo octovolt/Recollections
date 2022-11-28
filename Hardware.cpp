@@ -280,7 +280,8 @@ bool Hardware::renderRecordChannelSelect(State state) {
   for (uint8_t key = 0; key < 16; key++) {
     if (
       key > 7 ||
-      (state.flash == 0 &&
+      (!state.readyForRecInput &&
+        state.flash == 0 &&
         (state.autoRecordChannels[state.currentBank][key] ||
         state.randomInputChannels[state.currentBank][key]))
     ) {
