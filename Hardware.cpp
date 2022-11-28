@@ -178,11 +178,7 @@ bool Hardware::renderEditChannelSelect(State state) {
   for (uint8_t i = 0; i < 16; i++) {
     // non-illuminated keys
     if (
-      i > 7 ||
-      (state.flash == 0 && 
-        (i == state.selectedKeyForCopying || 
-        state.pasteTargetKeys[i] || 
-        state.randomOutputChannels[state.currentBank][i]))
+      i > 7 || (state.flash == 0 && (i == state.selectedKeyForCopying || state.pasteTargetKeys[i]))
     ) {
       pixels.setPixelColor(i, 0);
     }
