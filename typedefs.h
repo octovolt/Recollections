@@ -19,4 +19,10 @@ typedef uint8_t Screen_t;
  */
 typedef uint8_t Quadrant_t;
 
+/**
+ * Any color expressed as three 8-bit values such as [255, 255, 255].
+ * The indices are [red, green, blue].
+ */
+typedef uint8_t RGBColorArray_t[3];
+
 #endif

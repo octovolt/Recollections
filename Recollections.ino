@@ -216,6 +216,7 @@ bool setupConfig() {
     .purple = {51,0,255},
     .orange = {119,51,0},
     .magenta = {119,0,119},
+    .black = {0,0,0},
   };
   state.config.controllerOrientation = 1;
   state.config.currentModule = 0;

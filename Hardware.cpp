@@ -5,11 +5,9 @@
 
 #include <Adafruit_MCP4728.h>
 #include <Entropy.h>
-#include <string.h> // for memcpy() -- would prefer to remove this if possible
 
 #include "Utils.h"
 #include "constants.h"
-
 
 /**
  * @brief This is the entry point for side effects reflected in the hardware, based on the current
@@ -78,17 +76,12 @@ bool Hardware::prepareRenderingOfChannelEditGateStep(State state, uint8_t step) 
   if (state.randomSteps[state.currentBank][step][state.currentChannel]) {
     return Hardware::prepareRenderingOfRandomizedKey(state, step);
   }
-
-  uint8_t color[3] = {};
-  if (state.currentStep == step) {
-    memcpy(color, state.config.colors.white, 3);
-  } else if (state.gateSteps[state.currentBank][step][state.currentChannel]) {
-    memcpy(color, state.config.colors.yellow, 3);
-  } else {
-    memcpy(color, state.config.colors.purple, 3);
-  }
-
-  return Hardware::prepareRenderingOfKey(state, step, color);
+  return Hardware::prepareRenderingOfKey(state, step, state.currentStep == step
+    ? state.config.colors.white
+    : state.gateSteps[state.currentBank][step][state.currentChannel]
+      ? state.config.colors.yellow
+      : state.config.colors.purple
+  );
 }
 
 /**
@@ -99,38 +92,34 @@ bool Hardware::prepareRenderingOfChannelEditGateStep(State state, uint8_t step) 
  * @param step Which of the 16 steps/keys is targeted for changing.
  */
 bool Hardware::prepareRenderingOfChannelEditVoltageStep(State state, uint8_t step) {
-  uint8_t color[3] = {};
   if (
     state.selectedKeyForCopying >= 0 &&
     state.flash == 0 &&
     (step == state.selectedKeyForCopying ||
      state.pasteTargetKeys[step])
   ) {
-    return Hardware::prepareRenderingOfKey(state, step, color);
+    return Hardware::prepareRenderingOfKey(state, step, state.config.colors.black);
   }
-
-  if (state.randomSteps[state.currentBank][step][state.currentChannel]) {
+  else if (state.randomSteps[state.currentBank][step][state.currentChannel]) {
     return Hardware::prepareRenderingOfRandomizedKey(state, step);
   }
-
-  if (state.lockedVoltages[state.currentBank][step][state.currentChannel]) {
-    memcpy(color, state.config.colors.orange, 3);
+  else if (state.lockedVoltages[state.currentBank][step][state.currentChannel]) {
+    return Hardware::prepareRenderingOfKey(state, step, state.config.colors.orange);
   }
   else if (!state.activeSteps[state.currentBank][step][state.currentChannel]) {
-    memcpy(color, state.config.colors.purple, 3);
+    return Hardware::prepareRenderingOfKey(state, step, state.config.colors.purple);
   }
   else if (state.currentStep == step) {
-    memcpy(color, state.config.colors.white, 3);
+    return Hardware::prepareRenderingOfKey(state, step, state.config.colors.white);
   }
-  else { // yellow
-    int16_t voltage = state.voltages[state.currentBank][step][state.currentChannel];
-    uint8_t colorValue = static_cast<int>(
-      COLOR_VALUE_MAX * voltage * PERCENTAGE_MULTIPLIER_10_BIT
-    );
-    uint8_t yellowShade[3] = {colorValue, colorValue, 0};
-    memcpy(color, yellowShade, 3);
-  }
-  return Hardware::prepareRenderingOfKey(state, step, color);
+
+  int16_t voltage = state.voltages[state.currentBank][step][state.currentChannel];
+  RGBColorArray_t yellowShade = {
+    static_cast<uint8_t>(state.config.colors.yellow[0] * voltage * PERCENTAGE_MULTIPLIER_10_BIT),
+    static_cast<uint8_t>(state.config.colors.yellow[1] * voltage * PERCENTAGE_MULTIPLIER_10_BIT),
+    static_cast<uint8_t>(state.config.colors.yellow[2] * voltage * PERCENTAGE_MULTIPLIER_10_BIT),
+  };
+  return Hardware::prepareRenderingOfKey(state, step, yellowShade);
 }
 
 /**
@@ -145,12 +134,7 @@ bool Hardware::prepareRenderingOfChannelEditVoltageStep(State state, uint8_t ste
  * @return true
  * @return false
  */
-bool Hardware::prepareRenderingOfKey(State state, uint8_t key, uint8_t rgbColor[]) {
-  // uint8_t rgbColorSize = sizeof(rgbColor)/sizeof(rgbColor[0]);
-  // if (rgbColorSize != 3) {
-  //   Serial.printf("%s %u %s \n", "RGB color provided with", rgbColorSize, "values instead of 3.");
-  //   return 0;
-  // }
+bool Hardware::prepareRenderingOfKey(State state, uint8_t key, RGBColorArray_t rgbColor) {
   uint8_t displayKey = state.config.controllerOrientation
     ? key
     : 15 - key;
@@ -173,7 +157,7 @@ bool Hardware::prepareRenderingOfRandomizedKey(State state, uint8_t key) {
     uint8_t red = Entropy.random(MAX_UNSIGNED_8_BIT);
     uint8_t green = Entropy.random(MAX_UNSIGNED_8_BIT);
     uint8_t blue = Entropy.random(MAX_UNSIGNED_8_BIT);
-    uint8_t color[3] = {red, green, blue};
+    RGBColorArray_t color = {red, green, blue};
     return Hardware::prepareRenderingOfKey(state, key, color);
   }
   // else no op
@@ -181,25 +165,22 @@ bool Hardware::prepareRenderingOfRandomizedKey(State state, uint8_t key) {
 }
 
 bool Hardware::renderBankSelect(State state) {
-  uint8_t nonilluminated[3] = {};
-  uint8_t blue[3];
-  memcpy(blue, state.config.colors.blue, 3);
   if (state.selectedKeyForCopying < 0) {
     for (uint8_t i = 0; i < 16; i++) {
       if (i != state.currentBank) {
-        Hardware::prepareRenderingOfKey(state, i, nonilluminated);
+        Hardware::prepareRenderingOfKey(state, i, state.config.colors.black);
       }
     }
-    Hardware::prepareRenderingOfKey(state, state.currentBank, blue);
+    Hardware::prepareRenderingOfKey(state, state.currentBank, state.config.colors.blue);
   }
   else {
-    for (int8_t step = 0; step < 16; step++) {
+    for (uint8_t i = 0; i < 16; i++) {
       Hardware::prepareRenderingOfKey(
         state,
-        step,
-        state.flash && (step == state.selectedKeyForCopying || state.pasteTargetKeys[step])
-          ? blue
-          : nonilluminated
+        i,
+        state.flash && (i == state.selectedKeyForCopying || state.pasteTargetKeys[i])
+          ? state.config.colors.blue
+          : state.config.colors.black
       );
     }
   }
@@ -213,8 +194,7 @@ bool Hardware::renderEditChannelSelect(State state) {
     if (
       i > 7 || (state.flash == 0 && (i == state.selectedKeyForCopying || state.pasteTargetKeys[i]))
     ) {
-      uint8_t nonilluminated[3] = {};
-      Hardware::prepareRenderingOfKey(state, i, nonilluminated);
+      Hardware::prepareRenderingOfKey(state, i, state.config.colors.black);
     }
     // illuminated keys
     else {
@@ -222,15 +202,10 @@ bool Hardware::renderEditChannelSelect(State state) {
         Hardware::prepareRenderingOfRandomizedKey(state, i);
       }
       else {
-        uint8_t color[3] = {};
-        memcpy(
-          color,
-          state.gateChannels[state.currentBank][i]
-            ? state.config.colors.purple
-            : state.config.colors.yellow,
-          3
+        Hardware::prepareRenderingOfKey(state, i, state.gateChannels[state.currentBank][i]
+          ? state.config.colors.purple
+          : state.config.colors.yellow
         );
-        Hardware::prepareRenderingOfKey(state, i, color);
       }
     }
   }
@@ -254,18 +229,16 @@ bool Hardware::renderEditChannelVoltages(State state) {
 
 bool Hardware::renderError(State state) {
   for (uint8_t key = 0; key < 16; key++) {
-    uint8_t color[3] = {};
-    if (state.flash) {
-      memcpy(color, state.config.colors.red, 3);
-    }
-    Hardware::prepareRenderingOfKey(state, key, color);
+    Hardware::prepareRenderingOfKey(state, key, state.flash
+      ? state.config.colors.red
+      : state.config.colors.black
+    );
   }
   state.config.trellis.pixels.show();
   return 0; // stay in error screen
 }
 
 bool Hardware::renderGlobalEdit(State state) {
-  uint8_t color[3] = {};
   for (uint8_t i = 0; i < 16; i++) {
     bool allChannelVoltagesLocked = 1;
     bool allChannelStepsInactive = 1;
@@ -284,25 +257,19 @@ bool Hardware::renderGlobalEdit(State state) {
         (state.selectedKeyForCopying == i || state.pasteTargetKeys[i])
       )
     ) {
-      Hardware::prepareRenderingOfKey(state, i, color);
+      Hardware::prepareRenderingOfKey(state, i, state.config.colors.black);
     }
     else if (allChannelVoltagesLocked) {
-      memcpy(color, state.config.colors.orange, 3);
-      Hardware::prepareRenderingOfKey(state, i, color);
+      Hardware::prepareRenderingOfKey(state, i, state.config.colors.orange);
     }
     else if (allChannelStepsInactive) {
-      memcpy(color, state.config.colors.purple, 3);
-      Hardware::prepareRenderingOfKey(state, i, color);
+      Hardware::prepareRenderingOfKey(state, i, state.config.colors.purple);
+    }
+    else if (state.currentStep == i) {
+      Hardware::prepareRenderingOfKey(state, i, state.config.colors.white);
     }
     else {
-      memcpy(
-        color,
-        state.currentStep == i
-          ? state.config.colors.white
-          : state.config.colors.green,
-        3
-      );
-      Hardware::prepareRenderingOfKey(state, i, color);
+      Hardware::prepareRenderingOfKey(state, i, state.config.colors.green);
     }
   }
   state.config.trellis.pixels.show();
@@ -310,76 +277,73 @@ bool Hardware::renderGlobalEdit(State state) {
 }
 
 bool Hardware::renderModuleSelect(State state) {
-  uint8_t color[3] = {};
-  uint8_t dimmedGreen[3] = {
+  RGBColorArray_t dimmedGreen = {
     static_cast<uint8_t>(state.config.colors.green[0] * DIMMED_COLOR_MULTIPLIER),
     static_cast<uint8_t>(state.config.colors.green[1] * DIMMED_COLOR_MULTIPLIER),
     static_cast<uint8_t>(state.config.colors.green[2] * DIMMED_COLOR_MULTIPLIER),
   };
   for (uint8_t i = 0; i < 16; i++) {
-    if (state.config.currentModule == i) {
-      memcpy(color, state.config.colors.magenta, 3);
-    }
-    else {
-      memcpy(color, dimmedGreen, 3);
-    }
-    Hardware::prepareRenderingOfKey(state, i, color);
+    Hardware::prepareRenderingOfKey(state, i, state.config.currentModule == i
+      ? state.config.colors.magenta
+      : dimmedGreen
+    );
   }
   state.config.trellis.pixels.show();
   return 1;
 }
 
 bool Hardware::renderSectionSelect(State state) {
-  uint8_t color[3] = {};
   for (uint8_t i = 0; i < 16; i++) {
     switch (Utils::keyQuadrant(i)) {
       case QUADRANT.INVALID:
         return 0;
       case QUADRANT.NW: // EDIT_CHANNEL_SELECT
-        memcpy(color, state.config.colors.yellow, 3);
+        Hardware::prepareRenderingOfKey(state, i, state.config.colors.yellow);
         break;
       case QUADRANT.NE: // RECORD_CHANNEL_SELECT
-        memcpy(color, state.config.colors.red, 3);
+        Hardware::prepareRenderingOfKey(state, i, state.config.colors.red);
         break;
       case QUADRANT.SW: // GLOBAL_EDIT
-        memcpy(color, state.config.colors.green, 3);
+        Hardware::prepareRenderingOfKey(state, i, state.config.colors.green);
         break;
       case QUADRANT.SE: // BANK_SELECT
-        memcpy(color, state.config.colors.blue, 3);
+        Hardware::prepareRenderingOfKey(state, i, state.config.colors.blue);
         break;
     }
-    Hardware::prepareRenderingOfKey(state, i, color);
   }
   state.config.trellis.pixels.show();
   return 1;
 }
 
 bool Hardware::renderRecordChannelSelect(State state) {
-  uint8_t color[3] = {};
   for (uint8_t key = 0; key < 16; key++) {
     if (
       key > 7 ||
-      (!state.readyForRecInput &&
+      (state.readyForRecInput && // readyForRecInput means the rec input gate is low
         state.flash == 0 &&
         (state.autoRecordChannels[state.currentBank][key] ||
         state.randomInputChannels[state.currentBank][key]))
     ) {
-      Hardware::prepareRenderingOfKey(state, key, color); // not illuminated
+      Hardware::prepareRenderingOfKey(state, key, state.config.colors.black);
     }
     else if (state.lockedVoltages[state.currentBank][state.currentStep][key]) {
-      memcpy(color, state.config.colors.orange, 3);
-      Hardware::prepareRenderingOfKey(state, key, color);
+      Hardware::prepareRenderingOfKey(state, key, state.config.colors.orange);
     }
     else if (state.randomInputChannels[state.currentBank][key]) {
       Hardware::prepareRenderingOfRandomizedKey(state, key);
     }
     else {
       uint16_t voltage = state.voltages[state.currentBank][state.currentStep][key];
-      uint8_t colorValue = state.autoRecordChannels[state.currentBank][key]
-        ? 255
-        : static_cast<uint8_t>(COLOR_VALUE_MAX * voltage * PERCENTAGE_MULTIPLIER_10_BIT);
-      uint8_t redShade[3] = {colorValue, 0, 0};
-      Hardware::prepareRenderingOfKey(state, key, redShade);
+      if (state.autoRecordChannels[state.currentBank][key]) {
+        Hardware::prepareRenderingOfKey(state, key, state.config.colors.red);
+      } else {
+        RGBColorArray_t redShade = {
+          static_cast<uint8_t>(state.config.colors.red[0] * voltage * PERCENTAGE_MULTIPLIER_10_BIT),
+          static_cast<uint8_t>(state.config.colors.red[1] * voltage * PERCENTAGE_MULTIPLIER_10_BIT),
+          static_cast<uint8_t>(state.config.colors.red[2] * voltage * PERCENTAGE_MULTIPLIER_10_BIT)
+        };
+        Hardware::prepareRenderingOfKey(state, key, redShade);
+      }
     }
   }
   state.config.trellis.pixels.show();
@@ -387,48 +351,40 @@ bool Hardware::renderRecordChannelSelect(State state) {
 }
 
 bool Hardware::renderStepChannelSelect(State state) {
-  uint8_t color[3];
-  uint8_t dimmed[3] = {
+  RGBColorArray_t dimmedWhite = {
     static_cast<uint8_t>(state.config.colors.white[0] * DIMMED_COLOR_MULTIPLIER),
     static_cast<uint8_t>(state.config.colors.white[1] * DIMMED_COLOR_MULTIPLIER),
     static_cast<uint8_t>(state.config.colors.white[2] * DIMMED_COLOR_MULTIPLIER),
   };
-  uint8_t nonilluminated[3] = {};
   for (uint8_t i = 0; i < 16; i++) {
-    if (i < 8) {
-      if (state.currentChannel == i) {
-        memcpy(color, state.config.colors.white, 3);
-      }
-      else {
-        memcpy(color, dimmed, 3);
-      }
-    }
-    else {
-      memcpy(color, nonilluminated, 3);
-    }
-    Hardware::prepareRenderingOfKey(state, i, color);
+    Hardware::prepareRenderingOfKey(state, i, i > 7
+      ? state.config.colors.black
+      : state.currentChannel == i
+        ? state.config.colors.white
+        : dimmedWhite
+    );
   }
   state.config.trellis.pixels.show();
   return 1;
 }
 
 bool Hardware::renderStepSelect(State state) {
-  uint8_t color[3] = {};
   for (uint8_t i = 0; i < 16; i++) {
     if (state.selectedKeyForRecording == i) {
       uint16_t voltage =
         state.voltages[state.currentBank][state.selectedKeyForRecording][state.currentChannel];
-      uint8_t redShade[3] = {
-        static_cast<uint8_t>(COLOR_VALUE_MAX * voltage * PERCENTAGE_MULTIPLIER_10_BIT),
-        0,
-        0
+      RGBColorArray_t redShade = {
+        static_cast<uint8_t>(state.config.colors.red[0] * voltage * PERCENTAGE_MULTIPLIER_10_BIT),
+        static_cast<uint8_t>(state.config.colors.red[1] * voltage * PERCENTAGE_MULTIPLIER_10_BIT),
+        static_cast<uint8_t>(state.config.colors.red[2] * voltage * PERCENTAGE_MULTIPLIER_10_BIT)
       };
       Hardware::prepareRenderingOfKey(state, state.selectedKeyForRecording, redShade);
     }
     else {
-      uint8_t nonilluminated[3] = {};
-      memcpy(color, state.currentStep == i ? state.config.colors.white : nonilluminated, 3);
-      Hardware::prepareRenderingOfKey(state, i, color);
+      Hardware::prepareRenderingOfKey(state, i, state.currentStep == i
+        ? state.config.colors.white
+        : state.config.colors.black
+      );
     }
   }
   state.config.trellis.pixels.show();

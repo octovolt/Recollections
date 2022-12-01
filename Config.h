@@ -15,14 +15,15 @@
 #define VOLTAGE_MEMORY_CONFIG_H_
 
 typedef struct Colors {
-  uint8_t white[3];
-  uint8_t red[3];
-  uint8_t blue[3];
-  uint8_t yellow[3];
-  uint8_t green[3];
-  uint8_t purple[3];
-  uint8_t orange[3];
-  uint8_t magenta[3];
+  RGBColorArray_t white;
+  RGBColorArray_t red;
+  RGBColorArray_t blue;
+  RGBColorArray_t yellow;
+  RGBColorArray_t green;
+  RGBColorArray_t purple;
+  RGBColorArray_t orange;
+  RGBColorArray_t magenta;
+  RGBColorArray_t black;
 } Colors;
 
 /**

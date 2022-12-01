@@ -235,6 +235,7 @@ State Grid::handleGlobalEditKeyEvent(uint8_t key, State state) {
 
   if (state.readyForModPress) { // MOD button is not being held, toggle removed step
     if (state.removedSteps[key]) {
+      Serial.printf("%s %u \n", "global edit restoring step: ", key);
       state.removedSteps[key] = 0;
     }
     else {
@@ -244,6 +245,8 @@ State Grid::handleGlobalEditKeyEvent(uint8_t key, State state) {
           totalRemovedSteps = totalRemovedSteps + 1;
         }
       }
+      Serial.printf("%s %u \n", "total removed steps: ", totalRemovedSteps);
+      Serial.printf("%s %u \n", "removing step, unless it is the last one: ", key);
       state.removedSteps[key] = totalRemovedSteps < 15 ? 1 : 0;
     }
   }

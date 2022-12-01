@@ -69,6 +69,7 @@ Config Config::readConfigFromFile(Config config, File configFile) {
         copyArray(doc["colors"]["purple"], config.colors.purple);
         copyArray(doc["colors"]["orange"], config.colors.orange);
         copyArray(doc["colors"]["magenta"], config.colors.magenta);
+        copyArray(doc["colors"]["black"], config.colors.black);
       }
       if (doc["controllerOrientation"] != nullptr) {
         Serial.println("controllerOrientation from Config.txt");
