@@ -233,6 +233,14 @@ typedef struct State {
   static State quitCopyPasteFlowPriorToPaste(State state);
 
   /**
+   * @brief Make sure we have the correct path of directories set up on the SD card, or else create
+   * these directories. This is required to create a file.
+   *
+   * @param state
+   */
+  static void confirmOrCreatePathOnSDCard(State state);
+
+  /**
    * @brief Read an entirely new module from the SD card, reading from both Module.txt and all the
    * Bank_n.txt files within a new Module_n directory, so an entirely new set of 16 banks becomes
    * available. Creat the directory structure and files if they do not yet exist.

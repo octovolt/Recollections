@@ -100,6 +100,21 @@ State State::quitCopyPasteFlowPriorToPaste(State state) {
   return state;
 }
 
+void State::confirmOrCreatePathOnSDCard(State state) {
+  int currentModuleLength = snprintf(NULL, 0, "%d", state.config.currentModule) + 1;
+  char currentModuleString[currentModuleLength];
+  sprintf(currentModuleString, "%d", state.config.currentModule);
+  StackString<100> modulePath = StackString<100>(MODULE_SD_PATH_PREFIX);
+  modulePath.append(currentModuleString);
+
+  if (!SD.exists(modulePath.c_str())) {
+    if (!SD.exists("Recollections")) {
+      SD.mkdir("Recollections");
+    }
+    SD.mkdir(modulePath.c_str());
+  }
+}
+
 State State::readModuleFromSDCard(State state) {
   // First we establish defaults to make sure the data is populated, then we attempt to get data
   // from the SD card.
@@ -243,6 +258,8 @@ State State::readBankFileFromSDCard(State state, uint8_t bank) {
 
 bool State::writeCurrentModuleAndBankToSDCard(State state) {
   Serial.println("writing to SD card");
+
+  State::confirmOrCreatePathOnSDCard(state);
 
   // TODO: I would like to abstract a lot of this into a function, since a lot of lines are repeated
   // twice here and in the other SD card functions, but I am having trouble figuring out how to do
