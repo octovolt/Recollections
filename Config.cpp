@@ -56,11 +56,9 @@ Config Config::readConfigFromFile(Config config, File configFile) {
       Serial.println("getting config data from file");
 
       if (doc["brightness"] != nullptr) {
-        Serial.println("brightness from Config.txt");
         config.brightness = doc["brightness"];
       }
       if (doc["colors"] != nullptr) {
-        Serial.println("colors from Config.txt");
         copyArray(doc["colors"]["white"], config.colors.white);
         copyArray(doc["colors"]["red"], config.colors.red);
         copyArray(doc["colors"]["blue"], config.colors.blue);
@@ -72,15 +70,18 @@ Config Config::readConfigFromFile(Config config, File configFile) {
         copyArray(doc["colors"]["black"], config.colors.black);
       }
       if (doc["controllerOrientation"] != nullptr) {
-        Serial.println("controllerOrientation from Config.txt");
         config.controllerOrientation = doc["controllerOrientation"];
       }
       if (doc["currentModule"] != nullptr) {
-        Serial.println("controllerOrientation from Config.txt");
         config.currentModule = doc["currentModule"];
       }
+      if (doc["isAdvancingMaxInterval"] != nullptr) {
+        config.isAdvancingMaxInterval = doc["isAdvancingMaxInterval"];
+      }
+      if (doc["isClockedTolerance"] != nullptr) {
+        config.isClockedTolerance = doc["isClockedTolerance"];
+      }
       if (doc["randomOutputOverwritesSteps"] != nullptr) {
-        Serial.println("controllerOrientation from Config.txt");
         config.randomOutputOverwritesSteps = doc["randomOutputOverwritesSteps"];
       }
     }

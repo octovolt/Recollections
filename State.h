@@ -30,6 +30,12 @@ typedef struct State {
   /** The current index within the navHistory. */
   uint8_t navHistoryIndex;
 
+  /** Flag to track whether we have recently received a gate or trigger on the ADV input. */
+  bool isAdvancing;
+
+  /** Flag to track whether we are receiving regular gates or triggers on the ADV input. */
+  bool isClocked;
+
   /** Flag to track whether we should respond to a clock/gate/trigger on the ADV input. */
   bool readyForAdvInput;
 
@@ -67,8 +73,11 @@ typedef struct State {
    */
   unsigned long lastFlashToggle;
 
-  /** Time in ms since the last time a clock/gate/trigger was received at the ADV input. */
-  unsigned long lastAdvReceived;
+  /** Time in ms since the last time a clock/gate/trigger was received at the ADV input. We keep the
+   * last three values to determine whether the module is advancing or being clocked, as well as how
+   * long gates should be.
+   */
+  unsigned long lastAdvReceived[3];
 
   /** Time in ms since last MOD button press. */
   unsigned long timeModPressed;

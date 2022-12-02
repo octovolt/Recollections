@@ -45,13 +45,13 @@ uint16_t Utils::voltageValueForStep(State state, uint8_t step, uint8_t channel) 
     if (!state.config.randomOutputOverwritesSteps && state.randomSteps[currentBank][step][channel]) {
       return
         Entropy.random(2) &&
-        millis() - state.lastAdvReceived < state.gateMillis
+        millis() - state.lastAdvReceived[0] < state.gateMillis
         ? VOLTAGE_VALUE_MAX
         : 0;
     }
     return
       state.gateSteps[currentBank][step][channel] &&
-      millis() - state.lastAdvReceived < state.gateMillis
+      millis() - state.lastAdvReceived[0] < state.gateMillis
         ? VOLTAGE_VALUE_MAX
         : 0;
   }

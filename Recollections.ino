@@ -163,12 +163,16 @@ void changeStep(uint8_t newStep) {
  * @brief Change the current step to the next step and calculate the expected gate length.
  */
 void advanceStep() {
-  // manage gate length
-  unsigned long timeNow = millis();
-  if (timeNow - state.lastAdvReceived > 0) {
-    state.gateMillis = static_cast<unsigned long>((timeNow - state.lastAdvReceived) / 2);
-  }
-  state.lastAdvReceived = timeNow;
+  state.isAdvancing = true;
+
+  uint16_t avgInterval =
+    ((state.lastAdvReceived[0] - state.lastAdvReceived[1]) +
+    (state.lastAdvReceived[1] - state.lastAdvReceived[2])) * 0.5;
+  uint16_t lastInterval = state.lastAdvReceived[0] - millis();
+  // If our most recent interval is below the isClockedTolerance, we are no longer being clocked.
+  state.isClocked = lastInterval < avgInterval * (1 - state.config.isClockedTolerance)
+    ? false
+    : true;
 
   if (state.currentStep == 15) {
     changeStep(0);
@@ -176,6 +180,18 @@ void advanceStep() {
   else {
     changeStep(state.currentStep + 1);
   }
+}
+
+void updateStateAfterAdvancing(unsigned long loopStartTime) {
+  // manage gate length
+  if (loopStartTime - state.lastAdvReceived[0] > 0) {
+    state.gateMillis = static_cast<unsigned long>((loopStartTime - state.lastAdvReceived[0]) / 2);
+  }
+
+  // update tracking of last ADV pulse received
+  state.lastAdvReceived[2] = state.lastAdvReceived[1];
+  state.lastAdvReceived[1] = state.lastAdvReceived[0];
+  state.lastAdvReceived[0] = loopStartTime;
 }
 
 ////////////////////////////////////// SETUP AND LOOP  /////////////////////////////////////////////
@@ -220,6 +236,8 @@ bool setupConfig() {
   };
   state.config.controllerOrientation = 1;
   state.config.currentModule = 0;
+  state.config.isAdvancingMaxInterval = 10000;
+  state.config.isClockedTolerance = 0.1;
   state.config.randomOutputOverwritesSteps = 1;
 
   // overwrite defaults if anything is in the Config.txt file
@@ -361,20 +379,15 @@ void setup() {
  * Please note that the order of operations here is important.
  */
 void loop() {
+  unsigned long loopStartTime = millis();
   uint8_t currentBank = state.currentBank;
   uint8_t currentStep = state.currentStep;
   uint8_t currentChannel = state.currentChannel;
-  unsigned long ms = millis();
-
-  //----------------------------- HANDLE TRELLIS KEY EVENTS ----------------------------------------
-  if (!digitalRead(TRELLIS_INTERRUPT_INPUT)) {
-    state.config.trellis.read(false);
-  }
 
   //------------------------------------ FLASH TIMING ----------------------------------------------
   state.randomColorShouldChange = 0;
   if (
-    ms - state.lastFlashToggle > FLASH_TIME
+    loopStartTime - state.lastFlashToggle > FLASH_TIME
   ) {
     state.flashesSinceRandomColorChange += 1;
     if (state.flashesSinceRandomColorChange > 1) {
@@ -382,7 +395,7 @@ void loop() {
       state.randomColorShouldChange = 1;
     }
     state.flash = !state.flash;
-    state.lastFlashToggle = ms;
+    state.lastFlashToggle = loopStartTime;
   }
 
   // ----------------------------- ERROR SCREEN RETURNS EARLY --------------------------------------
@@ -391,10 +404,27 @@ void loop() {
     return;
   }
 
+  //----------------------------- HANDLE TRELLIS KEY EVENTS ----------------------------------------
+  if (!digitalRead(TRELLIS_INTERRUPT_INPUT)) {
+    state.config.trellis.read(false);
+  }
+
   //--------------------------------- HANDLE MOD BUTTON --------------------------------------------
   handleModButton();
 
   //--------------------------------- HANDLE ADV INPUT ---------------------------------------------
+  state.isAdvancing = state.lastAdvReceived[0] - loopStartTime < state.config.isAdvancingMaxInterval;
+
+  uint16_t avgInterval =
+    ((state.lastAdvReceived[0] - state.lastAdvReceived[1]) +
+    (state.lastAdvReceived[1] - state.lastAdvReceived[2])) * 0.5;
+  uint16_t lastInterval = state.lastAdvReceived[0] - loopStartTime;
+
+  // If our most recent interval is above the isClockedTolerance, we are no longer being clocked.
+  if (lastInterval > avgInterval * (1 + state.config.isClockedTolerance)) {
+    state.isClocked = false;
+  }
+
   if (state.readyForAdvInput && !digitalRead(ADV_INPUT)) {
     state.readyForAdvInput = 0;
 
@@ -420,6 +450,7 @@ void loop() {
     }
 
     advanceStep();
+    updateStateAfterAdvancing(loopStartTime);
   }
   else if (!state.readyForAdvInput && digitalRead(ADV_INPUT)) {
     state.readyForAdvInput = 1;

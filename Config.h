@@ -33,21 +33,6 @@ typedef struct Colors {
  */
 typedef struct Config {
   /**
-   * The current module. A module consists of 16 banks.
-   * We refer to this when loading the initial module's state at start up. This should be updated
-   * whenever we load a new module to replace all banks, steps, and channels in State.
-   *
-   * TODO: Create a "Load Module" flow. This would allow the user to load modules 0-15 dynamically.
-   *
-   * Note that it will be possible to go beyond 0-15 by directly editing this value on the SD card.
-   * That is, if a person changes this value to 16, we will save/load bank files to/from a folder
-   * associated with the index 16. However, this module 16 will be inaccessible in the "Load Module"
-   * flow as we will have only 16 keys to choose from. In the near future it will be possible to
-   * load higher index modules via i2c or MIDI.
-   */
-  uint8_t currentModule;
-
-  /**
    * Hardware. These will not change after being instantiated in setup().
    */
   Adafruit_MCP4728 dac1;
@@ -67,14 +52,6 @@ typedef struct Config {
   Colors colors;
 
   /**
-   * Flag to determine whether we should overwrite steps when using randomized output set up in the
-   * Edit Channel Selection or Edit Channel Voltages screens. It can be useful to do this overwrite,
-   * as no external gate or trigger is required here to get random values into memory, which is the
-   * case when using randomized input on the Recording screen.
-   */
-  bool randomOutputOverwritesSteps;
-
-  /**
    * The default orientation of Recollections has the keys at the bottom and the jacks at the top.
    * We refer to this as the "controller layout", and assume that Recollections would be located in
    * the row of modules closest to the musician with no other modules immediately beneath it. This
@@ -88,6 +65,42 @@ typedef struct Config {
    * way.
    */
   bool controllerOrientation;
+
+  /**
+   * The current module. A module consists of 16 banks.
+   * We refer to this when loading the initial module's state at start up. This should be updated
+   * whenever we load a new module to replace all banks, steps, and channels in State.
+   *
+   * Note that it will be possible to go beyond 0-15 by directly editing this value on the SD card.
+   * That is, if a person changes this value to 16, we will save/load bank files to/from a folder
+   * associated with the index 16. However, this module 16 will be inaccessible in the "Load Module"
+   * flow as we will have only 16 keys to choose from. In the near future it will be possible to
+   * load higher index modules via i2c or MIDI.
+   */
+  uint8_t currentModule;
+
+  /**
+   * The number of milliseconds that can be measured between gates or triggers at the ADV input jack
+   * before we say state.isAdvancing is false.
+   */
+  uint16_t isAdvancingMaxInterval;
+
+  /**
+   * The permissible limit of variation, expressed as a percentage between 0 and 1, that gates or
+   * triggers must be within to be considered "regular" clock pulses. That is, if the value of
+   * isClockedTolerance is 0.1, gates spaced at 1000 and 900 milliseconds would be considered to be
+   * regular, as would gates at 1000 and 1100 millseconds. That is, the second interval is +/- 10%
+   * of the first interval.
+   */
+  float isClockedTolerance;
+
+  /**
+   * Flag to determine whether we should overwrite steps when using randomized output set up in the
+   * Edit Channel Selection or Edit Channel Voltages screens. It can be useful to do this overwrite,
+   * as no external gate or trigger is required here to get random values into memory, which is the
+   * case when using randomized input on the Recording screen.
+   */
+  bool randomOutputOverwritesSteps;
 
   /** Get the config data from the config file */
   static Config readConfigFromSDCard(Config config);
