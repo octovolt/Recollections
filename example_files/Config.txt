@@ -1,0 +1,19 @@
+{
+  "brightness": 100,
+  "currentModule": 0,
+  "colors": {
+    "white": [255, 255, 255],
+    "yellow": [119, 119, 0],
+    "red": [85, 0, 0],
+    "green": [0, 85, 0],
+    "blue": [0, 0, 119],
+    "purple": [51, 0, 255],
+    "orange": [119, 51, 0],
+    "magenta": [119, 0, 119],
+    "black": [0, 0, 0]
+  },
+  "controllerOrientation": true,
+  "isAdvancingMaxInterval": 10000,
+  "isClockedTolerance": 0.1,
+  "randomOutputOverwritesSteps": true
+}

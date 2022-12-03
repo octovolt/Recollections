@@ -1,0 +1,12 @@
+{
+  "currentStep": 15,
+  "currentBank": 15,
+  "currentChannel": 15,
+  "selectedOutputChannel": 7,
+  "removedSteps": [
+    false,false,false,false,
+    false,false,false,false,
+    false,false,false,false,
+    false,false,false,false
+  ]
+}
