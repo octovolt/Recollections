@@ -21,7 +21,6 @@ State State::pasteBanks(State state) {
           state.activeSteps[i][j][k] = state.activeSteps[selectedKeyForCopying][j][k];
           state.autoRecordChannels[i][k] = state.autoRecordChannels[selectedKeyForCopying][k];
           state.gateChannels[i][k] = state.gateChannels[selectedKeyForCopying][k];
-          state.gateLengths[i][j][k] = state.gateLengths[selectedKeyForCopying][j][k];
           state.gateSteps[i][j][k] = state.gateSteps[selectedKeyForCopying][j][k];
           state.lockedVoltages[i][j][k] = state.lockedVoltages[selectedKeyForCopying][j][k];
           state.randomInputChannels[i][k] = state.randomInputChannels[selectedKeyForCopying][k];
@@ -47,8 +46,6 @@ State State::pasteChannels(State state) {
         for (uint8_t j = 0; j < 16; j++) {
           state.gateSteps[currentBank][j][i] =
             state.gateSteps[currentBank][j][selectedKeyForCopying];
-          state.gateLengths[currentBank][j][i] =
-            state.gateLengths[currentBank][j][selectedKeyForCopying];
         }
       }
       else {
@@ -145,7 +142,6 @@ State State::readModuleFromSDCard(State state) {
         state.activeSteps[i][j][k] = 1;
         state.autoRecordChannels[i][k] = 0;
         state.gateChannels[i][k] = 0;
-        state.gateLengths[i][j][k] = 0.5;
         state.gateSteps[i][j][k] = 0;
         state.lockedVoltages[i][j][k] = 0;
         state.randomInputChannels[i][k] = 0;
@@ -242,7 +238,6 @@ State State::readBankFileFromSDCard(State state, uint8_t bank) {
       copyArray(doc["activeSteps"], state.activeSteps[bank]);
       copyArray(doc["autoRecordChannels"], state.autoRecordChannels[bank]);
       copyArray(doc["gateChannels"], state.gateChannels[bank]);
-      copyArray(doc["gateLengths"], state.gateLengths[bank]);
       copyArray(doc["gateSteps"], state.gateSteps[bank]);
       copyArray(doc["lockedVoltages"], state.lockedVoltages[bank]);
       copyArray(doc["randomInputChannels"], state.randomInputChannels[bank]);
@@ -345,21 +340,18 @@ bool State::writeCurrentModuleAndBankToSDCard(State state) {
     randomOutputChannels.add(state.randomOutputChannels[bank][i]);
   }
   JsonArray activeSteps = bankRoot.createNestedArray("activeSteps");
-  JsonArray gateLengths = bankRoot.createNestedArray("gateLengths");
   JsonArray gateSteps = bankRoot.createNestedArray("gateSteps");
   JsonArray lockedVoltages = bankRoot.createNestedArray("lockedVoltages");
   JsonArray randomSteps = bankRoot.createNestedArray("randomSteps");
   JsonArray voltages = bankRoot.createNestedArray("voltages");
   for (uint8_t i = 0; i < 16; i++) {
     JsonArray activeStepsChannelArray = activeSteps.createNestedArray();
-    JsonArray gateLengthsChannelArray = gateLengths.createNestedArray();
     JsonArray gateStepsChannelArray = gateSteps.createNestedArray();
     JsonArray lockedVoltagesChannelArray = lockedVoltages.createNestedArray();
     JsonArray randomStepsChannelArray = randomSteps.createNestedArray();
     JsonArray voltagesChannelArray = voltages.createNestedArray();
     for (uint8_t j = 0; j < 8; j++) {
       activeStepsChannelArray.add(state.activeSteps[bank][i][j]);
-      gateLengthsChannelArray.add(state.gateLengths[bank][i][j]);
       gateStepsChannelArray.add(state.gateSteps[bank][i][j]);
       lockedVoltagesChannelArray.add(state.lockedVoltages[bank][i][j]);
       randomStepsChannelArray.add(state.randomSteps[bank][i][j]);

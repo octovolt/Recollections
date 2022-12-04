@@ -158,16 +158,8 @@ State Grid::handleEditChannelVoltagesKeyEvent(uint8_t key, State state) {
         state.randomSteps[currentBank][key][currentChannel] =
           !state.randomSteps[currentBank][key][currentChannel];
       }
-      // Set gate length to custom value. Note that this is not continually recording, but a sample.
-      // But maybe this should do continuous recording?
-      else if (state.keyPressesSinceModHold == 2) {
-        state.randomSteps[currentBank][key][currentChannel] =
-          !state.randomSteps[currentBank][key][currentChannel];
-        state.gateLengths[currentBank][key][currentChannel] =
-          analogRead(CV_INPUT) * PERCENTAGE_MULTIPLIER_10_BIT;
-      }
       // Recurse
-      else if (state.keyPressesSinceModHold == 3) {
+      else if (state.keyPressesSinceModHold == 2) {
         // TODO: restore to previous gate length value?
         state.keyPressesSinceModHold = 0;
         return Grid::handleEditChannelVoltagesKeyEvent(key, state);

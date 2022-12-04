@@ -180,13 +180,6 @@ typedef struct State {
   bool randomInputChannels[16][8];
 
   /**
-   * The stored lengths as a percentage of either 0ms to 1000ms or the time between the last
-   * gate/trigger/clock receive at the ADV input and the most recent gate/trigger/clock received.
-   * Indices are [bank][step][channel].
-   */
-  uint8_t gateLengths[16][16][8];
-
-  /**
    * Voltages that cannot be changed in RECORD_CHANNEL_SELECT screen or through automatic recording.
    * Indices are [bank][step][channel].
    */
