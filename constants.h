@@ -21,10 +21,6 @@
 #define COLOR_VALUE_MAX 255 // max brightness, relative to brightness setting
 #define DIMMED_COLOR_MULTIPLIER 0.15
 
-#define GATE_LENGTH_MAX 127
-#define GATE_LENGTH_MID 63
-#define PERCENTAGE_MULTIPLIER_7_BIT 0.0078740157480315 // 1/127 for 7-bit
-
 // All of these value are based on 10-bit, because the resolution of the ADC is 10-bit.
 // These are stepped up to 12-bit for output in real time.
 #define VOLTAGE_VALUE_MAX 1023
@@ -36,6 +32,8 @@
 #define MOD_DEBOUNCE_TIME 200
 #define FLASH_TIME 120
 #define LONG_PRESS_TIME 2000
+
+#define DEFAULT_TRIGGER_LENGTH 20;
 
 // Calculated with https://arduinojson.org/v6/assistant
 #define BANK_JSON_DOC_DESERIALIZATION_SIZE 16384 // 14639 required

@@ -170,6 +170,7 @@ void advanceStep() {
     (state.lastAdvReceived[1] - state.lastAdvReceived[2])) * 0.5;
   uint16_t lastInterval = state.lastAdvReceived[0] - millis();
   // If our most recent interval is below the isClockedTolerance, we are no longer being clocked.
+  // See the handling of the ADV input for the upper bound of the tolerance.
   state.isClocked = lastInterval < avgInterval * (1 - state.config.isClockedTolerance)
     ? false
     : true;
@@ -184,8 +185,12 @@ void advanceStep() {
 
 void updateStateAfterAdvancing(unsigned long loopStartTime) {
   // manage gate length
-  if (loopStartTime - state.lastAdvReceived[0] > 0) {
-    state.gateMillis = static_cast<unsigned long>((loopStartTime - state.lastAdvReceived[0]) / 2);
+  if (state.isClocked) {
+    if (loopStartTime - state.lastAdvReceived[0] > 0) {
+      state.gateMillis = static_cast<unsigned long>((loopStartTime - state.lastAdvReceived[0]) / 2);
+    }
+  } else {
+    state.gateMillis = DEFAULT_TRIGGER_LENGTH;
   }
 
   // update tracking of last ADV pulse received
@@ -421,6 +426,7 @@ void loop() {
   uint16_t lastInterval = state.lastAdvReceived[0] - loopStartTime;
 
   // If our most recent interval is above the isClockedTolerance, we are no longer being clocked.
+  // See advanceStep() for the lower bound of the tolerance.
   if (lastInterval > avgInterval * (1 + state.config.isClockedTolerance)) {
     state.isClocked = false;
   }
@@ -481,8 +487,8 @@ void loop() {
     }
     else if (
       state.screen == SCREEN.RECORD_CHANNEL_SELECT &&
-      !state.lockedVoltages[currentBank][currentStep][state.selectedKeyForRecording] &&
-      !state.autoRecordChannels[currentBank][currentStep] // automatic recording is sample and hold
+      !state.isAdvancing && // while advancing, recording is sample-and-hold
+      !state.lockedVoltages[currentBank][currentStep][state.selectedKeyForRecording]
     ) {
       state.voltages[currentBank][currentStep][state.selectedKeyForRecording] = analogRead(CV_INPUT);
     }

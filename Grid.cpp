@@ -359,8 +359,11 @@ State Grid::handleRecordChannelSelectKeyEvent(uint8_t key, State state) {
       }
     }
   else if ( // MOD button is not being held
-    !state.lockedVoltages[state.currentBank][state.currentStep][key]
+    // This is the initial sample.
+    // Locked steps only prevent recording when the module is in Advancing Mode.
+    !(state.lockedVoltages[state.currentBank][state.currentStep][key] && state.isAdvancing)
   ) {
+    Serial.printf("%s %u \n", "this should only happen once per step, right? step:", state.currentStep);
     state.currentChannel = key;
     state.selectedKeyForRecording = key;
     state.voltages[state.currentBank][state.currentStep][key] = analogRead(CV_INPUT);
