@@ -108,7 +108,7 @@ typedef struct State {
   uint8_t currentBank;
 
   /** Current selected output channel, 0-7. */
-  int8_t currentChannel;
+  uint8_t currentChannel;
 
   /**
    * Current selected step for recording, 0-15. This is used to continually record while a key is
@@ -191,7 +191,38 @@ typedef struct State {
    */
   uint16_t voltages[16][16][8];
 
+  /**
+   * Ephemeral cached voltage value for when we need to be able to get back to a voltage value
+   * instead of overwriting it permanently. Note there is only one of these -- this is truly
+   * ephemeral, and the ephemerality should be enforced.
+   */
+  uint16_t cachedVoltage;
+
   // static methods
+
+  /**
+   * @brief Record voltage on the channels set up for automatic recording.
+   *
+   * @param state
+   * @return State
+   */
+  static State autoRecord(State state);
+
+  /**
+   * @brief Edit voltage for key selected by hand.
+   *
+   * @param state
+   * @return State
+   */
+  static State editVoltageOnSelectedStep(State state);
+
+  /**
+   * @brief Record voltage for a key selected by hand.
+   *
+   * @param state
+   * @return State
+   */
+  static State recordVoltageOnSelectedChannel(State state);
 
   /**
    * @brief Paste the voltages from one bank to a number of other banks, across all 16 steps and all

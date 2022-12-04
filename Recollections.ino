@@ -57,7 +57,7 @@ TrellisCallback handleKeyEvent(keyEvent evt) {
   return 0;
 }
 
-//////////////////////////////////// HANDLE MOD BUTTON /////////////////////////////////////////////
+/////////////////////////////////////// INPUT HANDLERS /////////////////////////////////////////////
 
 void handleModButton() {
   // When MOD_INPUT is low, the button is being pressed.
@@ -104,6 +104,79 @@ void handleModButton() {
     state = Nav::goForward(state, SCREEN.STEP_CHANNEL_SELECT);
   }
 }
+
+void handleAdvInput(unsigned long loopStartTime) {
+  uint8_t currentBank = state.currentBank;
+  uint8_t currentStep = state.currentStep;
+  if ( // protect against overflow because I'm paranoid. is this even necessary?
+    !(loopStartTime > state.lastAdvReceived[0] &&
+    state.lastAdvReceived[0] > state.lastAdvReceived[1] &&
+    state.lastAdvReceived[1] > state.lastAdvReceived[2])
+  ) {
+    if (loopStartTime < 3) {
+      loopStartTime = 3;
+    }
+    state.lastAdvReceived[0] = loopStartTime - 1;
+    state.lastAdvReceived[1] = loopStartTime - 2;
+    state.lastAdvReceived[2] = loopStartTime - 3;
+  }
+  else {
+    state.isAdvancing = (loopStartTime - state.lastAdvReceived[0]) < state.config.isAdvancingMaxInterval;
+
+    uint16_t avgInterval =
+      ((state.lastAdvReceived[0] - state.lastAdvReceived[1]) +
+      (state.lastAdvReceived[1] - state.lastAdvReceived[2])) * 0.5;
+    uint16_t lastInterval = state.lastAdvReceived[0] - loopStartTime;
+
+    // If our most recent interval is above the isClockedTolerance, we are no longer being clocked.
+    // See advanceStep() for the lower bound of the tolerance.
+    if (lastInterval > avgInterval * (1 + state.config.isClockedTolerance)) {
+      state.isClocked = false;
+    }
+
+    if (state.readyForAdvInput && !digitalRead(ADV_INPUT)) {
+      state.readyForAdvInput = 0;
+
+      if (state.config.randomOutputOverwritesSteps) {
+        // set random output voltages of next step before advancing
+        for (uint8_t i = 0; i < 7; i++) {
+          // random channels, random 32-bit converted to 10-bit
+          if (state.randomOutputChannels[currentBank][i]) {
+            state.voltages[currentBank][currentStep + 1][i] = Entropy.random(MAX_UNSIGNED_10_BIT);
+          }
+
+          if (state.randomSteps[currentBank][currentStep + 1][i]) {
+            // random gate steps
+            if (state.gateChannels[currentBank][i]) {
+              state.voltages[currentBank][currentStep + 1][i] = Entropy.random(2)
+                ? VOLTAGE_VALUE_MAX
+                : 0;
+            }
+            // random CV steps, random 32-bit converted to 10-bit
+            state.voltages[currentBank][currentStep + 1][i] = Entropy.random(MAX_UNSIGNED_10_BIT);
+          }
+        }
+      }
+
+      advanceStep();
+      updateStateAfterAdvancing(loopStartTime);
+    }
+    else if (!state.readyForAdvInput && digitalRead(ADV_INPUT)) {
+      state.readyForAdvInput = 1;
+    }
+  }
+}
+
+void handleRecInput() {
+  if (state.readyForRecInput && !digitalRead(REC_INPUT)) {
+    state.readyForRecInput = 0;
+  }
+  else if (!state.readyForRecInput && digitalRead(REC_INPUT)) {
+    state.readyForRecInput = 1;
+  }
+}
+
+////////////////////////////////////////// PASTE ACTION ////////////////////////////////////////////
 
 void pasteFromCopyAction() {
   if (state.selectedKeyForCopying < 0) {
@@ -183,7 +256,28 @@ void advanceStep() {
   }
 }
 
+/**
+ * @brief This function assumes it is being called when state.isAdvancing is true.
+ *
+ * @param loopStartTime
+ */
 void updateStateAfterAdvancing(unsigned long loopStartTime) {
+  // Press record key while advancing: sample new voltage
+  if (state.screen == SCREEN.RECORD_CHANNEL_SELECT && state.selectedKeyForRecording >= 0) {
+    state = State::recordVoltageOnSelectedChannel(state);
+  }
+  // Autorecord while advancing: sample new voltage
+  else if (!state.readyForRecInput) {
+    for (uint8_t i = 0; i < 8; i++) {
+      if (state.autoRecordChannels[state.currentStep][i]) {
+        state.voltages[state.currentBank][state.currentStep][i] =
+          state.randomInputChannels[state.currentStep][i]
+          ? Entropy.random(MAX_UNSIGNED_10_BIT)
+          : analogRead(CV_INPUT);
+      }
+    }
+  }
+
   // manage gate length
   if (state.isClocked) {
     if (loopStartTime - state.lastAdvReceived[0] > 0) {
@@ -197,6 +291,25 @@ void updateStateAfterAdvancing(unsigned long loopStartTime) {
   state.lastAdvReceived[2] = state.lastAdvReceived[1];
   state.lastAdvReceived[1] = state.lastAdvReceived[0];
   state.lastAdvReceived[0] = loopStartTime;
+}
+
+////////////////////////////////////// RECORDING ///////////////////////////////////////////////////
+
+void recordContinuously() {
+  if (state.selectedKeyForRecording >= 0) {
+    if (
+      (state.screen == SCREEN.EDIT_CHANNEL_VOLTAGES || state.screen == SCREEN.STEP_SELECT) &&
+      !state.randomInputChannels[state.currentBank][state.currentChannel]
+    ) {
+      state = State::editVoltageOnSelectedStep(state);
+    }
+    else if (state.screen == SCREEN.RECORD_CHANNEL_SELECT && !state.isAdvancing) {
+      state = State::recordVoltageOnSelectedChannel(state);
+    }
+  }
+  else if (!state.readyForRecInput && !state.isAdvancing) {
+    state = State::autoRecord(state);
+  }
 }
 
 ////////////////////////////////////// SETUP AND LOOP  /////////////////////////////////////////////
@@ -385,11 +498,8 @@ void setup() {
  */
 void loop() {
   unsigned long loopStartTime = millis();
-  uint8_t currentBank = state.currentBank;
-  uint8_t currentStep = state.currentStep;
-  uint8_t currentChannel = state.currentChannel;
 
-  //------------------------------------ FLASH TIMING ----------------------------------------------
+  // flash timing
   state.randomColorShouldChange = 0;
   if (
     loopStartTime - state.lastFlashToggle > FLASH_TIME
@@ -403,98 +513,22 @@ void loop() {
     state.lastFlashToggle = loopStartTime;
   }
 
-  // ----------------------------- ERROR SCREEN RETURNS EARLY --------------------------------------
+  // error screen returns early
   if (state.screen == SCREEN.ERROR) {
     Hardware::reflectState(state);
     return;
   }
 
-  //----------------------------- HANDLE TRELLIS KEY EVENTS ----------------------------------------
+   // handle inputs and record -- these drive all of the state changes other than flash timing.
   if (!digitalRead(TRELLIS_INTERRUPT_INPUT)) {
     state.config.trellis.read(false);
   }
-
-  //--------------------------------- HANDLE MOD BUTTON --------------------------------------------
   handleModButton();
+  handleAdvInput(loopStartTime);
+  handleRecInput();
+  recordContinuously();
 
-  //--------------------------------- HANDLE ADV INPUT ---------------------------------------------
-  state.isAdvancing = state.lastAdvReceived[0] - loopStartTime < state.config.isAdvancingMaxInterval;
-
-  uint16_t avgInterval =
-    ((state.lastAdvReceived[0] - state.lastAdvReceived[1]) +
-    (state.lastAdvReceived[1] - state.lastAdvReceived[2])) * 0.5;
-  uint16_t lastInterval = state.lastAdvReceived[0] - loopStartTime;
-
-  // If our most recent interval is above the isClockedTolerance, we are no longer being clocked.
-  // See advanceStep() for the lower bound of the tolerance.
-  if (lastInterval > avgInterval * (1 + state.config.isClockedTolerance)) {
-    state.isClocked = false;
-  }
-
-  if (state.readyForAdvInput && !digitalRead(ADV_INPUT)) {
-    state.readyForAdvInput = 0;
-
-    if (state.config.randomOutputOverwritesSteps) {
-      // set random output voltages of next step before advancing
-      for (uint8_t i = 0; i < 7; i++) {
-        // random channels, random 32-bit converted to 10-bit
-        if (state.randomOutputChannels[currentBank][i]) {
-          state.voltages[currentBank][currentStep + 1][i] = Entropy.random(MAX_UNSIGNED_10_BIT);
-        }
-
-        if (state.randomSteps[currentBank][currentStep + 1][i]) {
-          // random gate steps
-          if (state.gateChannels[currentBank][i]) {
-            state.voltages[currentBank][currentStep + 1][i] = Entropy.random(2)
-              ? VOLTAGE_VALUE_MAX
-              : 0;
-          }
-          // random CV steps, random 32-bit converted to 10-bit
-          state.voltages[currentBank][currentStep + 1][i] = Entropy.random(MAX_UNSIGNED_10_BIT);
-        }
-      }
-    }
-
-    advanceStep();
-    updateStateAfterAdvancing(loopStartTime);
-  }
-  else if (!state.readyForAdvInput && digitalRead(ADV_INPUT)) {
-    state.readyForAdvInput = 1;
-  }
-
-  //--------------------------------- HANDLE REC INPUT ---------------------------------------------
-  if (state.readyForRecInput && !digitalRead(REC_INPUT)) {
-    state.readyForRecInput = 0;
-    for (uint8_t i = 0; i < 7; i++) {
-      if (
-        state.autoRecordChannels[currentBank][i] &&
-        !state.lockedVoltages[currentBank][currentStep][i]
-      ) {
-        state.voltages[currentBank][currentStep][i] = state.randomInputChannels[currentBank][i]
-          ? Entropy.random(MAX_UNSIGNED_10_BIT)
-          : analogRead(CV_INPUT);
-      }
-    }
-  }
-  else if (!state.readyForRecInput && digitalRead(REC_INPUT)) {
-    state.readyForRecInput = 1;
-  }
-
-  //------------------------ EDITING OR RECORDING VOLTAGE CONTINUOUSLY -----------------------------
-  if (state.selectedKeyForRecording >= 0) {
-    if (state.screen == SCREEN.EDIT_CHANNEL_VOLTAGES || state.screen == SCREEN.STEP_SELECT) {
-      state.voltages[currentBank][state.selectedKeyForRecording][currentChannel] = analogRead(CV_INPUT);
-    }
-    else if (
-      state.screen == SCREEN.RECORD_CHANNEL_SELECT &&
-      !state.isAdvancing && // while advancing, recording is sample-and-hold
-      !state.lockedVoltages[currentBank][currentStep][state.selectedKeyForRecording]
-    ) {
-      state.voltages[currentBank][currentStep][state.selectedKeyForRecording] = analogRead(CV_INPUT);
-    }
-  }
-
-  //------------------------------------- REFLECT STATE --------------------------------------------
+  // reflect state
   if (initialLoop) {
     Serial.println("attempting initial rendering of state");
   }
@@ -502,7 +536,7 @@ void loop() {
     state.screen = SCREEN.ERROR;
   }
 
-  //--------------------------------- INITIAL LOOP COMPLETED ---------------------------------------
+  // initial loop completed -- this is for development only
   if (initialLoop) {
     Serial.println("initial loop completed");
   }

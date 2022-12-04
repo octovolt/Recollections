@@ -4,6 +4,8 @@
 #include "Grid.h"
 
 #include <Adafruit_NeoTrellis.h>
+#include <Entropy.h>
+
 #include "Hardware.h"
 #include "Nav.h"
 #include "Utils.h"
@@ -299,74 +301,83 @@ State Grid::handleModuleSelectKeyEvent(uint8_t key, State state) {
 
 State Grid::handleRecordChannelSelectKeyEvent(uint8_t key, State state) {
   uint8_t currentBank = state.currentBank;
+  uint8_t currentStep = state.currentStep;
+  uint8_t currentChannel = state.currentChannel;
   if (key > 7) {
     return state;
   }
 
-  if (!state.readyForModPress) { // MOD button is being held
-    if (state.initialKeyPressedDuringModHold < 0) {
-      state.initialKeyPressedDuringModHold = key;
-    }
+  // MOD button is being held
+  if (!state.readyForModPress) {
     state = Grid::updateModKeyCombinationTracking(key, state);
+    if (state.initialKeyPressedDuringModHold != key) {
+      return state;
+    }
 
-    // if (state.initialKeyPressedDuringModHold == key) {
-      // Toggle automatic recording
-      // If autorecord is already on, turn off both autorecord and random and start the cycle again.
-      if (state.keyPressesSinceModHold == 1) {
-        state.autoRecordChannels[currentBank][key] =
-          !state.autoRecordChannels[currentBank][key];
-        if (
-          state.randomInputChannels[currentBank][key] &&
-          !state.autoRecordChannels[currentBank][key]
-        ) {
-          state.randomInputChannels[currentBank][key] = 0;
-        }
-      }
-
-      // Turn on randomly generated input.
-      // Note: this not turn off automatic recording, as we want to use random voltage as part of
-      // automatic recording in this case.
-      // I got a bit confused here -- maybe there is a way to simplify this?
-      else if (state.keyPressesSinceModHold == 2) {
-        // if we are back to the beginning, recurse
-        if (
-          state.initialKeyPressedDuringModHold == key &&
-          !state.autoRecordChannels[currentBank][key] &&
-          !state.randomInputChannels[currentBank][key]
-        ) {
-          state.keyPressesSinceModHold = 0;
-          return Grid::handleRecordChannelSelectKeyEvent(key, state);
-
-        // else if we are pressing a key that is not yet random, make it random.
-        // if this is the first key this will also advance the keyPressesSinceModHold count.
-        } else if (!state.randomInputChannels[currentBank][key]) {
-          state.autoRecordChannels[currentBank][key] = 1;
-          state.randomInputChannels[currentBank][key] = 1;
-
-        // else if we are pressing any random key other than the first, turn off random and return
-        // the key to the autorecord state.
-        } else if (state.initialKeyPressedDuringModHold != key) {
-          state.randomInputChannels[currentBank][key] = 0;
-        }
-      }
-
-      // Recurse
-      else if (state.keyPressesSinceModHold == 3) {
-        state.autoRecordChannels[currentBank][key] = 0;
+    // Toggle automatic recording
+    // If autorecord is already on, turn off both autorecord and random
+    if (state.keyPressesSinceModHold == 1) {
+      state.autoRecordChannels[currentBank][key] =
+        !state.autoRecordChannels[currentBank][key];
+      if (
+        state.randomInputChannels[currentBank][key] &&
+        !state.autoRecordChannels[currentBank][key]
+      ) {
         state.randomInputChannels[currentBank][key] = 0;
+      }
+    }
+
+    // Turn on randomly generated input.
+    // Note: this does not turn off automatic recording, as we want to use random voltage as part of
+    // automatic recording in this case.
+    else if (state.keyPressesSinceModHold == 2) {
+      // If we are back to the beginning, recurse. That is, if we started with autorecording on, and
+      // we just turned it off in the block above with the first key press, with the second key
+      // press we want to recurse and turn it back on again.
+      if (
+        !state.autoRecordChannels[currentBank][key] &&
+        !state.randomInputChannels[currentBank][key]
+      ) {
         state.keyPressesSinceModHold = 0;
         return Grid::handleRecordChannelSelectKeyEvent(key, state);
+
+      // else if we are pressing a key that is not yet random, make it random.
+      } else if (!state.randomInputChannels[currentBank][key]) {
+        state.autoRecordChannels[currentBank][key] = 1;
+        state.randomInputChannels[currentBank][key] = 1;
+        // if not advancing, sample random voltage immediately
+        if (!state.isAdvancing) {
+          state.cachedVoltage = state.voltages[currentBank][currentStep][currentChannel];
+          state.voltages[currentBank][currentStep][currentChannel] =
+            Entropy.random(MAX_UNSIGNED_10_BIT);
+        }
+
+      // else if we are pressing any random key other than the first, turn off random and return
+      // the key to the autorecord state.
+      } else if (state.initialKeyPressedDuringModHold != key) {
+        state.randomInputChannels[currentBank][key] = 0;
       }
     }
-  else if ( // MOD button is not being held
-    // This is the initial sample.
-    // Locked steps only prevent recording when the module is in Advancing Mode.
-    !(state.lockedVoltages[state.currentBank][state.currentStep][key] && state.isAdvancing)
-  ) {
-    Serial.printf("%s %u \n", "this should only happen once per step, right? step:", state.currentStep);
-    state.currentChannel = key;
+
+    // Recurse
+    else if (state.keyPressesSinceModHold == 3) {
+      state.autoRecordChannels[currentBank][key] = 0;
+      state.randomInputChannels[currentBank][key] = 0;
+      state.keyPressesSinceModHold = 0;
+      return Grid::handleRecordChannelSelectKeyEvent(key, state);
+    }
+  }
+
+  // MOD button is not being held
+  else {
     state.selectedKeyForRecording = key;
-    state.voltages[state.currentBank][state.currentStep][key] = analogRead(CV_INPUT);
+    state.currentChannel = key;
+    if (!state.isAdvancing) {
+      // This is only the initial sample when pressing the key. When isAdvancing is true, we do not
+      // record immediately upon pressing the key here, but rather when the step changes.
+      // See updateStateAfterAdvancing() within Recollections.ino.
+      state.voltages[state.currentBank][state.currentStep][key] = analogRead(CV_INPUT);
+    }
   }
   return state;
 }
@@ -429,7 +440,24 @@ State Grid::handleStepSelectKeyEvent(uint8_t key, State state) {
   if (!state.readyForModPress) { // MOD button is being held
     state.initialKeyPressedDuringModHold = key;
     state.selectedKeyForRecording = key;
-    state.voltages[state.currentBank][state.currentStep][state.currentChannel] = analogRead(CV_INPUT);
+    if (
+      state.randomInputChannels[state.currentBank][state.currentChannel] ||
+      (state.randomSteps[state.currentBank][state.currentStep][state.currentBank] &&
+        state.config.randomOutputOverwritesSteps)
+    ) {
+      Serial.printf(
+        "%s %u %s %u %s %u %s %u \n",
+        "currentBank", state.currentBank,
+        "currentStep", state.currentStep,
+        "currentChannel", state.currentChannel,
+        "key", key
+      );
+      state.voltages[state.currentBank][key][state.currentChannel] =
+        Entropy.random(MAX_UNSIGNED_10_BIT);
+    }
+    else {
+      state.voltages[state.currentBank][key][state.currentChannel] = analogRead(CV_INPUT);
+    }
   }
   else {
     state.currentStep = key;
@@ -459,7 +487,7 @@ State Grid::updateModKeyCombinationTracking(uint8_t key, State state) {
       state.keyPressesSinceModHold = state.keyPressesSinceModHold + 1;
     }
 
-    // paranoid defensiveness, maybe remove this?
+    // paranoid defensiveness, maybe remove this? or parameterize it.
     // uint8_t maxIterations = (
     //   state.screen == SCREEN.EDIT_CHANNEL_SELECT
     // ) ? 3 : 4;

@@ -10,6 +10,62 @@ using namespace Stack;
 
 #include "Utils.h"
 
+/**
+ * @brief Capture voltage while automatically recording.
+ *
+ * @param state
+ * @return State
+ */
+State State::autoRecord(State state) {
+  uint8_t currentBank = state.currentBank;
+  uint8_t currentStep = state.currentStep;
+  for (uint8_t i = 0; i < 7; i++) {
+    if (
+      state.autoRecordChannels[currentBank][i] &&
+      !state.lockedVoltages[currentBank][currentStep][i] &&
+      !state.randomInputChannels[currentBank][i]
+    ) {
+      state.voltages[currentBank][currentStep][i] = analogRead(CV_INPUT);
+    }
+  }
+  return state;
+}
+
+/**
+ * @brief Capture voltage in the current loop for a user flow within Editing or Step Selection. This
+ * function will record voltage on the selected STEP. Note this could be continuous recording or a
+ * sample -- this function is agnostic to whether it is continuous.
+ *
+ * @param state
+ * @return State
+ */
+State State::editVoltageOnSelectedStep(State state) {
+  if (state.screen == SCREEN.EDIT_CHANNEL_VOLTAGES || state.screen == SCREEN.STEP_SELECT) {
+    state.voltages[state.currentBank][state.selectedKeyForRecording][state.currentChannel] =
+      analogRead(CV_INPUT);
+  }
+  return state;
+}
+
+/**
+ * @brief Capture voltage in the current loop for a user flow within Recording. This function will
+ * record voltage on the selected CHANNEL. Note this could be continuous recording or a sample --
+ * this function is agnostic to whether it is continuous.
+ *
+ * @param state
+ * @return State
+ */
+State State::recordVoltageOnSelectedChannel(State state) {
+  if (
+    state.screen == SCREEN.RECORD_CHANNEL_SELECT &&
+    !state.lockedVoltages[state.currentBank][state.currentStep][state.selectedKeyForRecording]
+  ) {
+    state.voltages[state.currentBank][state.currentStep][state.selectedKeyForRecording] =
+      analogRead(CV_INPUT);
+  }
+  return state;
+}
+
 State State::pasteBanks(State state) {
   Serial.println("pasteBanks()");
   uint8_t selectedKeyForCopying = state.selectedKeyForCopying;
