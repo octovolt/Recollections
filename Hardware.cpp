@@ -73,12 +73,16 @@ bool Hardware::reflectState(State state) {
  * @param step Which of the 16 steps/keys is targeted for changing.
  */
 bool Hardware::prepareRenderingOfChannelEditGateStep(State state, uint8_t step) {
-  if (state.randomSteps[state.currentBank][step][state.currentChannel]) {
+  if (state.currentStep == step) {
+    return Hardware::prepareRenderingOfKey(state, step, state.config.colors.white);
+  }
+  else if (state.randomSteps[state.currentBank][step][state.currentChannel]) {
     return Hardware::prepareRenderingOfRandomizedKey(state, step);
   }
-  return Hardware::prepareRenderingOfKey(state, step, state.currentStep == step
-    ? state.config.colors.white
-    : state.gateSteps[state.currentBank][step][state.currentChannel]
+  return Hardware::prepareRenderingOfKey(
+    state,
+    step,
+    state.gateSteps[state.currentBank][step][state.currentChannel]
       ? state.config.colors.yellow
       : state.config.colors.purple
   );
@@ -100,6 +104,9 @@ bool Hardware::prepareRenderingOfChannelEditVoltageStep(State state, uint8_t ste
   ) {
     return Hardware::prepareRenderingOfKey(state, step, state.config.colors.black);
   }
+  else if (state.currentStep == step) {
+    return Hardware::prepareRenderingOfKey(state, step, state.config.colors.white);
+  }
   else if (state.randomSteps[state.currentBank][step][state.currentChannel]) {
     return Hardware::prepareRenderingOfRandomizedKey(state, step);
   }
@@ -108,9 +115,6 @@ bool Hardware::prepareRenderingOfChannelEditVoltageStep(State state, uint8_t ste
   }
   else if (!state.activeSteps[state.currentBank][step][state.currentChannel]) {
     return Hardware::prepareRenderingOfKey(state, step, state.config.colors.purple);
-  }
-  else if (state.currentStep == step) {
-    return Hardware::prepareRenderingOfKey(state, step, state.config.colors.white);
   }
 
   int16_t voltage = state.voltages[state.currentBank][step][state.currentChannel];
@@ -259,14 +263,14 @@ bool Hardware::renderGlobalEdit(State state) {
     ) {
       Hardware::prepareRenderingOfKey(state, i, state.config.colors.black);
     }
+    else if (state.currentStep == i) {
+      Hardware::prepareRenderingOfKey(state, i, state.config.colors.white);
+    }
     else if (allChannelVoltagesLocked) {
       Hardware::prepareRenderingOfKey(state, i, state.config.colors.orange);
     }
     else if (allChannelStepsInactive) {
       Hardware::prepareRenderingOfKey(state, i, state.config.colors.purple);
-    }
-    else if (state.currentStep == i) {
-      Hardware::prepareRenderingOfKey(state, i, state.config.colors.white);
     }
     else {
       Hardware::prepareRenderingOfKey(state, i, state.config.colors.green);
