@@ -67,7 +67,6 @@ State State::recordVoltageOnSelectedChannel(State state) {
 }
 
 State State::pasteBanks(State state) {
-  Serial.println("pasteBanks()");
   uint8_t selectedKeyForCopying = state.selectedKeyForCopying;
   // [banks][steps][channels]
   for (uint8_t i = 0; i < 16; i++) {

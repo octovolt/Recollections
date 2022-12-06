@@ -229,7 +229,6 @@ State Grid::handleGlobalEditKeyEvent(uint8_t key, State state) {
 
   if (state.readyForModPress) { // MOD button is not being held, toggle removed step
     if (state.removedSteps[key]) {
-      Serial.printf("%s %u \n", "global edit restoring step: ", key);
       state.removedSteps[key] = 0;
     }
     else {
@@ -239,8 +238,6 @@ State Grid::handleGlobalEditKeyEvent(uint8_t key, State state) {
           totalRemovedSteps = totalRemovedSteps + 1;
         }
       }
-      Serial.printf("%s %u \n", "total removed steps: ", totalRemovedSteps);
-      Serial.printf("%s %u \n", "removing step, unless it is the last one: ", key);
       state.removedSteps[key] = totalRemovedSteps < 15 ? 1 : 0;
     }
   }
@@ -445,13 +442,6 @@ State Grid::handleStepSelectKeyEvent(uint8_t key, State state) {
       (state.randomSteps[state.currentBank][state.currentStep][state.currentBank] &&
         state.config.randomOutputOverwritesSteps)
     ) {
-      Serial.printf(
-        "%s %u %s %u %s %u %s %u \n",
-        "currentBank", state.currentBank,
-        "currentStep", state.currentStep,
-        "currentChannel", state.currentChannel,
-        "key", key
-      );
       state.voltages[state.currentBank][key][state.currentChannel] =
         Entropy.random(MAX_UNSIGNED_10_BIT);
     }
