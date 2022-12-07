@@ -73,7 +73,7 @@ bool Hardware::reflectState(State state) {
  * @param step Which of the 16 steps/keys is targeted for changing.
  */
 bool Hardware::prepareRenderingOfChannelEditGateStep(State state, uint8_t step) {
-  if (state.currentStep == step) {
+  if (state.currentStep == step && state.initialKeyPressedDuringModHold != step) {
     return Hardware::prepareRenderingOfKey(state, step, state.config.colors.white);
   }
   else if (state.randomSteps[state.currentBank][step][state.currentChannel]) {
@@ -104,7 +104,7 @@ bool Hardware::prepareRenderingOfChannelEditVoltageStep(State state, uint8_t ste
   ) {
     return Hardware::prepareRenderingOfKey(state, step, state.config.colors.black);
   }
-  else if (state.currentStep == step) {
+  else if (state.currentStep == step && state.initialKeyPressedDuringModHold != step) {
     return Hardware::prepareRenderingOfKey(state, step, state.config.colors.white);
   }
   else if (state.randomSteps[state.currentBank][step][state.currentChannel]) {
@@ -263,7 +263,7 @@ bool Hardware::renderGlobalEdit(State state) {
     ) {
       Hardware::prepareRenderingOfKey(state, i, state.config.colors.black);
     }
-    else if (state.currentStep == i) {
+    else if (state.currentStep == i && state.initialKeyPressedDuringModHold != i) {
       Hardware::prepareRenderingOfKey(state, i, state.config.colors.white);
     }
     else if (allChannelVoltagesLocked) {
