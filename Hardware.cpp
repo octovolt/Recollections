@@ -298,21 +298,31 @@ bool Hardware::renderModuleSelect(State state) {
 
 bool Hardware::renderSectionSelect(State state) {
   for (uint8_t i = 0; i < 16; i++) {
-    switch (Utils::keyQuadrant(i)) {
-      case QUADRANT.INVALID:
-        return 0;
-      case QUADRANT.NW: // EDIT_CHANNEL_SELECT
-        Hardware::prepareRenderingOfKey(state, i, state.config.colors.yellow);
-        break;
-      case QUADRANT.NE: // RECORD_CHANNEL_SELECT
-        Hardware::prepareRenderingOfKey(state, i, state.config.colors.red);
-        break;
-      case QUADRANT.SW: // GLOBAL_EDIT
-        Hardware::prepareRenderingOfKey(state, i, state.config.colors.green);
-        break;
-      case QUADRANT.SE: // BANK_SELECT
-        Hardware::prepareRenderingOfKey(state, i, state.config.colors.blue);
-        break;
+    if (state.confirmingSave && !state.flash) {
+      Hardware::prepareRenderingOfKey(state, i, state.config.colors.black);
+    }
+    else {
+      switch (Utils::keyQuadrant(i)) {
+        case QUADRANT.INVALID:
+          return 0;
+        case QUADRANT.NW: // EDIT_CHANNEL_SELECT
+          Hardware::prepareRenderingOfKey(state, i, state.config.colors.yellow);
+          break;
+        case QUADRANT.NE: // RECORD_CHANNEL_SELECT
+          Hardware::prepareRenderingOfKey(state, i, state.config.colors.red);
+          break;
+        case QUADRANT.SW: // GLOBAL_EDIT
+          Hardware::prepareRenderingOfKey(state, i, state.config.colors.green);
+          break;
+        case QUADRANT.SE: // BANK_SELECT and save bank
+          if (state.readyToSave && !state.flash) {
+            Hardware::prepareRenderingOfKey(state, i, state.config.colors.black);
+          }
+          else {
+            Hardware::prepareRenderingOfKey(state, i, state.config.colors.blue);
+          }
+          break;
+      }
     }
   }
   state.config.trellis.pixels.show();

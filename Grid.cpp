@@ -381,20 +381,28 @@ State Grid::handleRecordChannelSelectKeyEvent(uint8_t key, State state) {
 
 State Grid::handleSectionSelectKeyEvent(uint8_t key, State state) {
   bool const modButtonIsBeingHeld = !state.readyForModPress;
-  switch (Utils::keyQuadrant(key)) {
+  Quadrant_t quadrant = Utils::keyQuadrant(key);
+
+  // Cancel save by pressing any other quadrant
+  if (state.readyToSave && quadrant != QUADRANT.SE) {
+    state.readyToSave = 0;
+    return state;
+  }
+
+  switch (quadrant) {
     case QUADRANT.INVALID:
       state.screen = SCREEN.ERROR;
       break;
-    case QUADRANT.NW: // yellow: navigate to channel editing or configure output voltage
+    case QUADRANT.NW: // yellow: navigate to channel editing
       if (modButtonIsBeingHeld) {
-        // TODO: configure output voltage
+        // TODO: configure output voltage?
       } else {
         state = Nav::goForward(state, SCREEN.EDIT_CHANNEL_SELECT);
       }
       break;
-    case QUADRANT.NE: // red: navigate to recording or configure input voltage
+    case QUADRANT.NE: // red: navigate to recording
       if (modButtonIsBeingHeld) {
-        // TODO: configure input voltage
+        // TODO: configure input voltage?
       } else {
         state = Nav::goForward(state, SCREEN.RECORD_CHANNEL_SELECT);
       }
@@ -408,13 +416,20 @@ State Grid::handleSectionSelectKeyEvent(uint8_t key, State state) {
       }
       break;
     case QUADRANT.SE: // blue: navigate to bank select or save bank to SD
-      if (modButtonIsBeingHeld) {
-        state.initialKeyPressedDuringModHold = key;
-        bool const writeSuccess = State::writeCurrentModuleAndBankToSDCard(state);
-        if (!writeSuccess) {
-          state = Nav::goForward(state, SCREEN.ERROR);
-        } else {
-          // TODO: do something visual to confirm the write
+      if (modButtonIsBeingHeld || state.readyToSave) {
+        if (!state.readyToSave) {
+          state.initialKeyPressedDuringModHold = key;
+          state.readyToSave = 1;
+        }
+        else {
+          bool const writeSuccess = State::writeCurrentModuleAndBankToSDCard(state);
+          if (writeSuccess) {
+            state.readyToSave = 0;
+            state.confirmingSave = 1;
+            state.flashesSinceSave = 0;
+          } else {
+            state = Nav::goForward(state, SCREEN.ERROR);
+          }
         }
       } else {
         state = Nav::goForward(state, SCREEN.BANK_SELECT);

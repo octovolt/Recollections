@@ -33,7 +33,9 @@
 #define FLASH_TIME 120
 #define LONG_PRESS_TIME 2000
 
-#define DEFAULT_TRIGGER_LENGTH 20;
+#define DEFAULT_TRIGGER_LENGTH 20
+
+#define SAVE_CONFIRMATION_MAX_FLASHES 4
 
 // Calculated with https://arduinojson.org/v6/assistant
 #define BANK_JSON_DOC_DESERIALIZATION_SIZE 16384 // 14639 required

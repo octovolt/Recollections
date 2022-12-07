@@ -49,6 +49,19 @@ typedef struct State {
   bool readyForModPress;
 
   /**
+   * Flag to track whether we should save the current bank on the next key press. This is
+   * equivalent to an "Are you sure?" dialog in a computer application. The next key press will
+   * confirm the user's intent to save.
+   */
+  bool readyToSave;
+
+  /** Flag to track whether we are currently showing the visual save confirmation. */
+  bool confirmingSave;
+
+  /** Count the number of flashes since saving to help manage the visual save confirmation. */
+  uint8_t flashesSinceSave;
+
+  /**
    * Count the number of flashes to determine if enough time has elapsed to where a new random
    * color should be rendered. This number will update regardless of whether any step
    * or channel has been set to utilize randomization.

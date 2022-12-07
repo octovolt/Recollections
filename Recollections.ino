@@ -75,8 +75,7 @@ void handleModButton() {
   // for over 50 days.
   else if (
     !state.readyForModPress && digitalRead(MOD_INPUT) &&
-    ((millis() - state.timeModPressed > MOD_DEBOUNCE_TIME) ||
-     millis() < state.timeModPressed)
+    ((millis() - state.timeModPressed > MOD_DEBOUNCE_TIME) || millis() < state.timeModPressed)
   ) {
     if (state.initialKeyPressedDuringModHold >= 0) {
       state.initialKeyPressedDuringModHold = -1;
@@ -84,6 +83,9 @@ void handleModButton() {
       if (state.selectedKeyForCopying >= 0) {
         pasteFromCopyAction();
       }
+    }
+    else if (state.screen == SCREEN.SECTION_SELECT && state.readyToSave) {
+      state.readyToSave = 0;
     }
     else if (state.screen == SCREEN.STEP_SELECT) {
       state = Nav::goForward(state, SCREEN.SECTION_SELECT);
@@ -508,6 +510,14 @@ void loop() {
     if (state.flashesSinceRandomColorChange > 1) {
       state.flashesSinceRandomColorChange = 0;
       state.randomColorShouldChange = 1;
+    }
+    if (state.confirmingSave) {
+      if (state.flashesSinceSave > SAVE_CONFIRMATION_MAX_FLASHES) {
+        state.confirmingSave = 0;
+      }
+      else {
+        state.flashesSinceSave += 1;
+      }
     }
     state.flash = !state.flash;
     state.lastFlashToggle = loopStartTime;
