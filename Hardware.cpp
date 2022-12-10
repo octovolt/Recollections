@@ -104,7 +104,7 @@ bool Hardware::prepareRenderingOfChannelEditGateStep(State state, uint8_t step) 
 bool Hardware::prepareRenderingOfChannelEditVoltageStep(State state, uint8_t step) {
   if (
     state.selectedKeyForCopying >= 0 &&
-    state.flash == 0 &&
+    !state.flash &&
     (step == state.selectedKeyForCopying ||
      state.pasteTargetKeys[step])
   ) {
@@ -208,7 +208,7 @@ bool Hardware::renderEditChannelSelect(State state) {
   for (uint8_t i = 0; i < 16; i++) {
     // non-illuminated keys
     if (
-      i > 7 || (state.flash == 0 && (i == state.selectedKeyForCopying || state.pasteTargetKeys[i]))
+      i > 7 || (!state.flash && (i == state.selectedKeyForCopying || state.pasteTargetKeys[i]))
     ) {
       Hardware::prepareRenderingOfKey(state, i, state.config.colors.black);
     }
@@ -272,7 +272,7 @@ bool Hardware::renderGlobalEdit(State state) {
     if (
       state.removedSteps[i] ||
       (
-        state.flash == 0 &&
+        !state.flash &&
         (state.selectedKeyForCopying == i || state.pasteTargetKeys[i])
       )
     ) {
@@ -355,7 +355,7 @@ bool Hardware::renderRecordChannelSelect(State state) {
     if (
       key > 7 ||
       (state.readyForRecInput && // readyForRecInput means the rec input gate is low
-        state.flash == 0 &&
+        !state.flash &&
         (state.autoRecordChannels[state.currentBank][key] ||
         state.randomInputChannels[state.currentBank][key]))
     ) {
