@@ -140,6 +140,13 @@ State Grid::handleEditChannelVoltagesKeyEvent(uint8_t key, State state) {
   uint8_t currentBank = state.currentBank;
   uint8_t currentChannel = state.currentChannel;
 
+  // Alternate step selection flow
+  if (state.readyForModPress && state.readyForStepSelection) {
+    state.currentStep = key;
+    state.readyForStepSelection = 0;
+    return state;
+  }
+
   // Gate channel
   if (state.gateChannels[currentBank][state.currentChannel]) {
     // MOD button is not being held, so toggle gate on or off
@@ -227,7 +234,23 @@ State Grid::handleEditChannelVoltagesKeyEvent(uint8_t key, State state) {
 State Grid::handleGlobalEditKeyEvent(uint8_t key, State state) {
   uint8_t currentBank = state.currentBank;
 
-  if (state.readyForModPress) { // MOD button is not being held, toggle removed step
+  // Alternate step selection flow
+  if (state.readyForModPress && state.readyForStepSelection) {
+    state.currentStep = key;
+    state.readyForStepSelection = 0;
+    return state;
+  }
+
+  if (state.readyForModPress) { // MOD button is not being held
+
+    // Alternate step selection flow
+    if (state.readyForStepSelection) {
+      state.currentStep = key;
+      state.readyForStepSelection = 0;
+      return state;
+    }
+
+    // Toggle removed steps
     if (state.removedSteps[key]) {
       state.removedSteps[key] = 0;
     }
@@ -241,6 +264,7 @@ State Grid::handleGlobalEditKeyEvent(uint8_t key, State state) {
       state.removedSteps[key] = totalRemovedSteps < 15 ? 1 : 0;
     }
   }
+
   // MOD button is being held
   else {
     // Clear states for faster work flow -- is this actually needed?

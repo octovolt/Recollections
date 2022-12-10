@@ -48,6 +48,9 @@ typedef struct State {
   /** Flag to track whether we should respond to MOD press. */
   bool readyForModPress;
 
+  /** Flag for the alternate step selection flow in EDIT_CHANNEL_VOLTAGES and GLOBAL_EDIT */
+  bool readyForStepSelection;
+
   /**
    * Flag to track whether we should save the current bank on the next key press. This is
    * equivalent to an "Are you sure?" dialog in a computer application. The next key press will

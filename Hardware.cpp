@@ -74,18 +74,24 @@ bool Hardware::reflectState(State state) {
  */
 bool Hardware::prepareRenderingOfChannelEditGateStep(State state, uint8_t step) {
   if (state.currentStep == step && state.initialKeyPressedDuringModHold != step) {
-    return Hardware::prepareRenderingOfKey(state, step, state.config.colors.white);
+    return Hardware::prepareRenderingOfKey(
+      state,
+      step,
+      state.readyForStepSelection && !state.flash
+        ? state.config.colors.black
+        : state.config.colors.white
+    );
   }
   else if (state.randomSteps[state.currentBank][step][state.currentChannel]) {
     return Hardware::prepareRenderingOfRandomizedKey(state, step);
   }
-  return Hardware::prepareRenderingOfKey(
-    state,
-    step,
-    state.gateSteps[state.currentBank][step][state.currentChannel]
-      ? state.config.colors.yellow
-      : state.config.colors.purple
-  );
+    return Hardware::prepareRenderingOfKey(
+      state,
+      step,
+      state.gateSteps[state.currentBank][step][state.currentChannel]
+        ? state.config.colors.yellow
+        : state.config.colors.purple
+    );
 }
 
 /**
@@ -105,7 +111,13 @@ bool Hardware::prepareRenderingOfChannelEditVoltageStep(State state, uint8_t ste
     return Hardware::prepareRenderingOfKey(state, step, state.config.colors.black);
   }
   else if (state.currentStep == step && state.initialKeyPressedDuringModHold != step) {
-    return Hardware::prepareRenderingOfKey(state, step, state.config.colors.white);
+    return Hardware::prepareRenderingOfKey(
+      state,
+      step,
+      state.readyForStepSelection && !state.flash
+        ? state.config.colors.black
+        : state.config.colors.white
+    );
   }
   else if (state.randomSteps[state.currentBank][step][state.currentChannel]) {
     return Hardware::prepareRenderingOfRandomizedKey(state, step);
@@ -246,6 +258,8 @@ bool Hardware::renderGlobalEdit(State state) {
   for (uint8_t i = 0; i < 16; i++) {
     bool allChannelVoltagesLocked = 1;
     bool allChannelStepsInactive = 1;
+
+    // global states reflected back into global edit screen
     for (uint8_t j = 0; j < 8; j++) {
       if (!state.lockedVoltages[state.currentBank][i][j]) {
         allChannelVoltagesLocked = 0;
@@ -254,6 +268,7 @@ bool Hardware::renderGlobalEdit(State state) {
         allChannelStepsInactive = 0;
       }
     }
+
     if (
       state.removedSteps[i] ||
       (
@@ -264,7 +279,13 @@ bool Hardware::renderGlobalEdit(State state) {
       Hardware::prepareRenderingOfKey(state, i, state.config.colors.black);
     }
     else if (state.currentStep == i && state.initialKeyPressedDuringModHold != i) {
-      Hardware::prepareRenderingOfKey(state, i, state.config.colors.white);
+      return Hardware::prepareRenderingOfKey(
+        state,
+        i,
+        state.readyForStepSelection && !state.flash
+          ? state.config.colors.black
+          : state.config.colors.white
+      );
     }
     else if (allChannelVoltagesLocked) {
       Hardware::prepareRenderingOfKey(state, i, state.config.colors.orange);

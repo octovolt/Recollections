@@ -94,16 +94,23 @@ void handleModButton() {
       state = Nav::goBack(state);
     }
     state.readyForModPress = 1;
+    state.readyForStepSelection = 0;
   }
   // MOD button long press in STEP_SELECT screen navigates to STEP_CHANNEL_SELECT screen.
   if (
-    state.screen == SCREEN.STEP_SELECT &&
-    state.readyForModPress == 0 &&
+    !state.readyForModPress &&
     state.initialKeyPressedDuringModHold < 0 &&
     millis() - state.timeModPressed > LONG_PRESS_TIME
   ) {
     state.initialKeyPressedDuringModHold = 69; // faking this to prevent immediate navigation back
-    state = Nav::goForward(state, SCREEN.STEP_CHANNEL_SELECT);
+    if (state.screen == SCREEN.STEP_SELECT) {
+      state = Nav::goForward(state, SCREEN.STEP_CHANNEL_SELECT);
+    } else if (
+      state.screen == SCREEN.EDIT_CHANNEL_VOLTAGES ||
+      state.screen == SCREEN.GLOBAL_EDIT
+    ) {
+      state.readyForStepSelection = 1;
+    }
   }
 }
 
