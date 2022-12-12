@@ -256,30 +256,17 @@ bool Hardware::renderError(State state) {
 
 bool Hardware::renderGlobalEdit(State state) {
   for (uint8_t i = 0; i < 16; i++) {
-    bool allChannelVoltagesLocked = 1;
-    bool allChannelStepsInactive = 1;
-
-    // global states reflected back into global edit screen
-    for (uint8_t j = 0; j < 8; j++) {
-      if (!state.lockedVoltages[state.currentBank][i][j]) {
-        allChannelVoltagesLocked = 0;
-      }
-      if (state.activeSteps[state.currentBank][i][j]) {
-        allChannelStepsInactive = 0;
-      }
+    if (state.removedSteps[i]) {
+      Hardware::prepareRenderingOfKey(state, i, state.config.colors.black);
     }
-
-    if (
-      state.removedSteps[i] ||
-      (
-        !state.flash &&
-        (state.selectedKeyForCopying == i || state.pasteTargetKeys[i])
-      )
+    else if (
+      (state.selectedKeyForCopying == i || state.pasteTargetKeys[i]) &&
+      !state.flash
     ) {
       Hardware::prepareRenderingOfKey(state, i, state.config.colors.black);
     }
     else if (state.currentStep == i && state.initialKeyPressedDuringModHold != i) {
-      return Hardware::prepareRenderingOfKey(
+      Hardware::prepareRenderingOfKey(
         state,
         i,
         state.readyForStepSelection && !state.flash
@@ -287,14 +274,28 @@ bool Hardware::renderGlobalEdit(State state) {
           : state.config.colors.white
       );
     }
-    else if (allChannelVoltagesLocked) {
-      Hardware::prepareRenderingOfKey(state, i, state.config.colors.orange);
-    }
-    else if (allChannelStepsInactive) {
-      Hardware::prepareRenderingOfKey(state, i, state.config.colors.purple);
-    }
     else {
-      Hardware::prepareRenderingOfKey(state, i, state.config.colors.green);
+      // global states reflected back into global edit screen
+      bool allChannelVoltagesLocked = 1;
+      bool allChannelStepsInactive = 1;
+      for (uint8_t j = 0; j < 8; j++) {
+        if (!state.lockedVoltages[state.currentBank][i][j]) {
+          allChannelVoltagesLocked = 0;
+        }
+        if (state.activeSteps[state.currentBank][i][j]) {
+          allChannelStepsInactive = 0;
+        }
+      }
+
+      if (allChannelVoltagesLocked) {
+        Hardware::prepareRenderingOfKey(state, i, state.config.colors.orange);
+      }
+      else if (allChannelStepsInactive) {
+        Hardware::prepareRenderingOfKey(state, i, state.config.colors.purple);
+      }
+      else {
+        Hardware::prepareRenderingOfKey(state, i, state.config.colors.green);
+      }
     }
   }
   state.config.trellis.pixels.show();

@@ -234,15 +234,7 @@ State Grid::handleEditChannelVoltagesKeyEvent(uint8_t key, State state) {
 State Grid::handleGlobalEditKeyEvent(uint8_t key, State state) {
   uint8_t currentBank = state.currentBank;
 
-  // Alternate step selection flow
-  if (state.readyForModPress && state.readyForStepSelection) {
-    state.currentStep = key;
-    state.readyForStepSelection = 0;
-    return state;
-  }
-
   if (state.readyForModPress) { // MOD button is not being held
-
     // Alternate step selection flow
     if (state.readyForStepSelection) {
       state.currentStep = key;

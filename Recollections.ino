@@ -90,27 +90,13 @@ void handleModButton() {
     else if (state.screen == SCREEN.STEP_SELECT) {
       state = Nav::goForward(state, SCREEN.SECTION_SELECT);
     }
+    else if (state.readyForStepSelection == 1) {
+      state.readyForStepSelection = 0;
+    }
     else {
       state = Nav::goBack(state);
     }
     state.readyForModPress = 1;
-    state.readyForStepSelection = 0;
-  }
-  // MOD button long press in STEP_SELECT screen navigates to STEP_CHANNEL_SELECT screen.
-  if (
-    !state.readyForModPress &&
-    state.initialKeyPressedDuringModHold < 0 &&
-    millis() - state.timeModPressed > LONG_PRESS_TIME
-  ) {
-    state.initialKeyPressedDuringModHold = 69; // faking this to prevent immediate navigation back
-    if (state.screen == SCREEN.STEP_SELECT) {
-      state = Nav::goForward(state, SCREEN.STEP_CHANNEL_SELECT);
-    } else if (
-      state.screen == SCREEN.EDIT_CHANNEL_VOLTAGES ||
-      state.screen == SCREEN.GLOBAL_EDIT
-    ) {
-      state.readyForStepSelection = 1;
-    }
   }
 }
 
@@ -443,6 +429,7 @@ bool setupState() {
   state.readyForKeyPress = 1;
   state.readyForModPress = 1;
   state.readyForRecInput = 1;
+  state.readyForStepSelection = 0;
   state.selectedKeyForCopying = -1;
   state.selectedKeyForRecording = -1;
   for (uint8_t i = 0; i < 16; i++) {
