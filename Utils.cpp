@@ -45,13 +45,13 @@ uint16_t Utils::voltageValue(State state, uint8_t preset, uint8_t channel) {
     if (!state.config.randomOutputOverwrites && state.randomVoltages[currentBank][preset][channel]) {
       return
         Entropy.random(2) &&
-        millis() - state.lastAdvReceived[0] < state.gateMillis
+        millis() - state.lastAdvReceivedTime[0] < state.gateMillis
         ? VOLTAGE_VALUE_MAX
         : 0;
     }
     return
       state.gateVoltages[currentBank][preset][channel] &&
-      millis() - state.lastAdvReceived[0] < state.gateMillis
+      millis() - state.lastAdvReceivedTime[0] < state.gateMillis
         ? VOLTAGE_VALUE_MAX
         : 0;
   }

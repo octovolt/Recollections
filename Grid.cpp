@@ -103,8 +103,8 @@ State Grid::handleEditChannelSelectKeyEvent(uint8_t key, State state) {
     state.randomOutputChannels[state.currentBank][key] = 0;
 
     // Update mod + key tracking.
-    if (state.initialKeyPressedDuringModHold < 0) {
-      state.initialKeyPressedDuringModHold = key;
+    if (state.initialModHoldKey < 0) {
+      state.initialModHoldKey = key;
     }
     state = Grid::updateModKeyCombinationTracking(key, state);
 
@@ -157,8 +157,8 @@ State Grid::handleEditChannelVoltagesKeyEvent(uint8_t key, State state) {
     // MOD button is being held
     else {
       // Update mod + key tracking.
-      if (state.initialKeyPressedDuringModHold < 0) {
-        state.initialKeyPressedDuringModHold = key;
+      if (state.initialModHoldKey < 0) {
+        state.initialModHoldKey = key;
       }
       state = Grid::updateModKeyCombinationTracking(key, state);
 
@@ -197,8 +197,8 @@ State Grid::handleEditChannelVoltagesKeyEvent(uint8_t key, State state) {
       }
 
       // Update mod + key tracking.
-      if (state.initialKeyPressedDuringModHold < 0) {
-        state.initialKeyPressedDuringModHold = key;
+      if (state.initialModHoldKey < 0) {
+        state.initialModHoldKey = key;
       }
       state = Grid::updateModKeyCombinationTracking(key, state);
 
@@ -272,8 +272,8 @@ State Grid::handleGlobalEditKeyEvent(uint8_t key, State state) {
     }
 
     // Update mod + key tracking.
-    if (state.initialKeyPressedDuringModHold < 0) {
-      state.initialKeyPressedDuringModHold = key;
+    if (state.initialModHoldKey < 0) {
+      state.initialModHoldKey = key;
     }
     state = Grid::updateModKeyCombinationTracking(key, state);
 
@@ -324,7 +324,7 @@ State Grid::handleRecordChannelSelectKeyEvent(uint8_t key, State state) {
   // MOD button is being held
   if (!state.readyForModPress) {
     state = Grid::updateModKeyCombinationTracking(key, state);
-    if (state.initialKeyPressedDuringModHold != key) {
+    if (state.initialModHoldKey != key) {
       return state;
     }
 
@@ -368,7 +368,7 @@ State Grid::handleRecordChannelSelectKeyEvent(uint8_t key, State state) {
 
       // else if we are pressing any random key other than the first, turn off random and return
       // the key to the autorecord state.
-      } else if (state.initialKeyPressedDuringModHold != key) {
+      } else if (state.initialModHoldKey != key) {
         state.randomInputChannels[currentBank][key] = 0;
       }
     }
@@ -426,7 +426,7 @@ State Grid::handleSectionSelectKeyEvent(uint8_t key, State state) {
       break;
     case QUADRANT.SW: // green: navigate to global edit or load module
       if (modButtonIsBeingHeld) {
-        state.initialKeyPressedDuringModHold = key;
+        state.initialModHoldKey = key;
         state = Nav::goForward(state, SCREEN.MODULE_SELECT);
       } else {
         state = Nav::goForward(state, SCREEN.GLOBAL_EDIT);
@@ -435,7 +435,7 @@ State Grid::handleSectionSelectKeyEvent(uint8_t key, State state) {
     case QUADRANT.SE: // blue: navigate to bank select or save bank to SD
       if (modButtonIsBeingHeld || state.readyToSave) {
         if (!state.readyToSave) {
-          state.initialKeyPressedDuringModHold = key;
+          state.initialModHoldKey = key;
           state.readyToSave = 1;
         }
         else {
@@ -467,7 +467,7 @@ State Grid::handlePresetChannelSelectKeyEvent(uint8_t key, State state) {
 
 State Grid::handlePresetSelectKeyEvent(uint8_t key, State state) {
   if (!state.readyForModPress) { // MOD button is being held
-    state.initialKeyPressedDuringModHold = key;
+    state.initialModHoldKey = key;
     state.selectedKeyForRecording = key;
     if (
       state.randomInputChannels[state.currentBank][state.currentChannel] ||
@@ -500,12 +500,12 @@ State Grid::updateModKeyCombinationTracking(uint8_t key, State state) {
   // MOD button is being held
   if (!state.readyForModPress) {
     // this is the first key to be pressed
-    if (state.initialKeyPressedDuringModHold < 0) {
-      state.initialKeyPressedDuringModHold = key;
+    if (state.initialModHoldKey < 0) {
+      state.initialModHoldKey = key;
       state.keyPressesSinceModHold = 1;
     }
     // initial key is pressed repeatedly
-    else if (state.initialKeyPressedDuringModHold == key) {
+    else if (state.initialModHoldKey == key) {
       state.keyPressesSinceModHold = state.keyPressesSinceModHold + 1;
     }
   }

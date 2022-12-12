@@ -16,12 +16,20 @@
 
 /**
  * The sole state object. All state goes here, nowhere else.
+ *
+ * Many of the data structures in the state object are based on a 3D array with the following
+ * indices or axes, in this order: [bank][preset][channel]. When we refer the value at the
+ * intersection of these three axes, we refer to it as a "voltage", regardless of whether it is
+ * an actual voltage value or a boolean.
+ *
+ * Some channel configurations affect every voltage on that channel. In these cases, the preset axis
+ * is dropped and a 2D array of [bank][channel] is used instead.
  */
 typedef struct State {
   /** Global config. Values here should very rarely change. Initial values provided in setup(). */
   Config config;
 
-  /** Current operating screen. See constants.h. */
+  /** Current screen presented on the 16 illuminated keys. See constants.h. */
   Screen_t screen;
 
   /** Array to track navigational history. Used to restore previous step in navigation. */
@@ -89,24 +97,25 @@ typedef struct State {
    */
   unsigned long lastFlashToggle;
 
-  /** Time in ms since the last time a clock/gate/trigger was received at the ADV input. We keep the
+  /**
+   * Time in ms since the last time a clock/gate/trigger was received at the ADV input. We keep the
    * last three values to determine whether the module is advancing or being clocked, as well as how
    * long gates should be.
    */
-  unsigned long lastAdvReceived[3];
+  unsigned long lastAdvReceivedTime[3];
 
   /** Time in ms since last MOD button press. */
-  unsigned long timeModPressed;
+  unsigned long lastModPressTime;
 
   /**
    * Which key was initially pressed while holding the MOD button.
    * This is also how we track whether *any* key was pressed while holding the MOD button.
-   * A negative number indicates no key was pressed, or has been pressed yet.
+   * A negative number indicates no key was pressed, or no key has been pressed yet.
    */
-  int8_t initialKeyPressedDuringModHold;
+  int8_t initialModHoldKey;
 
   /**
-   * The number of times the initialKeyPressedDuringModHold has been pressed since the MOD button
+   * The number of times the initialModHoldKey has been pressed since the MOD button
    * was held down. This is used to cycle through various outcomes of the MOD + key combination.
    */
   uint8_t keyPressesSinceModHold;
@@ -117,11 +126,11 @@ typedef struct State {
    */
   unsigned long gateMillis;
 
-  /** Current preset, 0-15. */
-  uint8_t currentPreset;
-
   /** Current bank, 0-15. */
   uint8_t currentBank;
+
+  /** Current preset, 0-15. */
+  uint8_t currentPreset;
 
   /** Current selected output channel, 0-7. */
   uint8_t currentChannel;
@@ -138,29 +147,6 @@ typedef struct State {
 
   /** Keys representing banks, channels, presets or sets of presets to be  pasted. */
   bool pasteTargetKeys[16];
-
-  /**
-   * If a voltage is not active, its value will be ignored in favor of the last previous
-   * active voltage. There must always be at least one active voltage.
-   * This is set in EDIT_CHANNEL_VOLTAGES screen.
-   * Indices are [bank][preset][channel].
-   */
-  bool activeVoltages[16][16][8];
-
-  /**
-   * The voltages (aka "steps") that will produce gates on a specified channel.
-   * This is set in EDIT_CHANNEL_VOLTAGES screen.
-   * Indices are [bank][preset][channel].
-   */
-  bool gateVoltages[16][16][8];
-
-  /**
-   * The voltages (aka "steps") that will produce a random value, either CV or gate, on a specified
-   * channel.
-   * This is set in EDIT_CHANNEL_VOLTAGES screen.
-   * Indices are [bank][preset][channel].
-   */
-  bool randomVoltages[16][16][8];
 
   /**
    * The presets that will be skipped entirely during sequencing.
@@ -196,6 +182,29 @@ typedef struct State {
   bool randomInputChannels[16][8];
 
   /**
+   * If a voltage is not active, its value will be ignored in favor of the last previous
+   * active voltage. There must always be at least one active voltage.
+   * This is set in EDIT_CHANNEL_VOLTAGES screen.
+   * Indices are [bank][preset][channel].
+   */
+  bool activeVoltages[16][16][8];
+
+  /**
+   * The voltages (aka "steps") that will produce gates on a specified channel.
+   * This is set in EDIT_CHANNEL_VOLTAGES screen.
+   * Indices are [bank][preset][channel].
+   */
+  bool gateVoltages[16][16][8];
+
+  /**
+   * The voltages (aka "steps") that will produce a random value, either CV or gate, on a specified
+   * channel.
+   * This is set in EDIT_CHANNEL_VOLTAGES screen.
+   * Indices are [bank][preset][channel].
+   */
+  bool randomVoltages[16][16][8];
+
+  /**
    * Voltages that cannot be changed in RECORD_CHANNEL_SELECT screen or through automatic recording.
    * Indices are [bank][preset][channel].
    */
@@ -214,7 +223,7 @@ typedef struct State {
    */
   uint16_t cachedVoltage;
 
-  // static methods
+  // ------------------------------- static methods ------------------------------------------------
 
   /**
    * @brief Record voltage on the channels set up for automatic recording.

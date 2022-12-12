@@ -73,7 +73,7 @@ bool Hardware::reflectState(State state) {
  * @param key Which of the 16 keys is targeted for changing.
  */
 bool Hardware::prepareRenderingOfChannelEditGateKey(State state, uint8_t key) {
-  if (state.currentPreset == key && state.initialKeyPressedDuringModHold != key) {
+  if (state.currentPreset == key && state.initialModHoldKey != key) {
     return Hardware::prepareRenderingOfKey(
       state,
       key,
@@ -110,7 +110,7 @@ bool Hardware::prepareRenderingOfChannelEditVoltageKey(State state, uint8_t key)
   ) {
     return Hardware::prepareRenderingOfKey(state, key, state.config.colors.black);
   }
-  else if (state.currentPreset == key && state.initialKeyPressedDuringModHold != key) {
+  else if (state.currentPreset == key && state.initialModHoldKey != key) {
     return Hardware::prepareRenderingOfKey(
       state,
       key,
@@ -265,7 +265,7 @@ bool Hardware::renderGlobalEdit(State state) {
     ) {
       Hardware::prepareRenderingOfKey(state, i, state.config.colors.black);
     }
-    else if (state.currentPreset == i && state.initialKeyPressedDuringModHold != i) {
+    else if (state.currentPreset == i && state.initialModHoldKey != i) {
       Hardware::prepareRenderingOfKey(
         state,
         i,

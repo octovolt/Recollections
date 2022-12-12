@@ -63,10 +63,10 @@ void handleModButton(unsigned long loopStartTime) {
   // long press handling
   if (
     !state.readyForModPress &&
-    state.initialKeyPressedDuringModHold < 0 &&
-    loopStartTime - state.timeModPressed > LONG_PRESS_TIME
+    state.initialModHoldKey < 0 &&
+    loopStartTime - state.lastModPressTime > LONG_PRESS_TIME
   ) {
-    state.initialKeyPressedDuringModHold = 69; // faking this to prevent immediate navigation back
+    state.initialModHoldKey = 69; // faking this to prevent immediate navigation back
     if (state.screen == SCREEN.PRESET_SELECT) {
       state = Nav::goForward(state, SCREEN.PRESET_CHANNEL_SELECT);
     } else if (
@@ -83,7 +83,7 @@ void handleModButton(unsigned long loopStartTime) {
   // say we are not readyForModPress until the button is released and the debounce time has elapsed.
   if (state.readyForModPress && !digitalRead(MOD_INPUT)) {
     state.readyForModPress = 0;
-    state.timeModPressed = loopStartTime;
+    state.lastModPressTime = loopStartTime;
     return;
   }
 
@@ -96,12 +96,12 @@ void handleModButton(unsigned long loopStartTime) {
   if (
     !state.readyForModPress && digitalRead(MOD_INPUT) &&
     (
-      (loopStartTime - state.timeModPressed > MOD_DEBOUNCE_TIME) ||
-      loopStartTime < state.timeModPressed
+      (loopStartTime - state.lastModPressTime > MOD_DEBOUNCE_TIME) ||
+      loopStartTime < state.lastModPressTime
     )
   ) {
-    if (state.initialKeyPressedDuringModHold >= 0) {
-      state.initialKeyPressedDuringModHold = -1;
+    if (state.initialModHoldKey >= 0) {
+      state.initialModHoldKey = -1;
       state.keyPressesSinceModHold = 0;
       if (state.selectedKeyForCopying >= 0) {
         pasteFromCopyAction();
@@ -127,24 +127,24 @@ void handleAdvInput(unsigned long loopStartTime) {
   uint8_t currentBank = state.currentBank;
   uint8_t currentPreset = state.currentPreset;
   if ( // protect against overflow because I'm paranoid. is this even necessary?
-    !(loopStartTime > state.lastAdvReceived[0] &&
-    state.lastAdvReceived[0] > state.lastAdvReceived[1] &&
-    state.lastAdvReceived[1] > state.lastAdvReceived[2])
+    !(loopStartTime > state.lastAdvReceivedTime[0] &&
+    state.lastAdvReceivedTime[0] > state.lastAdvReceivedTime[1] &&
+    state.lastAdvReceivedTime[1] > state.lastAdvReceivedTime[2])
   ) {
     if (loopStartTime < 3) {
       loopStartTime = 3;
     }
-    state.lastAdvReceived[0] = loopStartTime - 1;
-    state.lastAdvReceived[1] = loopStartTime - 2;
-    state.lastAdvReceived[2] = loopStartTime - 3;
+    state.lastAdvReceivedTime[0] = loopStartTime - 1;
+    state.lastAdvReceivedTime[1] = loopStartTime - 2;
+    state.lastAdvReceivedTime[2] = loopStartTime - 3;
   }
   else {
-    state.isAdvancing = (loopStartTime - state.lastAdvReceived[0]) < state.config.isAdvancingMaxInterval;
+    state.isAdvancing = (loopStartTime - state.lastAdvReceivedTime[0]) < state.config.isAdvancingMaxInterval;
 
     uint16_t avgInterval =
-      ((state.lastAdvReceived[0] - state.lastAdvReceived[1]) +
-      (state.lastAdvReceived[1] - state.lastAdvReceived[2])) * 0.5;
-    uint16_t lastInterval = state.lastAdvReceived[0] - loopStartTime;
+      ((state.lastAdvReceivedTime[0] - state.lastAdvReceivedTime[1]) +
+      (state.lastAdvReceivedTime[1] - state.lastAdvReceivedTime[2])) * 0.5;
+    uint16_t lastInterval = state.lastAdvReceivedTime[0] - loopStartTime;
 
     // If our most recent interval is above the isClockedTolerance, we are no longer being clocked.
     // See advancePreset() for the lower bound of the tolerance.
@@ -260,9 +260,9 @@ void advancePreset(unsigned long loopStartTime) {
   state.isAdvancing = true;
 
   uint16_t avgInterval =
-    ((state.lastAdvReceived[0] - state.lastAdvReceived[1]) +
-    (state.lastAdvReceived[1] - state.lastAdvReceived[2])) * 0.5;
-  uint16_t lastInterval = state.lastAdvReceived[0] - loopStartTime;
+    ((state.lastAdvReceivedTime[0] - state.lastAdvReceivedTime[1]) +
+    (state.lastAdvReceivedTime[1] - state.lastAdvReceivedTime[2])) * 0.5;
+  uint16_t lastInterval = state.lastAdvReceivedTime[0] - loopStartTime;
   // If our most recent interval is below the isClockedTolerance, we are no longer being clocked.
   // See the handling of the ADV input for the upper bound of the tolerance.
   state.isClocked = lastInterval < avgInterval * (1 - state.config.isClockedTolerance)
@@ -301,17 +301,17 @@ void updateStateAfterAdvancing(unsigned long loopStartTime) {
 
   // manage gate length
   if (state.isClocked) {
-    if (loopStartTime - state.lastAdvReceived[0] > 0) {
-      state.gateMillis = static_cast<unsigned long>((loopStartTime - state.lastAdvReceived[0]) / 2);
+    if (loopStartTime - state.lastAdvReceivedTime[0] > 0) {
+      state.gateMillis = static_cast<unsigned long>((loopStartTime - state.lastAdvReceivedTime[0]) / 2);
     }
   } else {
     state.gateMillis = DEFAULT_TRIGGER_LENGTH;
   }
 
   // update tracking of last ADV pulse received
-  state.lastAdvReceived[2] = state.lastAdvReceived[1];
-  state.lastAdvReceived[1] = state.lastAdvReceived[0];
-  state.lastAdvReceived[0] = loopStartTime;
+  state.lastAdvReceivedTime[2] = state.lastAdvReceivedTime[1];
+  state.lastAdvReceivedTime[1] = state.lastAdvReceivedTime[0];
+  state.lastAdvReceivedTime[0] = loopStartTime;
 }
 
 ////////////////////////////////////// RECORDING ///////////////////////////////////////////////////
@@ -446,7 +446,7 @@ bool setupState() {
   }
   state.flash = 1;
   state.flashesSinceRandomColorChange = 0;
-  state.initialKeyPressedDuringModHold = -1;
+  state.initialModHoldKey = -1;
   state.keyPressesSinceModHold = 0;
   state.lastFlashToggle = 0;
   state.navHistoryIndex = 0;
