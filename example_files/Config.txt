@@ -15,5 +15,5 @@
   "controllerOrientation": true,
   "isAdvancingMaxInterval": 10000,
   "isClockedTolerance": 0.1,
-  "randomOutputOverwritesSteps": true
+  "randomOutputOverwrites": true
 }

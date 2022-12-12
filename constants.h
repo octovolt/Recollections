@@ -75,15 +75,15 @@ uint8_t const CV_INPUT = A6; // (originally A0? pin "14" on Teensy 3.6)
 // counting from 0, so the second pin is 0, the third pin is 1, etc.
 /** Button (gate) that acts as a modifier for keys or as an escape to quit the current screen */
 uint8_t const MOD_INPUT = 4; // could be 2 in the future?
-/** Gate to advance the current step to the next step. */
+/** Gate to advance the current preset to the next preset. */
 uint8_t const ADV_INPUT = 3;
 /** Gate to start/stop automatic recording. Recording occurs when the gate is high. */
 uint8_t const REC_INPUT = 0; // could be 4 in the future ?
 /** Gate that determines if a key is being pressed. Avoids unnecessary polling. */
 uint8_t const TRELLIS_INTERRUPT_INPUT = 5;
-/** [EXPANSION ONLY] Gate to reverse the direction of step advancement. */
+/** [EXPANSION ONLY] Gate to reverse the direction of preset advancement. */
 uint8_t const REV_INPUT = 6;
-/** [EXPANSION ONLY] Gate to reset the step advancement to the first step. */
+/** [EXPANSION ONLY] Gate to reset the preset advancement to the first preset. */
 uint8_t const RESET_INPUT = 7;
 /** [EXPANSION ONLY] Gate to advance the current bank to the next bank. */
 uint8_t const BANK_ADV_INPUT = 16;
@@ -104,43 +104,47 @@ uint8_t const TEENSY_LED = 13;
  * Screen constants.
  *
  * Please note: these are referred to as either "sections" or "screens" in the user manual. There
- * are five major "sections": step selection, channel editing, recording, global editing, and bank
+ * are five major "sections": preset selection, channel editing, recording, global editing, and bank
  * selection. Some of these have additional "screens" other than their first.
  */
 typedef struct Screen {
-  // Step selection.
+  // Preset selection.
   // Color: white
-  Screen_t STEP_SELECT = 0;
+  Screen_t PRESET_SELECT = 0;
 
-  // Select the channel on which to perform operations, such as recording while in STEP_SELECT.
+  // Select the channel on which to perform operations, such as recording while in PRESET_SELECT.
   // Color: white
-  Screen_t STEP_CHANNEL_SELECT = 1;
+  Screen_t PRESET_CHANNEL_SELECT = 1;
 
   // Intermediary screen allowing navigation to all five major sections.
   // Colors: blue, red, yellow, green
   Screen_t SECTION_SELECT = 2;
 
-  // Edit all 16 steps for a single channel, or configure channels for gates or CV.
+  // Configure channels for gates, CV or random.
   // Color: yellow
   Screen_t EDIT_CHANNEL_SELECT = 3;
+
+  // Edit any of the 16 voltages for a single channel, or configure them to be locked, inactive or
+  // random.
+  // Color: yellow
   Screen_t EDIT_CHANNEL_VOLTAGES = 4;
 
-  // Record voltages, either manually across the 8 channels for a single step, or for
-  // multiple steps on a single channel while the ADV input is receiving a clock/gate/trigger.
+  // Record voltages, either manually on any of the 8 channels for a single preset, or across
+  // multiple presets on a single channel while the ADV input is receiving a clock/gate/trigger.
   // This is also the screen where one can set up automatic recording.
   // Color: red
   Screen_t RECORD_CHANNEL_SELECT = 5;
 
-  // Global editing of steps, including whether steps are addressed at all when a gate/trigger/clock
-  // is received at the ADV input.
+  // Global editing of presets, including whether presets are addressed at all when a
+  // gate/trigger/clock is received at the ADV input.
   // Color: green
   Screen_t GLOBAL_EDIT = 6;
 
-  // Select a new bank from memory. Each bank has 16 steps.
+  // Select a new bank from memory. Each bank has 16 presets and 8 channels.
   // Color: blue
   Screen_t BANK_SELECT = 7;
 
-  // Load an entirely new module (banks, steps, channels) from the SD card.
+  // Load an entirely new module (banks, presets, channels) from the SD card.
   // Colors: green, magenta
   Screen_t MODULE_SELECT = 8;
 

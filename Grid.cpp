@@ -36,17 +36,17 @@ State Grid::handleKeyEvent(keyEvent evt, State state) {
       case SCREEN.MODULE_SELECT:
         state = Grid::handleModuleSelectKeyEvent(key, state);
         break;
+      case SCREEN.PRESET_CHANNEL_SELECT:
+        state = Grid::handlePresetChannelSelectKeyEvent(key, state);
+        break;
+      case SCREEN.PRESET_SELECT:
+        state = Grid::handlePresetSelectKeyEvent(key, state);
+        break;
       case SCREEN.RECORD_CHANNEL_SELECT:
         state = Grid::handleRecordChannelSelectKeyEvent(key, state);
         break;
       case SCREEN.SECTION_SELECT:
         state = Grid::handleSectionSelectKeyEvent(key, state);
-        break;
-      case SCREEN.STEP_CHANNEL_SELECT:
-        state = Grid::handleStepChannelSelectKeyEvent(key, state);
-        break;
-      case SCREEN.STEP_SELECT:
-        state = Grid::handleStepSelectKeyEvent(key, state);
         break;
     }
   }
@@ -64,11 +64,11 @@ State Grid::addKeyToCopyPasteData(uint8_t key, State state) {
   if (state.selectedKeyForCopying == key) {
     Serial.println("Somehow began copy/paste incorrectly. This should never happen.");
   }
-  if (state.selectedKeyForCopying < 0) { // No step selected, initiate copy.
+  if (state.selectedKeyForCopying < 0) { // No key selected yet, initiate copy of the pressed key.
     state.selectedKeyForCopying = key;
     state.pasteTargetKeys[key] = 1;
   }
-  else { // Pressed step should be added or removed from the set of paste steps.
+  else { // Pressed key should be added or removed from the set of paste target keys.
     state.pasteTargetKeys[key] = !state.pasteTargetKeys[key];
   }
   return state;
@@ -140,10 +140,10 @@ State Grid::handleEditChannelVoltagesKeyEvent(uint8_t key, State state) {
   uint8_t currentBank = state.currentBank;
   uint8_t currentChannel = state.currentChannel;
 
-  // Alternate step selection flow
-  if (state.readyForModPress && state.readyForStepSelection) {
-    state.currentStep = key;
-    state.readyForStepSelection = 0;
+  // Alternate preset selection flow
+  if (state.readyForModPress && state.readyForPresetSelection) {
+    state.currentPreset = key;
+    state.readyForPresetSelection = 0;
     return state;
   }
 
@@ -151,8 +151,8 @@ State Grid::handleEditChannelVoltagesKeyEvent(uint8_t key, State state) {
   if (state.gateChannels[currentBank][state.currentChannel]) {
     // MOD button is not being held, so toggle gate on or off
     if (state.readyForModPress) {
-      state.gateSteps[currentBank][key][currentChannel] =
-        !state.gateSteps[currentBank][key][currentChannel];
+      state.gateVoltages[currentBank][key][currentChannel] =
+        !state.gateVoltages[currentBank][key][currentChannel];
     }
     // MOD button is being held
     else {
@@ -162,10 +162,10 @@ State Grid::handleEditChannelVoltagesKeyEvent(uint8_t key, State state) {
       }
       state = Grid::updateModKeyCombinationTracking(key, state);
 
-      // Step is a random coin-flip between gate on or gate off
+      // Voltage is a random coin-flip between gate on or gate off
       if (state.keyPressesSinceModHold == 1) {
-        state.randomSteps[currentBank][key][currentChannel] =
-          !state.randomSteps[currentBank][key][currentChannel];
+        state.randomVoltages[currentBank][key][currentChannel] =
+          !state.randomVoltages[currentBank][key][currentChannel];
       }
       // Recurse
       else if (state.keyPressesSinceModHold == 2) {
@@ -186,12 +186,14 @@ State Grid::handleEditChannelVoltagesKeyEvent(uint8_t key, State state) {
     }
     // MOD button is being held
     else {
-      // Clear states - is this really needed? Should the code below always toggle rather than set
-      // to a value?
+      // TODO: this can be improved to avoid going into copy-paste when we actually want to clear
+      // the alternate state (locked, inactive, random). I think the solution here is to clear
+      // states if they have been modified, and to only update keyPressesSinceModHold if we are both
+      // at zero for keyPressesSinceModHold and no state needs to be cleared.
       if (state.keyPressesSinceModHold == 0) {
         state.lockedVoltages[currentBank][key][currentChannel] = 0;
-        state.activeSteps[currentBank][key][currentChannel] = 1;
-        state.randomSteps[currentBank][key][currentChannel] = 0;
+        state.activeVoltages[currentBank][key][currentChannel] = 1;
+        state.randomVoltages[currentBank][key][currentChannel] = 0;
       }
 
       // Update mod + key tracking.
@@ -200,28 +202,28 @@ State Grid::handleEditChannelVoltagesKeyEvent(uint8_t key, State state) {
       }
       state = Grid::updateModKeyCombinationTracking(key, state);
 
-      // Copy-paste voltage value, or restore step to defaults
+      // Copy-paste voltage value
       if (state.keyPressesSinceModHold == 1) {
         state = Grid::addKeyToCopyPasteData(key, state);
       }
-      // Step is locked
+      // Voltage is locked
       else if (state.keyPressesSinceModHold == 2) {
         state = State::quitCopyPasteFlowPriorToPaste(state);
         state.lockedVoltages[currentBank][key][currentChannel] = 1;
       }
-      // Step is inactive
+      // Voltage is inactive
       else if (state.keyPressesSinceModHold == 3) {
         state.lockedVoltages[currentBank][key][currentChannel] = 0;
-        state.activeSteps[currentBank][key][currentChannel] = 0;
+        state.activeVoltages[currentBank][key][currentChannel] = 0;
       }
-      // Step is random
+      // Voltage is random
       else if (state.keyPressesSinceModHold == 4) {
-        state.activeSteps[currentBank][key][currentChannel] = 1;
-        state.randomSteps[currentBank][key][currentChannel] = 1;
+        state.activeVoltages[currentBank][key][currentChannel] = 1;
+        state.randomVoltages[currentBank][key][currentChannel] = 1;
       }
       // Recurse
       else if (state.keyPressesSinceModHold == 5) {
-        state.randomSteps[currentBank][key][currentChannel] = 0;
+        state.randomVoltages[currentBank][key][currentChannel] = 0;
         state.keyPressesSinceModHold = 0;
         return Grid::handleEditChannelVoltagesKeyEvent(key, state);
       }
@@ -235,25 +237,27 @@ State Grid::handleGlobalEditKeyEvent(uint8_t key, State state) {
   uint8_t currentBank = state.currentBank;
 
   if (state.readyForModPress) { // MOD button is not being held
-    // Alternate step selection flow
-    if (state.readyForStepSelection) {
-      state.currentStep = key;
-      state.readyForStepSelection = 0;
+    // Alternate preset selection flow
+    if (state.readyForPresetSelection) {
+      state.currentPreset = key;
+      state.readyForPresetSelection = 0;
       return state;
     }
 
-    // Toggle removed steps
-    if (state.removedSteps[key]) {
-      state.removedSteps[key] = 0;
+    // Toggle removed presets
+    if (state.removedPresets[key]) {
+      state.removedPresets[key] = 0;
     }
     else {
-      uint8_t totalRemovedSteps = 0;
+      uint8_t totalRemovedPresets = 0;
       for (uint8_t i = 0; i < 16; i++) {
-        if (state.removedSteps[i]) {
-          totalRemovedSteps = totalRemovedSteps + 1;
+        if (state.removedPresets[i]) {
+          totalRemovedPresets = totalRemovedPresets + 1;
         }
       }
-      state.removedSteps[key] = totalRemovedSteps < 15 ? 1 : 0;
+      // NOTE: it is important to always have at least one preset, so we need to prevent the removal
+      // if it would be the 16th removed preset.
+      state.removedPresets[key] = totalRemovedPresets < 15 ? 1 : 0;
     }
   }
 
@@ -263,7 +267,7 @@ State Grid::handleGlobalEditKeyEvent(uint8_t key, State state) {
     if (state.keyPressesSinceModHold == 0) {
       for (uint8_t i = 0; i < 8; i++) {
         state.lockedVoltages[currentBank][key][i] = 0;
-        state.activeSteps[currentBank][key][i] = 1;
+        state.activeVoltages[currentBank][key][i] = 1;
       }
     }
 
@@ -277,27 +281,24 @@ State Grid::handleGlobalEditKeyEvent(uint8_t key, State state) {
     if (state.keyPressesSinceModHold == 1) {
       state = Grid::addKeyToCopyPasteData(key, state);
     }
-
-    // Toggle locked voltage
+    // Toggle locked voltages
     else if (state.keyPressesSinceModHold == 2) {
       state = State::quitCopyPasteFlowPriorToPaste(state);
       for (uint8_t i = 0; i < 8; i++) {
         state.lockedVoltages[currentBank][key][i] = 1;
       }
     }
-
-    // Toggle active/inactive step
+    // Toggle active/inactive voltages
     else if (state.keyPressesSinceModHold == 3) {
       for (uint8_t i = 0; i < 8; i++) {
         state.lockedVoltages[currentBank][key][i] = 0;
-        state.activeSteps[currentBank][key][i] = 0;
+        state.activeVoltages[currentBank][key][i] = 0;
       }
     }
-
     // Recurse
     else if (state.keyPressesSinceModHold == 4) {
       for (uint8_t i = 0; i < 8; i++) {
-        state.activeSteps[currentBank][key][i] = 1;
+        state.activeVoltages[currentBank][key][i] = 1;
       }
       state.keyPressesSinceModHold = 0;
       return Grid::handleGlobalEditKeyEvent(key, state);
@@ -314,7 +315,7 @@ State Grid::handleModuleSelectKeyEvent(uint8_t key, State state) {
 
 State Grid::handleRecordChannelSelectKeyEvent(uint8_t key, State state) {
   uint8_t currentBank = state.currentBank;
-  uint8_t currentStep = state.currentStep;
+  uint8_t currentPreset = state.currentPreset;
   uint8_t currentChannel = state.currentChannel;
   if (key > 7) {
     return state;
@@ -360,8 +361,8 @@ State Grid::handleRecordChannelSelectKeyEvent(uint8_t key, State state) {
         state.randomInputChannels[currentBank][key] = 1;
         // if not advancing, sample random voltage immediately
         if (!state.isAdvancing) {
-          state.cachedVoltage = state.voltages[currentBank][currentStep][currentChannel];
-          state.voltages[currentBank][currentStep][currentChannel] =
+          state.cachedVoltage = state.voltages[currentBank][currentPreset][currentChannel];
+          state.voltages[currentBank][currentPreset][currentChannel] =
             Entropy.random(MAX_UNSIGNED_10_BIT);
         }
 
@@ -387,9 +388,9 @@ State Grid::handleRecordChannelSelectKeyEvent(uint8_t key, State state) {
     state.currentChannel = key;
     if (!state.isAdvancing) {
       // This is only the initial sample when pressing the key. When isAdvancing is true, we do not
-      // record immediately upon pressing the key here, but rather when the step changes.
+      // record immediately upon pressing the key here, but rather when the preset changes.
       // See updateStateAfterAdvancing() within Recollections.ino.
-      state.voltages[state.currentBank][state.currentStep][key] = analogRead(CV_INPUT);
+      state.voltages[state.currentBank][state.currentPreset][key] = analogRead(CV_INPUT);
     }
   }
   return state;
@@ -455,7 +456,7 @@ State Grid::handleSectionSelectKeyEvent(uint8_t key, State state) {
   return state;
 }
 
-State Grid::handleStepChannelSelectKeyEvent(uint8_t key, State state) {
+State Grid::handlePresetChannelSelectKeyEvent(uint8_t key, State state) {
   if (key > 7) {
     return state;
   }
@@ -464,14 +465,14 @@ State Grid::handleStepChannelSelectKeyEvent(uint8_t key, State state) {
   return state;
 }
 
-State Grid::handleStepSelectKeyEvent(uint8_t key, State state) {
+State Grid::handlePresetSelectKeyEvent(uint8_t key, State state) {
   if (!state.readyForModPress) { // MOD button is being held
     state.initialKeyPressedDuringModHold = key;
     state.selectedKeyForRecording = key;
     if (
       state.randomInputChannels[state.currentBank][state.currentChannel] ||
-      (state.randomSteps[state.currentBank][state.currentStep][state.currentBank] &&
-        state.config.randomOutputOverwritesSteps)
+      (state.randomVoltages[state.currentBank][state.currentPreset][state.currentBank] &&
+        state.config.randomOutputOverwrites)
     ) {
       state.voltages[state.currentBank][key][state.currentChannel] =
         Entropy.random(MAX_UNSIGNED_10_BIT);
@@ -481,7 +482,7 @@ State Grid::handleStepSelectKeyEvent(uint8_t key, State state) {
     }
   }
   else {
-    state.currentStep = key;
+    state.currentPreset = key;
   }
   return state;
 }
@@ -507,14 +508,6 @@ State Grid::updateModKeyCombinationTracking(uint8_t key, State state) {
     else if (state.initialKeyPressedDuringModHold == key) {
       state.keyPressesSinceModHold = state.keyPressesSinceModHold + 1;
     }
-
-    // paranoid defensiveness, maybe remove this? or parameterize it.
-    // uint8_t maxIterations = (
-    //   state.screen == SCREEN.EDIT_CHANNEL_SELECT
-    // ) ? 3 : 4;
-    // if (state.keyPressesSinceModHold > maxIterations) {
-    //   state.keyPressesSinceModHold = 1;
-    // }
   }
   return state;
 }

@@ -81,8 +81,8 @@ Config Config::readConfigFromFile(Config config, File configFile) {
       if (doc["isClockedTolerance"] != nullptr) {
         config.isClockedTolerance = doc["isClockedTolerance"];
       }
-      if (doc["randomOutputOverwritesSteps"] != nullptr) {
-        config.randomOutputOverwritesSteps = doc["randomOutputOverwritesSteps"];
+      if (doc["randomOutputOverwrites"] != nullptr) {
+        config.randomOutputOverwrites = doc["randomOutputOverwrites"];
       }
     }
   }

@@ -67,13 +67,13 @@ void handleModButton(unsigned long loopStartTime) {
     loopStartTime - state.timeModPressed > LONG_PRESS_TIME
   ) {
     state.initialKeyPressedDuringModHold = 69; // faking this to prevent immediate navigation back
-    if (state.screen == SCREEN.STEP_SELECT) {
-      state = Nav::goForward(state, SCREEN.STEP_CHANNEL_SELECT);
+    if (state.screen == SCREEN.PRESET_SELECT) {
+      state = Nav::goForward(state, SCREEN.PRESET_CHANNEL_SELECT);
     } else if (
       state.screen == SCREEN.EDIT_CHANNEL_VOLTAGES ||
       state.screen == SCREEN.GLOBAL_EDIT
     ) {
-      state.readyForStepSelection = 1;
+      state.readyForPresetSelection = 1;
     }
     return;
   }
@@ -110,11 +110,11 @@ void handleModButton(unsigned long loopStartTime) {
     else if (state.screen == SCREEN.SECTION_SELECT && state.readyToSave) {
       state.readyToSave = 0;
     }
-    else if (state.screen == SCREEN.STEP_SELECT) {
+    else if (state.screen == SCREEN.PRESET_SELECT) {
       state = Nav::goForward(state, SCREEN.SECTION_SELECT);
     }
-    else if (state.readyForStepSelection == 1) {
-      state.readyForStepSelection = 0;
+    else if (state.readyForPresetSelection == 1) {
+      state.readyForPresetSelection = 0;
     }
     else {
       state = Nav::goBack(state);
@@ -125,7 +125,7 @@ void handleModButton(unsigned long loopStartTime) {
 
 void handleAdvInput(unsigned long loopStartTime) {
   uint8_t currentBank = state.currentBank;
-  uint8_t currentStep = state.currentStep;
+  uint8_t currentPreset = state.currentPreset;
   if ( // protect against overflow because I'm paranoid. is this even necessary?
     !(loopStartTime > state.lastAdvReceived[0] &&
     state.lastAdvReceived[0] > state.lastAdvReceived[1] &&
@@ -147,7 +147,7 @@ void handleAdvInput(unsigned long loopStartTime) {
     uint16_t lastInterval = state.lastAdvReceived[0] - loopStartTime;
 
     // If our most recent interval is above the isClockedTolerance, we are no longer being clocked.
-    // See advanceStep() for the lower bound of the tolerance.
+    // See advancePreset() for the lower bound of the tolerance.
     if (lastInterval > avgInterval * (1 + state.config.isClockedTolerance)) {
       state.isClocked = false;
     }
@@ -155,28 +155,28 @@ void handleAdvInput(unsigned long loopStartTime) {
     if (state.readyForAdvInput && !digitalRead(ADV_INPUT)) {
       state.readyForAdvInput = 0;
 
-      if (state.config.randomOutputOverwritesSteps) {
-        // set random output voltages of next step before advancing
+      if (state.config.randomOutputOverwrites) {
+        // set random output voltages of next preset before advancing
         for (uint8_t i = 0; i < 7; i++) {
           // random channels, random 32-bit converted to 10-bit
           if (state.randomOutputChannels[currentBank][i]) {
-            state.voltages[currentBank][currentStep + 1][i] = Entropy.random(MAX_UNSIGNED_10_BIT);
+            state.voltages[currentBank][currentPreset + 1][i] = Entropy.random(MAX_UNSIGNED_10_BIT);
           }
 
-          if (state.randomSteps[currentBank][currentStep + 1][i]) {
-            // random gate steps
+          if (state.randomVoltages[currentBank][currentPreset + 1][i]) {
+            // random gate presets
             if (state.gateChannels[currentBank][i]) {
-              state.voltages[currentBank][currentStep + 1][i] = Entropy.random(2)
+              state.voltages[currentBank][currentPreset + 1][i] = Entropy.random(2)
                 ? VOLTAGE_VALUE_MAX
                 : 0;
             }
-            // random CV steps, random 32-bit converted to 10-bit
-            state.voltages[currentBank][currentStep + 1][i] = Entropy.random(MAX_UNSIGNED_10_BIT);
+            // random CV presets, random 32-bit converted to 10-bit
+            state.voltages[currentBank][currentPreset + 1][i] = Entropy.random(MAX_UNSIGNED_10_BIT);
           }
         }
       }
 
-      advanceStep(loopStartTime);
+      advancePreset(loopStartTime);
       updateStateAfterAdvancing(loopStartTime);
     }
     else if (!state.readyForAdvInput && digitalRead(ADV_INPUT)) {
@@ -209,54 +209,54 @@ void pasteFromCopyAction() {
       state = State::pasteChannels(state);
       break;
     case SCREEN.EDIT_CHANNEL_VOLTAGES:
-      state = State::pasteChannelStepVoltages(state);
+      state = State::pasteVoltages(state);
       break;
     case SCREEN.GLOBAL_EDIT:
-      state = State::pasteGlobalSteps(state);
+      state = State::pastePresets(state);
       break;
   }
   state.selectedKeyForCopying = -1;
 }
 
-////////////////////////////////////////// CHANGE STEP /////////////////////////////////////////////
+////////////////////////////////////////// CHANGE PRESET /////////////////////////////////////////////
 
 /**
- * @brief Change the current step to the provided step index.
+ * @brief Change the current preset to the provided preset index.
  *
- * @param newStep Index of the new step.
+ * @param newPreset Index of the new preset.
  * @param loopStartTime
  */
-void changeStep(uint8_t newStep, unsigned long loopStartTime) {
-  if (newStep > 15) {
-    state.currentStep = 0; // to do: error handling
+void changePreset(uint8_t newPreset, unsigned long loopStartTime) {
+  if (newPreset > 15) {
+    state.currentPreset = 0; // to do: error handling
     return;
   }
-  state.currentStep = newStep;
+  state.currentPreset = newPreset;
 
-  // Below we handle skipping the current step, if needed.
+  // Below we handle skipping the current preset, if needed.
   //
   // WARNING! ACHTUNG! PELIGRO!
   //
-  // Make sure to prevent an infinite loop before calling advanceStep()! We cannot allow all steps
-  // to be removed, but if somehow they are, do not call advanceStep().
-  bool allStepsRemoved = 1;
+  // Make sure to prevent an infinite loop before calling advancePreset()! We cannot allow all presets
+  // to be removed, but if somehow they are, do not call advancePreset().
+  bool allPresetsRemoved = 1;
   for (u_int8_t i = 0; i < 16; i++) {
-    if (!state.removedSteps[i]) {
-      allStepsRemoved = 0;
+    if (!state.removedPresets[i]) {
+      allPresetsRemoved = 0;
       break;
     }
   }
-  if (!allStepsRemoved && state.removedSteps[state.currentStep]) {
-    advanceStep(loopStartTime);
+  if (!allPresetsRemoved && state.removedPresets[state.currentPreset]) {
+    advancePreset(loopStartTime);
   }
 }
 
 /**
- * @brief Change the current step to the next step and calculate the expected gate length.
+ * @brief Change the current preset to the next preset and calculate the expected gate length.
  *
  * @param loopStartTime
  */
-void advanceStep(unsigned long loopStartTime) {
+void advancePreset(unsigned long loopStartTime) {
   state.isAdvancing = true;
 
   uint16_t avgInterval =
@@ -269,11 +269,11 @@ void advanceStep(unsigned long loopStartTime) {
     ? false
     : true;
 
-  if (state.currentStep == 15) {
-    changeStep(0, loopStartTime);
+  if (state.currentPreset == 15) {
+    changePreset(0, loopStartTime);
   }
   else {
-    changeStep(state.currentStep + 1, loopStartTime);
+    changePreset(state.currentPreset + 1, loopStartTime);
   }
 }
 
@@ -290,9 +290,9 @@ void updateStateAfterAdvancing(unsigned long loopStartTime) {
   // Autorecord while advancing: sample new voltage
   else if (!state.readyForRecInput) {
     for (uint8_t i = 0; i < 8; i++) {
-      if (state.autoRecordChannels[state.currentStep][i]) {
-        state.voltages[state.currentBank][state.currentStep][i] =
-          state.randomInputChannels[state.currentStep][i]
+      if (state.autoRecordChannels[state.currentPreset][i]) {
+        state.voltages[state.currentBank][state.currentPreset][i] =
+          state.randomInputChannels[state.currentPreset][i]
           ? Entropy.random(MAX_UNSIGNED_10_BIT)
           : analogRead(CV_INPUT);
       }
@@ -319,10 +319,10 @@ void updateStateAfterAdvancing(unsigned long loopStartTime) {
 void recordContinuously() {
   if (state.selectedKeyForRecording >= 0) {
     if (
-      (state.screen == SCREEN.EDIT_CHANNEL_VOLTAGES || state.screen == SCREEN.STEP_SELECT) &&
+      (state.screen == SCREEN.EDIT_CHANNEL_VOLTAGES || state.screen == SCREEN.PRESET_SELECT) &&
       !state.randomInputChannels[state.currentBank][state.currentChannel]
     ) {
-      state = State::editVoltageOnSelectedStep(state);
+      state = State::editVoltageOnSelectedPreset(state);
     }
     else if (state.screen == SCREEN.RECORD_CHANNEL_SELECT && !state.isAdvancing) {
       state = State::recordVoltageOnSelectedChannel(state);
@@ -377,7 +377,7 @@ bool setupConfig() {
   state.config.currentModule = 0;
   state.config.isAdvancingMaxInterval = 10000;
   state.config.isClockedTolerance = 0.1;
-  state.config.randomOutputOverwritesSteps = 1;
+  state.config.randomOutputOverwrites = 1;
 
   // overwrite defaults if anything is in the Config.txt file
   state.config = Config::readConfigFromSDCard(state.config);
@@ -442,7 +442,7 @@ bool setupState() {
 
   // ephemeral state
   if (state.screen != SCREEN.ERROR) {
-    state.screen = SCREEN.STEP_SELECT;
+    state.screen = SCREEN.PRESET_SELECT;
   }
   state.flash = 1;
   state.flashesSinceRandomColorChange = 0;
@@ -455,12 +455,12 @@ bool setupState() {
   state.readyForKeyPress = 1;
   state.readyForModPress = 1;
   state.readyForRecInput = 1;
-  state.readyForStepSelection = 0;
+  state.readyForPresetSelection = 0;
   state.selectedKeyForCopying = -1;
   state.selectedKeyForRecording = -1;
   for (uint8_t i = 0; i < 16; i++) {
     if (i < 4) {
-      state.navHistory[i] = SCREEN.STEP_SELECT;
+      state.navHistory[i] = SCREEN.PRESET_SELECT;
     }
     state.pasteTargetKeys[i] = 0;
   }

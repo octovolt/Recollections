@@ -37,12 +37,12 @@ uint16_t Utils::tenBitToTwelveBit(uint16_t n) {
 }
 
 // TODO: create unit tests for this
-uint16_t Utils::voltageValueForStep(State state, uint8_t step, uint8_t channel) {
+uint16_t Utils::voltageValue(State state, uint8_t preset, uint8_t channel) {
   uint8_t currentBank = state.currentBank;
 
   // Gate channels
   if (state.gateChannels[currentBank][channel]) {
-    if (!state.config.randomOutputOverwritesSteps && state.randomSteps[currentBank][step][channel]) {
+    if (!state.config.randomOutputOverwrites && state.randomVoltages[currentBank][preset][channel]) {
       return
         Entropy.random(2) &&
         millis() - state.lastAdvReceived[0] < state.gateMillis
@@ -50,43 +50,43 @@ uint16_t Utils::voltageValueForStep(State state, uint8_t step, uint8_t channel) 
         : 0;
     }
     return
-      state.gateSteps[currentBank][step][channel] &&
+      state.gateVoltages[currentBank][preset][channel] &&
       millis() - state.lastAdvReceived[0] < state.gateMillis
         ? VOLTAGE_VALUE_MAX
         : 0;
   }
 
-  // Inactive steps within CV channels
-  if (!state.activeSteps[currentBank][step][channel]) {
-    // To get the voltage for an inactive step, we need to find the last active step, even if that
+  // Inactive presets within CV channels
+  if (!state.activeVoltages[currentBank][preset][channel]) {
+    // To get the voltage for an inactive preset, we need to find the last active preset, even if that
     // means wrapping around the sequence.
     for (uint8_t i = 1; i < 15; i++) {
-      int8_t priorStep = step - i;
-      uint8_t candidateStep = priorStep >= 0 ? priorStep : 16 + priorStep;
-      if (candidateStep == step) {
+      int8_t priorPreset = preset - i;
+      uint8_t candidatePreset = priorPreset >= 0 ? priorPreset : 16 + priorPreset;
+      if (candidatePreset == preset) {
         continue;
       }
-      else if (state.activeSteps[currentBank][candidateStep][channel])
+      else if (state.activeVoltages[currentBank][candidatePreset][channel])
       {
-        return Utils::outputControlVoltageValueForStep(state, candidateStep, channel);
+        return Utils::outputControlVoltageValue(state, candidatePreset, channel);
       }
     }
   }
 
   // Default CV channel behavior
-  return Utils::outputControlVoltageValueForStep(state, step, channel);
+  return Utils::outputControlVoltageValue(state, preset, channel);
 }
 
 //--------------------------------------- PRIVATE --------------------------------------------------
 
-uint16_t Utils::outputControlVoltageValueForStep(State state, uint8_t step, uint8_t channel) {
+uint16_t Utils::outputControlVoltageValue(State state, uint8_t preset, uint8_t channel) {
   uint8_t currentBank = state.currentBank;
   if (
-    !state.config.randomOutputOverwritesSteps &&
+    !state.config.randomOutputOverwrites &&
     (state.randomOutputChannels[currentBank][channel] ||
-      state.randomSteps[currentBank][step][channel])
+      state.randomVoltages[currentBank][preset][channel])
   ) {
     return Entropy.random(MAX_UNSIGNED_10_BIT);
   }
-  return state.voltages[currentBank][step][channel];
+  return state.voltages[currentBank][preset][channel];
 }

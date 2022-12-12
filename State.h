@@ -48,8 +48,8 @@ typedef struct State {
   /** Flag to track whether we should respond to MOD press. */
   bool readyForModPress;
 
-  /** Flag for the alternate step selection flow in EDIT_CHANNEL_VOLTAGES and GLOBAL_EDIT */
-  bool readyForStepSelection;
+  /** Flag for the alternate preset selection flow in EDIT_CHANNEL_VOLTAGES and GLOBAL_EDIT */
+  bool readyForPresetSelection;
 
   /**
    * Flag to track whether we should save the current bank on the next key press. This is
@@ -66,14 +66,14 @@ typedef struct State {
 
   /**
    * Count the number of flashes to determine if enough time has elapsed to where a new random
-   * color should be rendered. This number will update regardless of whether any step
+   * color should be rendered. This number will update regardless of whether any preset
    * or channel has been set to utilize randomization.
    */
   uint8_t flashesSinceRandomColorChange;
 
   /**
-   * Flag to track if we should change colors. This flag will update regardless of whether any step
-   * or channel has been set to utilize randomization.
+   * Flag to track if we should change colors. This flag will update regardless of whether any
+   * preset or channel has been set to utilize randomization.
    */
   bool randomColorShouldChange;
 
@@ -117,8 +117,8 @@ typedef struct State {
    */
   unsigned long gateMillis;
 
-  /** Current step, 0-15. */
-  uint8_t currentStep;
+  /** Current preset, 0-15. */
+  uint8_t currentPreset;
 
   /** Current bank, 0-15. */
   uint8_t currentBank;
@@ -127,46 +127,46 @@ typedef struct State {
   uint8_t currentChannel;
 
   /**
-   * Current selected step for recording, 0-15. This is used to continually record while a key is
-   * held down. A value below zero denotes that no step is selected; no key is pressed or we are not
-   * in a recording screen.
+   * Current selected preset for recording, 0-15. This is used to continually record while a key is
+   * held down. A value below zero denotes that no preset is selected; no key is pressed or we are
+   * not in a recording screen.
    */
   int8_t selectedKeyForRecording;
 
-  /** Keys representing banks, channels, channel steps or global steps that will be copied. */
+  /** Keys representing banks, channels, presets or sets of presets to be copied. */
   int8_t selectedKeyForCopying;
 
-  /** Keys representing banks, channels, channel steps or global steps that will be pasted. */
+  /** Keys representing banks, channels, presets or sets of presets to be  pasted. */
   bool pasteTargetKeys[16];
 
   /**
-   * If a step is not active, its voltage value will be ignored in favor of the last previous active
-   * step. There must always be at least one active step.
+   * If a voltage is not active, its value will be ignored in favor of the last previous
+   * active voltage. There must always be at least one active voltage.
    * This is set in EDIT_CHANNEL_VOLTAGES screen.
-   * Indices are [bank][step][channel].
+   * Indices are [bank][preset][channel].
    */
-  bool activeSteps[16][16][8];
+  bool activeVoltages[16][16][8];
 
   /**
-   * The steps that will produce gates when the steps are sequenced via triggers on the ADV_INPUT
-   * jack.
+   * The voltages (aka "steps") that will produce gates on a specified channel.
    * This is set in EDIT_CHANNEL_VOLTAGES screen.
-   * Indices are [bank][step][channel].
+   * Indices are [bank][preset][channel].
    */
-  bool gateSteps[16][16][8];
+  bool gateVoltages[16][16][8];
 
   /**
-   * The steps that will produce a random value, either CV or gate.
+   * The voltages (aka "steps") that will produce a random value, either CV or gate, on a specified
+   * channel.
    * This is set in EDIT_CHANNEL_VOLTAGES screen.
-   * Indices are [bank][step][channel].
+   * Indices are [bank][preset][channel].
    */
-  bool randomSteps[16][16][8];
+  bool randomVoltages[16][16][8];
 
   /**
-   * The steps that will be skipped entirely during sequencing.
+   * The presets that will be skipped entirely during sequencing.
    * This is set in GLOBAL_EDIT screen.
    */
-  bool removedSteps[16];
+  bool removedPresets[16];
 
   /**
    * The channels where the voltage will be either 5v or 0v and the duration of 5v will be based on
@@ -197,13 +197,13 @@ typedef struct State {
 
   /**
    * Voltages that cannot be changed in RECORD_CHANNEL_SELECT screen or through automatic recording.
-   * Indices are [bank][step][channel].
+   * Indices are [bank][preset][channel].
    */
   bool lockedVoltages[16][16][8];
 
   /**
-   * 10-bit stored voltages for channels per step per bank (max value is 1023).
-   * Indices are [bank][step][channel].
+   * 10-bit stored voltage values for channels per preset per bank (max value is 1023).
+   * Indices are [bank][preset][channel].
    */
   uint16_t voltages[16][16][8];
 
@@ -230,7 +230,7 @@ typedef struct State {
    * @param state
    * @return State
    */
-  static State editVoltageOnSelectedStep(State state);
+  static State editVoltageOnSelectedPreset(State state);
 
   /**
    * @brief Record voltage for a key selected by hand.
@@ -241,7 +241,7 @@ typedef struct State {
   static State recordVoltageOnSelectedChannel(State state);
 
   /**
-   * @brief Paste the voltages from one bank to a number of other banks, across all 16 steps and all
+   * @brief Paste the voltages from one bank to a number of other banks, across all 16 presets and all
    * 8 channels.
    *
    * @param state
@@ -250,7 +250,7 @@ typedef struct State {
   static State pasteBanks(State state);
 
   /**
-   * @brief Paste the voltages from one channel to a number of other channels, across all 16 steps.
+   * @brief Paste the voltages from one channel to a number of other channels, across all 16 presets.
    *
    * @param state
    * @return State
@@ -258,20 +258,20 @@ typedef struct State {
   static State pasteChannels(State state);
 
   /**
-   * @brief Paste the voltage from one step to a number of other steps on the same channel.
+   * @brief Paste the voltage from one preset to a number of other presets on the same channel.
    *
    * @param state
    * @return State
    */
-  static State pasteChannelStepVoltages(State state);
+  static State pasteVoltages(State state);
 
   /**
-   * @brief Paste the voltage from one step to a number of other steps, across all 8 channels.
+   * @brief Paste the voltage from one preset to a number of other presets, across all 8 channels.
    *
    * @param state
    * @return State
    */
-  static State pasteGlobalSteps(State state);
+  static State pastePresets(State state);
 
   /**
    * @brief Clean up state related to copy-paste.

@@ -18,29 +18,29 @@ using namespace Stack;
  */
 State State::autoRecord(State state) {
   uint8_t currentBank = state.currentBank;
-  uint8_t currentStep = state.currentStep;
+  uint8_t currentPreset = state.currentPreset;
   for (uint8_t i = 0; i < 7; i++) {
     if (
       state.autoRecordChannels[currentBank][i] &&
-      !state.lockedVoltages[currentBank][currentStep][i] &&
+      !state.lockedVoltages[currentBank][currentPreset][i] &&
       !state.randomInputChannels[currentBank][i]
     ) {
-      state.voltages[currentBank][currentStep][i] = analogRead(CV_INPUT);
+      state.voltages[currentBank][currentPreset][i] = analogRead(CV_INPUT);
     }
   }
   return state;
 }
 
 /**
- * @brief Capture voltage in the current loop for a user flow within Editing or Step Selection. This
- * function will record voltage on the selected STEP. Note this could be continuous recording or a
- * sample -- this function is agnostic to whether it is continuous.
+ * @brief Capture voltage in the current loop for a user flow within Editing or Preset Selection. This
+ * function will record voltage on the selected PRESET for the current channel. Note this could be
+ * continuous recording or a sample -- this function is agnostic to whether it is continuous.
  *
  * @param state
  * @return State
  */
-State State::editVoltageOnSelectedStep(State state) {
-  if (state.screen == SCREEN.EDIT_CHANNEL_VOLTAGES || state.screen == SCREEN.STEP_SELECT) {
+State State::editVoltageOnSelectedPreset(State state) {
+  if (state.screen == SCREEN.EDIT_CHANNEL_VOLTAGES || state.screen == SCREEN.PRESET_SELECT) {
     state.voltages[state.currentBank][state.selectedKeyForRecording][state.currentChannel] =
       analogRead(CV_INPUT);
   }
@@ -49,8 +49,8 @@ State State::editVoltageOnSelectedStep(State state) {
 
 /**
  * @brief Capture voltage in the current loop for a user flow within Recording. This function will
- * record voltage on the selected CHANNEL. Note this could be continuous recording or a sample --
- * this function is agnostic to whether it is continuous.
+ * record voltage on the selected CHANNEL for the current preset. Note this could be continuous
+ * recording or a sample -- this function is agnostic to whether it is continuous.
  *
  * @param state
  * @return State
@@ -58,9 +58,9 @@ State State::editVoltageOnSelectedStep(State state) {
 State State::recordVoltageOnSelectedChannel(State state) {
   if (
     state.screen == SCREEN.RECORD_CHANNEL_SELECT &&
-    !state.lockedVoltages[state.currentBank][state.currentStep][state.selectedKeyForRecording]
+    !state.lockedVoltages[state.currentBank][state.currentPreset][state.selectedKeyForRecording]
   ) {
-    state.voltages[state.currentBank][state.currentStep][state.selectedKeyForRecording] =
+    state.voltages[state.currentBank][state.currentPreset][state.selectedKeyForRecording] =
       analogRead(CV_INPUT);
   }
   return state;
@@ -68,19 +68,19 @@ State State::recordVoltageOnSelectedChannel(State state) {
 
 State State::pasteBanks(State state) {
   uint8_t selectedKeyForCopying = state.selectedKeyForCopying;
-  // [banks][steps][channels]
+  // [banks][presets][channels]
   for (uint8_t i = 0; i < 16; i++) {
     if (state.pasteTargetKeys[i]) {
       for (uint8_t j = 0; j < 16; j++) {
         for (uint8_t k = 0; k < 8; k++) {
-          state.activeSteps[i][j][k] = state.activeSteps[selectedKeyForCopying][j][k];
+          state.activeVoltages[i][j][k] = state.activeVoltages[selectedKeyForCopying][j][k];
           state.autoRecordChannels[i][k] = state.autoRecordChannels[selectedKeyForCopying][k];
           state.gateChannels[i][k] = state.gateChannels[selectedKeyForCopying][k];
-          state.gateSteps[i][j][k] = state.gateSteps[selectedKeyForCopying][j][k];
+          state.gateVoltages[i][j][k] = state.gateVoltages[selectedKeyForCopying][j][k];
           state.lockedVoltages[i][j][k] = state.lockedVoltages[selectedKeyForCopying][j][k];
           state.randomInputChannels[i][k] = state.randomInputChannels[selectedKeyForCopying][k];
           state.randomOutputChannels[i][k] = state.randomOutputChannels[selectedKeyForCopying][k];
-          state.randomSteps[i][j][k] = state.randomSteps[selectedKeyForCopying][j][k];
+          state.randomVoltages[i][j][k] = state.randomVoltages[selectedKeyForCopying][j][k];
           state.voltages[i][j][k] = state.voltages[selectedKeyForCopying][j][k];
         }
       }
@@ -91,6 +91,12 @@ State State::pasteBanks(State state) {
   return state;
 }
 
+/**
+ * @brief Paste all 16 preset voltage values from one channel to the set of target channels.
+ *
+ * @param state
+ * @return State
+ */
 State State::pasteChannels(State state) {
   uint8_t currentBank = state.currentBank;
   uint8_t selectedKeyForCopying = state.selectedKeyForCopying;
@@ -99,14 +105,14 @@ State State::pasteChannels(State state) {
       if (state.gateChannels[currentBank][selectedKeyForCopying]) {
         state.gateChannels[state.currentBank][i] = 1;
         for (uint8_t j = 0; j < 16; j++) {
-          state.gateSteps[currentBank][j][i] =
-            state.gateSteps[currentBank][j][selectedKeyForCopying];
+          state.gateVoltages[currentBank][j][i] =
+            state.gateVoltages[currentBank][j][selectedKeyForCopying];
         }
       }
       else {
-        for (uint8_t j = 0; j < 16; j++) { // steps
-          state.activeSteps[currentBank][j][i] =
-            state.activeSteps[currentBank][j][state.selectedKeyForCopying];
+        for (uint8_t j = 0; j < 16; j++) { // presets
+          state.activeVoltages[currentBank][j][i] =
+            state.activeVoltages[currentBank][j][state.selectedKeyForCopying];
           state.voltages[currentBank][j][i] =
             state.voltages[currentBank][j][state.selectedKeyForCopying];
         }
@@ -118,8 +124,15 @@ State State::pasteChannels(State state) {
   return state;
 }
 
-State State::pasteChannelStepVoltages(State state) {
-  for (uint8_t i = 0; i < 16; i++) { // steps
+/**
+ * @brief Within the current channel, paste voltage values from one preset to the set of target
+ * presets.
+ *
+ * @param state
+ * @return State
+ */
+State State::pasteVoltages(State state) {
+  for (uint8_t i = 0; i < 16; i++) { // presets
     if (state.pasteTargetKeys[i]) {
       state.voltages[state.currentBank][i][state.currentChannel] =
         state.voltages[state.currentBank][state.selectedKeyForCopying][state.currentChannel];
@@ -130,8 +143,14 @@ State State::pasteChannelStepVoltages(State state) {
   return state;
 }
 
-State State::pasteGlobalSteps(State state) {
-  for (uint8_t i = 0; i < 16; i++) { // steps
+/**
+ * @brief Paste all 8 channel voltage values from one preset to the set of target presets.
+ *
+ * @param state
+ * @return State
+ */
+State State::pastePresets(State state) {
+  for (uint8_t i = 0; i < 16; i++) { // presets
     if (state.pasteTargetKeys[i]) {
       for (uint8_t j = 0; j < 8; j++) { // channels
         state.voltages[state.currentBank][i][j] =
@@ -175,11 +194,11 @@ State State::readModuleFromSDCard(State state) {
   // Keep this in sync with State::readModuleFileFromSDCard().
   // If adding or removing anything here, please recalculate the size constants for the JSON
   // documents required for storing the data on the SD card. See constants.h.
-  state.currentStep = 0;
+  state.currentPreset = 0;
   state.currentBank = 0;
   state.currentChannel = 0;
   for (uint8_t i = 0; i < 16; i++) {
-    state.removedSteps[i] = 0;
+    state.removedPresets[i] = 0;
   }
 
   // Bank data -- preserved in Bank_<bank-index>.txt
@@ -190,18 +209,18 @@ State State::readModuleFromSDCard(State state) {
   //
   // Also keep this in sync with State::pasteBanks().
   //
-  // Indices are bank, step, channel.
+  // Indices are bank, preset, channel.
   for (uint8_t i = 0; i < 16; i++) {
     for (uint8_t j = 0; j < 16; j++) {
       for (uint8_t k = 0; k < 8; k++) {
-        state.activeSteps[i][j][k] = 1;
+        state.activeVoltages[i][j][k] = 1;
         state.autoRecordChannels[i][k] = 0;
         state.gateChannels[i][k] = 0;
-        state.gateSteps[i][j][k] = 0;
+        state.gateVoltages[i][j][k] = 0;
         state.lockedVoltages[i][j][k] = 0;
         state.randomInputChannels[i][k] = 0;
         state.randomOutputChannels[i][k] = 0;
-        state.randomSteps[i][j][k] = 0;
+        state.randomVoltages[i][j][k] = 0;
         state.voltages[i][j][k] = VOLTAGE_VALUE_MID;
       }
     }
@@ -243,10 +262,10 @@ State State::readModuleFileFromSDCard(State state) {
       Serial.printf("%s %s \n", "deserializeJson() failed during read operation: ", error.c_str());
     }
     else {
-      state.currentStep = doc["currentStep"];
+      state.currentPreset = doc["currentPreset"];
       state.currentBank = doc["currentBank"];
       state.currentChannel = doc["currentChannel"];
-      copyArray(doc["removedSteps"], state.removedSteps);
+      copyArray(doc["removedPresets"], state.removedPresets);
     }
     moduleFile.close();
   }
@@ -290,14 +309,14 @@ State State::readBankFileFromSDCard(State state, uint8_t bank) {
       Serial.printf("%s %s \n", "deserializeJson() failed during read operation: ", error.c_str());
     }
     else {
-      copyArray(doc["activeSteps"], state.activeSteps[bank]);
+      copyArray(doc["activeVoltages"], state.activeVoltages[bank]);
       copyArray(doc["autoRecordChannels"], state.autoRecordChannels[bank]);
       copyArray(doc["gateChannels"], state.gateChannels[bank]);
-      copyArray(doc["gateSteps"], state.gateSteps[bank]);
+      copyArray(doc["gateVoltages"], state.gateVoltages[bank]);
       copyArray(doc["lockedVoltages"], state.lockedVoltages[bank]);
       copyArray(doc["randomInputChannels"], state.randomInputChannels[bank]);
       copyArray(doc["randomOutputChannels"], state.randomOutputChannels[bank]);
-      copyArray(doc["randomSteps"], state.randomSteps[bank]);
+      copyArray(doc["randomVoltages"], state.randomVoltages[bank]);
       copyArray(doc["voltages"], state.voltages[bank]);
     }
   }
@@ -341,9 +360,9 @@ bool State::writeCurrentModuleAndBankToSDCard(State state) {
   StaticJsonDocument<MODULE_JSON_DOC_SERIALIZATION_SIZE> moduleDoc;
   moduleDoc["currentBank"] = state.currentBank;
   moduleDoc["currentChannel"] = state.currentChannel;
-  moduleDoc["currentStep"] = state.currentStep;
+  moduleDoc["currentPreset"] = state.currentPreset;
   for (uint8_t i = 0; i < 16; i++) {
-    moduleDoc["removedSteps"][i] = state.removedSteps[i];
+    moduleDoc["removedPresets"][i] = state.removedPresets[i];
   }
 
   WriteBufferingStream writeBufferingStream(moduleFile, 64);
@@ -394,22 +413,22 @@ bool State::writeCurrentModuleAndBankToSDCard(State state) {
     randomInputChannels.add(state.randomInputChannels[bank][i]);
     randomOutputChannels.add(state.randomOutputChannels[bank][i]);
   }
-  JsonArray activeSteps = bankRoot.createNestedArray("activeSteps");
-  JsonArray gateSteps = bankRoot.createNestedArray("gateSteps");
+  JsonArray activeVoltages = bankRoot.createNestedArray("activeVoltages");
+  JsonArray gateVoltages = bankRoot.createNestedArray("gateVoltages");
   JsonArray lockedVoltages = bankRoot.createNestedArray("lockedVoltages");
-  JsonArray randomSteps = bankRoot.createNestedArray("randomSteps");
+  JsonArray randomVoltages = bankRoot.createNestedArray("randomVoltages");
   JsonArray voltages = bankRoot.createNestedArray("voltages");
   for (uint8_t i = 0; i < 16; i++) {
-    JsonArray activeStepsChannelArray = activeSteps.createNestedArray();
-    JsonArray gateStepsChannelArray = gateSteps.createNestedArray();
+    JsonArray activeVoltagesChannelArray = activeVoltages.createNestedArray();
+    JsonArray gateVoltagesChannelArray = gateVoltages.createNestedArray();
     JsonArray lockedVoltagesChannelArray = lockedVoltages.createNestedArray();
-    JsonArray randomStepsChannelArray = randomSteps.createNestedArray();
+    JsonArray randomVoltagesChannelArray = randomVoltages.createNestedArray();
     JsonArray voltagesChannelArray = voltages.createNestedArray();
     for (uint8_t j = 0; j < 8; j++) {
-      activeStepsChannelArray.add(state.activeSteps[bank][i][j]);
-      gateStepsChannelArray.add(state.gateSteps[bank][i][j]);
+      activeVoltagesChannelArray.add(state.activeVoltages[bank][i][j]);
+      gateVoltagesChannelArray.add(state.gateVoltages[bank][i][j]);
       lockedVoltagesChannelArray.add(state.lockedVoltages[bank][i][j]);
-      randomStepsChannelArray.add(state.randomSteps[bank][i][j]);
+      randomVoltagesChannelArray.add(state.randomVoltages[bank][i][j]);
       voltagesChannelArray.add(state.voltages[bank][i][j]);
     }
   }

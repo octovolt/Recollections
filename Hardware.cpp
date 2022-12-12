@@ -45,17 +45,17 @@ bool Hardware::reflectState(State state) {
     case SCREEN.MODULE_SELECT:
       result = Hardware::renderModuleSelect(state);
       break;
+    case SCREEN.PRESET_CHANNEL_SELECT:
+      result = Hardware::renderPresetChannelSelect(state);
+      break;
+    case SCREEN.PRESET_SELECT:
+      result = Hardware::renderPresetSelect(state);
+      break;
     case SCREEN.RECORD_CHANNEL_SELECT:
       result = Hardware::renderRecordChannelSelect(state);
       break;
     case SCREEN.SECTION_SELECT:
       result = Hardware::renderSectionSelect(state);
-      break;
-    case SCREEN.STEP_CHANNEL_SELECT:
-      result = Hardware::renderStepChannelSelect(state);
-      break;
-    case SCREEN.STEP_SELECT:
-      result = Hardware::renderStepSelect(state);
       break;
   }
 
@@ -70,25 +70,25 @@ bool Hardware::reflectState(State state) {
  * called afterward.
  *
  * @param state Global state object.
- * @param step Which of the 16 steps/keys is targeted for changing.
+ * @param key Which of the 16 keys is targeted for changing.
  */
-bool Hardware::prepareRenderingOfChannelEditGateStep(State state, uint8_t step) {
-  if (state.currentStep == step && state.initialKeyPressedDuringModHold != step) {
+bool Hardware::prepareRenderingOfChannelEditGateKey(State state, uint8_t key) {
+  if (state.currentPreset == key && state.initialKeyPressedDuringModHold != key) {
     return Hardware::prepareRenderingOfKey(
       state,
-      step,
-      state.readyForStepSelection && !state.flash
+      key,
+      state.readyForPresetSelection && !state.flash
         ? state.config.colors.black
         : state.config.colors.white
     );
   }
-  else if (state.randomSteps[state.currentBank][step][state.currentChannel]) {
-    return Hardware::prepareRenderingOfRandomizedKey(state, step);
+  else if (state.randomVoltages[state.currentBank][key][state.currentChannel]) {
+    return Hardware::prepareRenderingOfRandomizedKey(state, key);
   }
     return Hardware::prepareRenderingOfKey(
       state,
-      step,
-      state.gateSteps[state.currentBank][step][state.currentChannel]
+      key,
+      state.gateVoltages[state.currentBank][key][state.currentChannel]
         ? state.config.colors.yellow
         : state.config.colors.purple
     );
@@ -99,43 +99,43 @@ bool Hardware::prepareRenderingOfChannelEditGateStep(State state, uint8_t step) 
  * correct color. After the key is prepared, trellis.pixels.show() must be called afterward.
  *
  * @param state Global state object.
- * @param step Which of the 16 steps/keys is targeted for changing.
+ * @param key Which of the 16 keys is targeted for changing.
  */
-bool Hardware::prepareRenderingOfChannelEditVoltageStep(State state, uint8_t step) {
+bool Hardware::prepareRenderingOfChannelEditVoltageKey(State state, uint8_t key) {
   if (
     state.selectedKeyForCopying >= 0 &&
     !state.flash &&
-    (step == state.selectedKeyForCopying ||
-     state.pasteTargetKeys[step])
+    (key == state.selectedKeyForCopying ||
+     state.pasteTargetKeys[key])
   ) {
-    return Hardware::prepareRenderingOfKey(state, step, state.config.colors.black);
+    return Hardware::prepareRenderingOfKey(state, key, state.config.colors.black);
   }
-  else if (state.currentStep == step && state.initialKeyPressedDuringModHold != step) {
+  else if (state.currentPreset == key && state.initialKeyPressedDuringModHold != key) {
     return Hardware::prepareRenderingOfKey(
       state,
-      step,
-      state.readyForStepSelection && !state.flash
+      key,
+      state.readyForPresetSelection && !state.flash
         ? state.config.colors.black
         : state.config.colors.white
     );
   }
-  else if (state.randomSteps[state.currentBank][step][state.currentChannel]) {
-    return Hardware::prepareRenderingOfRandomizedKey(state, step);
+  else if (state.randomVoltages[state.currentBank][key][state.currentChannel]) {
+    return Hardware::prepareRenderingOfRandomizedKey(state, key);
   }
-  else if (state.lockedVoltages[state.currentBank][step][state.currentChannel]) {
-    return Hardware::prepareRenderingOfKey(state, step, state.config.colors.orange);
+  else if (state.lockedVoltages[state.currentBank][key][state.currentChannel]) {
+    return Hardware::prepareRenderingOfKey(state, key, state.config.colors.orange);
   }
-  else if (!state.activeSteps[state.currentBank][step][state.currentChannel]) {
-    return Hardware::prepareRenderingOfKey(state, step, state.config.colors.purple);
+  else if (!state.activeVoltages[state.currentBank][key][state.currentChannel]) {
+    return Hardware::prepareRenderingOfKey(state, key, state.config.colors.purple);
   }
 
-  int16_t voltage = state.voltages[state.currentBank][step][state.currentChannel];
+  int16_t voltage = state.voltages[state.currentBank][key][state.currentChannel];
   RGBColorArray_t yellowShade = {
     static_cast<uint8_t>(state.config.colors.yellow[0] * voltage * PERCENTAGE_MULTIPLIER_10_BIT),
     static_cast<uint8_t>(state.config.colors.yellow[1] * voltage * PERCENTAGE_MULTIPLIER_10_BIT),
     static_cast<uint8_t>(state.config.colors.yellow[2] * voltage * PERCENTAGE_MULTIPLIER_10_BIT),
   };
-  return Hardware::prepareRenderingOfKey(state, step, yellowShade);
+  return Hardware::prepareRenderingOfKey(state, key, yellowShade);
 }
 
 /**
@@ -233,10 +233,10 @@ bool Hardware::renderEditChannelVoltages(State state) {
   seesaw_NeoPixel pixels = state.config.trellis.pixels;
   for (uint8_t i = 0; i < 16; i++) {
     if (state.gateChannels[state.currentBank][state.currentChannel]) {
-      Hardware::prepareRenderingOfChannelEditGateStep(state, i);
+      Hardware::prepareRenderingOfChannelEditGateKey(state, i);
     }
     else {
-      Hardware::prepareRenderingOfChannelEditVoltageStep(state, i);
+      Hardware::prepareRenderingOfChannelEditVoltageKey(state, i);
     }
   }
   pixels.show();
@@ -256,7 +256,7 @@ bool Hardware::renderError(State state) {
 
 bool Hardware::renderGlobalEdit(State state) {
   for (uint8_t i = 0; i < 16; i++) {
-    if (state.removedSteps[i]) {
+    if (state.removedPresets[i]) {
       Hardware::prepareRenderingOfKey(state, i, state.config.colors.black);
     }
     else if (
@@ -265,11 +265,11 @@ bool Hardware::renderGlobalEdit(State state) {
     ) {
       Hardware::prepareRenderingOfKey(state, i, state.config.colors.black);
     }
-    else if (state.currentStep == i && state.initialKeyPressedDuringModHold != i) {
+    else if (state.currentPreset == i && state.initialKeyPressedDuringModHold != i) {
       Hardware::prepareRenderingOfKey(
         state,
         i,
-        state.readyForStepSelection && !state.flash
+        state.readyForPresetSelection && !state.flash
           ? state.config.colors.black
           : state.config.colors.white
       );
@@ -277,20 +277,20 @@ bool Hardware::renderGlobalEdit(State state) {
     else {
       // global states reflected back into global edit screen
       bool allChannelVoltagesLocked = 1;
-      bool allChannelStepsInactive = 1;
+      bool allChannelVoltagesInactive = 1;
       for (uint8_t j = 0; j < 8; j++) {
         if (!state.lockedVoltages[state.currentBank][i][j]) {
           allChannelVoltagesLocked = 0;
         }
-        if (state.activeSteps[state.currentBank][i][j]) {
-          allChannelStepsInactive = 0;
+        if (state.activeVoltages[state.currentBank][i][j]) {
+          allChannelVoltagesInactive = 0;
         }
       }
 
       if (allChannelVoltagesLocked) {
         Hardware::prepareRenderingOfKey(state, i, state.config.colors.orange);
       }
-      else if (allChannelStepsInactive) {
+      else if (allChannelVoltagesInactive) {
         Hardware::prepareRenderingOfKey(state, i, state.config.colors.purple);
       }
       else {
@@ -362,14 +362,14 @@ bool Hardware::renderRecordChannelSelect(State state) {
     ) {
       Hardware::prepareRenderingOfKey(state, key, state.config.colors.black);
     }
-    else if (state.lockedVoltages[state.currentBank][state.currentStep][key]) {
+    else if (state.lockedVoltages[state.currentBank][state.currentPreset][key]) {
       Hardware::prepareRenderingOfKey(state, key, state.config.colors.orange);
     }
     else if (state.randomInputChannels[state.currentBank][key]) {
       Hardware::prepareRenderingOfRandomizedKey(state, key);
     }
     else {
-      uint16_t voltage = state.voltages[state.currentBank][state.currentStep][key];
+      uint16_t voltage = state.voltages[state.currentBank][state.currentPreset][key];
       if (state.autoRecordChannels[state.currentBank][key]) {
         Hardware::prepareRenderingOfKey(state, key, state.config.colors.red);
       } else {
@@ -386,7 +386,7 @@ bool Hardware::renderRecordChannelSelect(State state) {
   return 1;
 }
 
-bool Hardware::renderStepChannelSelect(State state) {
+bool Hardware::renderPresetChannelSelect(State state) {
   RGBColorArray_t dimmedWhite = {
     static_cast<uint8_t>(state.config.colors.white[0] * DIMMED_COLOR_MULTIPLIER),
     static_cast<uint8_t>(state.config.colors.white[1] * DIMMED_COLOR_MULTIPLIER),
@@ -404,7 +404,7 @@ bool Hardware::renderStepChannelSelect(State state) {
   return 1;
 }
 
-bool Hardware::renderStepSelect(State state) {
+bool Hardware::renderPresetSelect(State state) {
   for (uint8_t i = 0; i < 16; i++) {
     if (state.selectedKeyForRecording == i) {
       uint16_t voltage =
@@ -417,7 +417,7 @@ bool Hardware::renderStepSelect(State state) {
       Hardware::prepareRenderingOfKey(state, state.selectedKeyForRecording, redShade);
     }
     else {
-      Hardware::prepareRenderingOfKey(state, i, state.currentStep == i
+      Hardware::prepareRenderingOfKey(state, i, state.currentPreset == i
         ? state.config.colors.white
         : state.config.colors.black
       );
@@ -460,7 +460,7 @@ bool Hardware::setOutputsAll(State state) {
   // TODO: revise to use dac.fastWrite().
   // See https://adafruit.github.io/Adafruit_MCP4728/html/class_adafruit___m_c_p4728.html
   for (uint8_t channel = 0; channel < 8; channel++) {
-    uint16_t voltageValue = Utils::voltageValueForStep(state, state.currentStep, channel);
+    uint16_t voltageValue = Utils::voltageValue(state, state.currentPreset, channel);
     if(!Hardware::setOutput(state, channel, voltageValue)) {
       return 0;
     }

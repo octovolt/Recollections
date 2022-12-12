@@ -60,22 +60,23 @@ typedef struct Config {
    * bottom and all the buttons and knobs are at the top. Or perhaps a person might want to put
    * Recollections in a different location, and the more "standard" orientation makes more sense for
    * them in this case. An inverted, non-controller panel for Recollections is available, so
-   * rearranging it in this way is quite possible. However, in this case, the display of steps will
-   * also need to be inverted, and this flag controls whether to display the steps in this inverted
-   * way.
+   * rearranging it in this way is quite possible. However, in this case, the display of the keys
+   * will also need to be inverted, and this flag controls whether to display the keys in this
+   * inverted way.
    */
   bool controllerOrientation;
 
   /**
    * The current module. A module consists of 16 banks.
    * We refer to this when loading the initial module's state at start up. This should be updated
-   * whenever we load a new module to replace all banks, steps, and channels in State.
+   * whenever we load a new module to replace all voltages across all banks, presets, and channels
+   * in State in addition to any other data within the module's directory on the SD card.
    *
-   * Note that it will be possible to go beyond 0-15 by directly editing this value on the SD card.
-   * That is, if a person changes this value to 16, we will save/load bank files to/from a folder
-   * associated with the index 16. However, this module 16 will be inaccessible in the "Load Module"
-   * flow as we will have only 16 keys to choose from. In the near future it will be possible to
-   * load higher index modules via i2c or MIDI.
+   * Note that it will be possible to go beyond modules 0-15 by directly editing this value on the
+   * SD card. That is, if a person changes this value to 16, we will save/load bank files to/from a
+   * folder associated with the index 16. However, this module 16 will be inaccessible in the "Load
+   * Module" flow as we will have only 16 keys to choose from. In the near future it will be
+   * possible to load higher index modules via i2c or MIDI.
    */
   uint8_t currentModule;
 
@@ -95,12 +96,12 @@ typedef struct Config {
   float isClockedTolerance;
 
   /**
-   * Flag to determine whether we should overwrite steps when using randomized output set up in the
-   * Edit Channel Selection or Edit Channel Voltages screens. It can be useful to do this overwrite,
-   * as no external gate or trigger is required here to get random values into memory, which is the
-   * case when using randomized input on the Recording screen.
+   * Flag to determine whether we should overwrite voltages when using randomized output set up in
+   * the Edit Channel Selection or Edit Channel Voltages screens. It can be useful to do this
+   * overwrite, as no external gate or trigger is required here to get random values into memory,
+   * which is the case when using randomized input on the Recording screen.
    */
-  bool randomOutputOverwritesSteps;
+  bool randomOutputOverwrites;
 
   /** Get the config data from the config file */
   static Config readConfigFromSDCard(Config config);

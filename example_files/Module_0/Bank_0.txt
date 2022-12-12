@@ -1,5 +1,5 @@
 {
-  "activeSteps": [
+  "activeVoltages": [
     [false,false,false,false,false,false,false,false],
     [false,false,false,false,false,false,false,false],
     [false,false,false,false,false,false,false,false],
@@ -19,7 +19,7 @@
   ],
   "autoRecordChannels":[false,false,false,false,false,false,false,false],
   "gateChannels": [false,false,false,false,false,false,false,false],
-  "gateSteps": [
+  "gateVoltages": [
     [false,false,false,false,false,false,false,false],
     [false,false,false,false,false,false,false,false],
     [false,false,false,false,false,false,false,false],
@@ -57,7 +57,7 @@
   ],
   "randomInputChannels": [false,false,false,false,false,false,false,false],
   "randomOutputChannels": [false,false,false,false,false,false,false,false],
-  "randomSteps":[
+  "randomVoltages":[
     [false,false,false,false,false,false,false,false],
     [false,false,false,false,false,false,false,false],
     [false,false,false,false,false,false,false,false],

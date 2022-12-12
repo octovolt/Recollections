@@ -14,8 +14,8 @@ typedef struct Hardware {
   static bool reflectState(State state);
 
   private:
-  static bool prepareRenderingOfChannelEditGateStep(State state, uint8_t step);
-  static bool prepareRenderingOfChannelEditVoltageStep(State state, uint8_t step);
+  static bool prepareRenderingOfChannelEditGateKey(State state, uint8_t preset);
+  static bool prepareRenderingOfChannelEditVoltageKey(State state, uint8_t preset);
   static bool prepareRenderingOfKey(State state, uint8_t key, uint8_t rgbColor[]);
   static bool prepareRenderingOfRandomizedKey(State state, uint8_t key);
   static bool renderBankSelect(State state);
@@ -26,8 +26,8 @@ typedef struct Hardware {
   static bool renderModuleSelect(State state);
   static bool renderRecordChannelSelect(State state);
   static bool renderSectionSelect(State state);
-  static bool renderStepChannelSelect(State state);
-  static bool renderStepSelect(State state);
+  static bool renderPresetChannelSelect(State state);
+  static bool renderPresetSelect(State state);
   static bool setOutput(State state, const int8_t channel, const uint16_t voltageValue);
   static bool setOutputsAll(State state);
 } Hardware;
