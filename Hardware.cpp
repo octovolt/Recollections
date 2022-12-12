@@ -353,12 +353,14 @@ bool Hardware::renderSectionSelect(State state) {
 
 bool Hardware::renderRecordChannelSelect(State state) {
   for (uint8_t key = 0; key < 16; key++) {
-    if (
-      key > 7 ||
-      (state.readyForRecInput && // readyForRecInput means the rec input gate is low
-        !state.flash &&
-        (state.autoRecordChannels[state.currentBank][key] ||
-        state.randomInputChannels[state.currentBank][key]))
+    if (key > 7) {
+      Hardware::prepareRenderingOfKey(state, key, state.config.colors.black);
+    }
+    else if (
+      state.readyForRecInput && // rec input gate is low
+      !state.flash &&
+      (state.autoRecordChannels[state.currentBank][key] ||
+      state.randomInputChannels[state.currentBank][key])
     ) {
       Hardware::prepareRenderingOfKey(state, key, state.config.colors.black);
     }
