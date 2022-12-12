@@ -28,7 +28,7 @@ State Grid::handleKeyEvent(keyEvent evt, State state) {
         state = Grid::handleEditChannelVoltagesKeyEvent(key, state);
         break;
       case SCREEN.ERROR:
-        SCB_AIRCR = 0x05FA0004; // Do a soft reboot of Teensy. Does not work (???)
+        SCB_AIRCR = 0x05FA0004; // Do a soft reboot of Teensy
         break;
       case SCREEN.GLOBAL_EDIT:
         state = Grid::handleGlobalEditKeyEvent(key, state);
