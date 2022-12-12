@@ -9,7 +9,8 @@
 
 Quadrant_t Utils::keyQuadrant(uint8_t key) {
   if (key > 15) {
-    // todo: error handling
+    Serial.println("Key is outside of range");
+    return QUADRANT.INVALID;
   }
   if (key < 2 || (key > 3 && key < 6)) {
     return QUADRANT.NW;
