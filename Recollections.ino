@@ -59,23 +59,46 @@ TrellisCallback handleKeyEvent(keyEvent evt) {
 
 /////////////////////////////////////// INPUT HANDLERS /////////////////////////////////////////////
 
-void handleModButton() {
+void handleModButton(unsigned long loopStartTime) {
+  // long press handling
+  if (
+    !state.readyForModPress &&
+    state.initialKeyPressedDuringModHold < 0 &&
+    loopStartTime - state.timeModPressed > LONG_PRESS_TIME
+  ) {
+    state.initialKeyPressedDuringModHold = 69; // faking this to prevent immediate navigation back
+    if (state.screen == SCREEN.STEP_SELECT) {
+      state = Nav::goForward(state, SCREEN.STEP_CHANNEL_SELECT);
+    } else if (
+      state.screen == SCREEN.EDIT_CHANNEL_VOLTAGES ||
+      state.screen == SCREEN.GLOBAL_EDIT
+    ) {
+      state.readyForStepSelection = 1;
+    }
+    return;
+  }
+
   // When MOD_INPUT is low, the button is being pressed.
   // We have a debounce scheme here with the readyForModPress flag. Once the button is pressed, we
   // say we are not readyForModPress until the button is released and the debounce time has elapsed.
   if (state.readyForModPress && !digitalRead(MOD_INPUT)) {
     state.readyForModPress = 0;
-    state.timeModPressed = millis();
+    state.timeModPressed = loopStartTime;
+    return;
   }
+
   // When MOD_INPUT is high, the button is no longer being pressed.
   // When the button is not being pressed, but we are still not ready for a new press, and the
   // debounce time has elapsed, we then clear the readyForModPress state to become ready for a new
-  // button press. Note that if millis() overflows and starts over at zero, this will be treated as
-  // if the debounce time has elapsed. In theory, this would only happen if the program was running
-  // for over 50 days.
-  else if (
+  // button press. Note that if loopStartTime overflows and starts over at zero, this will be
+  // treated as if the debounce time has elapsed. In theory, this would only happen if the program
+  // was running for over 50 days.
+  if (
     !state.readyForModPress && digitalRead(MOD_INPUT) &&
-    ((millis() - state.timeModPressed > MOD_DEBOUNCE_TIME) || millis() < state.timeModPressed)
+    (
+      (loopStartTime - state.timeModPressed > MOD_DEBOUNCE_TIME) ||
+      loopStartTime < state.timeModPressed
+    )
   ) {
     if (state.initialKeyPressedDuringModHold >= 0) {
       state.initialKeyPressedDuringModHold = -1;
@@ -153,7 +176,7 @@ void handleAdvInput(unsigned long loopStartTime) {
         }
       }
 
-      advanceStep();
+      advanceStep(loopStartTime);
       updateStateAfterAdvancing(loopStartTime);
     }
     else if (!state.readyForAdvInput && digitalRead(ADV_INPUT)) {
@@ -201,8 +224,9 @@ void pasteFromCopyAction() {
  * @brief Change the current step to the provided step index.
  *
  * @param newStep Index of the new step.
+ * @param loopStartTime
  */
-void changeStep(uint8_t newStep) {
+void changeStep(uint8_t newStep, unsigned long loopStartTime) {
   if (newStep > 15) {
     state.currentStep = 0; // to do: error handling
     return;
@@ -223,20 +247,22 @@ void changeStep(uint8_t newStep) {
     }
   }
   if (!allStepsRemoved && state.removedSteps[state.currentStep]) {
-    advanceStep();
+    advanceStep(loopStartTime);
   }
 }
 
 /**
  * @brief Change the current step to the next step and calculate the expected gate length.
+ *
+ * @param loopStartTime
  */
-void advanceStep() {
+void advanceStep(unsigned long loopStartTime) {
   state.isAdvancing = true;
 
   uint16_t avgInterval =
     ((state.lastAdvReceived[0] - state.lastAdvReceived[1]) +
     (state.lastAdvReceived[1] - state.lastAdvReceived[2])) * 0.5;
-  uint16_t lastInterval = state.lastAdvReceived[0] - millis();
+  uint16_t lastInterval = state.lastAdvReceived[0] - loopStartTime;
   // If our most recent interval is below the isClockedTolerance, we are no longer being clocked.
   // See the handling of the ADV input for the upper bound of the tolerance.
   state.isClocked = lastInterval < avgInterval * (1 - state.config.isClockedTolerance)
@@ -244,10 +270,10 @@ void advanceStep() {
     : true;
 
   if (state.currentStep == 15) {
-    changeStep(0);
+    changeStep(0, loopStartTime);
   }
   else {
-    changeStep(state.currentStep + 1);
+    changeStep(state.currentStep + 1, loopStartTime);
   }
 }
 
@@ -527,7 +553,7 @@ void loop() {
   if (!digitalRead(TRELLIS_INTERRUPT_INPUT)) {
     state.config.trellis.read(false);
   }
-  handleModButton();
+  handleModButton(loopStartTime);
   handleAdvInput(loopStartTime);
   handleRecInput();
   recordContinuously();
