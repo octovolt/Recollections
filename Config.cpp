@@ -75,8 +75,8 @@ Config Config::readConfigFromFile(Config config, File configFile) {
       if (doc["currentModule"] != nullptr) {
         config.currentModule = doc["currentModule"];
       }
-      if (doc["isAdvancingMaxInterval"] != nullptr) {
-        config.isAdvancingMaxInterval = doc["isAdvancingMaxInterval"];
+      if (doc["isAdvancingPresetsMaxInterval"] != nullptr) {
+        config.isAdvancingPresetsMaxInterval = doc["isAdvancingPresetsMaxInterval"];
       }
       if (doc["isClockedTolerance"] != nullptr) {
         config.isClockedTolerance = doc["isClockedTolerance"];

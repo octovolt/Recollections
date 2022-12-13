@@ -393,7 +393,7 @@ State Grid::handleRecordChannelSelectKeyEvent(uint8_t key, State state) {
         state.autoRecordChannels[currentBank][key] = 1;
         state.randomInputChannels[currentBank][key] = 1;
         // if not advancing, sample random voltage immediately
-        if (!state.isAdvancing) {
+        if (!state.isAdvancingPresets) {
           state.cachedVoltage = state.voltages[currentBank][currentPreset][currentChannel];
           state.voltages[currentBank][currentPreset][currentChannel] =
             Entropy.random(MAX_UNSIGNED_10_BIT);
@@ -419,8 +419,8 @@ State Grid::handleRecordChannelSelectKeyEvent(uint8_t key, State state) {
   else {
     state.selectedKeyForRecording = key;
     state.currentChannel = key;
-    if (!state.isAdvancing) {
-      // This is only the initial sample when pressing the key. When isAdvancing is true, we do not
+    if (!state.isAdvancingPresets) {
+      // This is only the initial sample when pressing the key. When isAdvancingPresets is true, we do not
       // record immediately upon pressing the key here, but rather when the preset changes.
       // See updateStateAfterAdvancing() within Recollections.ino.
       state.voltages[state.currentBank][state.currentPreset][key] = analogRead(CV_INPUT);

@@ -139,7 +139,8 @@ void handleAdvInput(unsigned long loopStartTime) {
     state.lastAdvReceivedTime[2] = loopStartTime - 3;
   }
   else {
-    state.isAdvancing = (loopStartTime - state.lastAdvReceivedTime[0]) < state.config.isAdvancingMaxInterval;
+    state.isAdvancingPresets =
+      (loopStartTime - state.lastAdvReceivedTime[0]) < state.config.isAdvancingPresetsMaxInterval;
 
     uint16_t avgInterval =
       ((state.lastAdvReceivedTime[0] - state.lastAdvReceivedTime[1]) +
@@ -194,6 +195,56 @@ void handleRecInput() {
   }
 }
 
+void handleResetInput() {
+  if (state.readyForResetInput && !digitalRead(RESET_INPUT)) {
+    state.readyForResetInput = 0;
+    state.currentPreset = 0;
+  }
+  else if (!state.readyForResetInput && digitalRead(RESET_INPUT)) {
+    state.readyForResetInput = 1;
+  }
+}
+
+void handleReverseInput() {
+  if (state.readyForReverseInput && !digitalRead(REV_INPUT)) {
+    state.readyForReverseInput = 0;
+    state.advancePresetAddend = state.advancePresetAddend * -1;
+  }
+  else if (!state.readyForReverseInput && digitalRead(REV_INPUT)) {
+    state.readyForReverseInput = 1;
+  }
+}
+
+void handleBankAdvanceInput() {
+  if (state.readyForBankAdvanceInput && !digitalRead(BANK_ADV_INPUT)) {
+    state.readyForBankAdvanceInput = 0;
+    if (-15 > state.advanceBankAddend || state.advanceBankAddend > 15) {
+      Serial.println("advanceBankAddend out of range, resetting it to 1");
+      state.advanceBankAddend = 1;
+    }
+    int8_t advancedBank = state.currentBank + state.advanceBankAddend;
+    state.currentBank =
+      advancedBank > 15
+        ? advancedBank - 16
+        : advancedBank < 0
+          ? advancedBank + 16
+          : advancedBank;
+  }
+  else if (!state.readyForBankAdvanceInput && digitalRead(BANK_ADV_INPUT)) {
+    state.readyForBankAdvanceInput = 1;
+  }
+}
+
+void handleBankReverseInput() {
+  if (state.readyForBankReverseInput && !digitalRead(BANK_REV_INPUT)) {
+    state.readyForBankReverseInput = 0;
+    state.advanceBankAddend = state.advanceBankAddend * -1;
+  }
+  else if (!state.readyForBankReverseInput && digitalRead(BANK_REV_INPUT)) {
+    state.readyForBankReverseInput = 1;
+  }
+}
+
 ////////////////////////////////////////// PASTE ACTION ////////////////////////////////////////////
 
 void pasteFromCopyAction() {
@@ -218,7 +269,7 @@ void pasteFromCopyAction() {
   state.selectedKeyForCopying = -1;
 }
 
-////////////////////////////////////////// CHANGE PRESET /////////////////////////////////////////////
+////////////////////////////////////////// CHANGE PRESET ///////////////////////////////////////////
 
 /**
  * @brief Change the current preset to the provided preset index.
@@ -226,8 +277,8 @@ void pasteFromCopyAction() {
  * @param newPreset Index of the new preset.
  * @param loopStartTime
  */
-void changePreset(uint8_t newPreset, unsigned long loopStartTime) {
-  if (newPreset > 15) {
+void changePreset(int8_t newPreset, unsigned long loopStartTime) {
+  if (newPreset > 15 || newPreset < 0) {
     state.currentPreset = 0; // to do: error handling
     return;
   }
@@ -237,8 +288,8 @@ void changePreset(uint8_t newPreset, unsigned long loopStartTime) {
   //
   // WARNING! ACHTUNG! PELIGRO!
   //
-  // Make sure to prevent an infinite loop before calling advancePreset()! We cannot allow all presets
-  // to be removed, but if somehow they are, do not call advancePreset().
+  // Make sure to prevent an infinite loop before calling advancePreset()! We cannot allow all
+  // presets to be removed, but if somehow they are, do not call advancePreset().
   bool allPresetsRemoved = 1;
   for (u_int8_t i = 0; i < 16; i++) {
     if (!state.removedPresets[i]) {
@@ -257,7 +308,7 @@ void changePreset(uint8_t newPreset, unsigned long loopStartTime) {
  * @param loopStartTime
  */
 void advancePreset(unsigned long loopStartTime) {
-  state.isAdvancing = true;
+  state.isAdvancingPresets = true;
 
   uint16_t avgInterval =
     ((state.lastAdvReceivedTime[0] - state.lastAdvReceivedTime[1]) +
@@ -269,16 +320,22 @@ void advancePreset(unsigned long loopStartTime) {
     ? false
     : true;
 
-  if (state.currentPreset == 15) {
-    changePreset(0, loopStartTime);
+  if (-15 > state.advancePresetAddend || state.advancePresetAddend > 15) {
+    Serial.println("advancePresetAddend out of range, resetting it to 1");
+    state.advancePresetAddend = 1;
   }
-  else {
-    changePreset(state.currentPreset + 1, loopStartTime);
-  }
+  int8_t advancedPreset = state.currentPreset + state.advancePresetAddend;
+  int8_t newPreset =
+    advancedPreset > 15
+      ? advancedPreset - 16
+      : advancedPreset < 0
+        ? advancedPreset + 16
+        : advancedPreset;
+  changePreset(newPreset, loopStartTime);
 }
 
 /**
- * @brief This function assumes it is being called when state.isAdvancing is true.
+ * @brief This function assumes it is being called when state.isAdvancingPresets is true.
  *
  * @param loopStartTime
  */
@@ -324,11 +381,11 @@ void recordContinuously() {
     ) {
       state = State::editVoltageOnSelectedPreset(state);
     }
-    else if (state.screen == SCREEN.RECORD_CHANNEL_SELECT && !state.isAdvancing) {
+    else if (state.screen == SCREEN.RECORD_CHANNEL_SELECT && !state.isAdvancingPresets) {
       state = State::recordVoltageOnSelectedChannel(state);
     }
   }
-  else if (!state.readyForRecInput && !state.isAdvancing) {
+  else if (!state.readyForRecInput && !state.isAdvancingPresets) {
     state = State::autoRecord(state);
   }
 }
@@ -375,7 +432,7 @@ bool setupConfig() {
   };
   state.config.controllerOrientation = 1;
   state.config.currentModule = 0;
-  state.config.isAdvancingMaxInterval = 10000;
+  state.config.isAdvancingPresetsMaxInterval = 10000;
   state.config.isClockedTolerance = 0.1;
   state.config.randomOutputOverwrites = 1;
 
@@ -444,25 +501,31 @@ bool setupState() {
   if (state.screen != SCREEN.ERROR) {
     state.screen = SCREEN.PRESET_SELECT;
   }
-  state.flash = 1;
+  state.advanceBankAddend = 1;
+  state.advancePresetAddend = 1;
+  state.flash = true;
   state.flashesSinceRandomColorChange = 0;
   state.initialModHoldKey = -1;
   state.keyPressesSinceModHold = 0;
   state.lastFlashToggle = 0;
   state.navHistoryIndex = 0;
-  state.randomColorShouldChange = 1;
-  state.readyForAdvInput = 1;
-  state.readyForKeyPress = 1;
-  state.readyForModPress = 1;
-  state.readyForRecInput = 1;
-  state.readyForPresetSelection = 0;
+  state.randomColorShouldChange = true;
+  state.readyForAdvInput = true;
+  state.readyForBankAdvanceInput = true;
+  state.readyForBankReverseInput = true;
+  state.readyForKeyPress = true;
+  state.readyForModPress = true;
+  state.readyForRecInput = true;
+  state.readyForResetInput = true;
+  state.readyForReverseInput = true;
+  state.readyForPresetSelection = false;
   state.selectedKeyForCopying = -1;
   state.selectedKeyForRecording = -1;
   for (uint8_t i = 0; i < 16; i++) {
     if (i < 4) {
       state.navHistory[i] = SCREEN.PRESET_SELECT;
     }
-    state.pasteTargetKeys[i] = 0;
+    state.pasteTargetKeys[i] = true;
   }
   Serial.println("Successfully set up transient state");
 

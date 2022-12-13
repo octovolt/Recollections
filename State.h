@@ -38,22 +38,57 @@ typedef struct State {
   /** The current index within the navHistory. */
   uint8_t navHistoryIndex;
 
+  /** Current bank, 0-15. */
+  uint8_t currentBank;
+
+  /** Current preset, 0-15. */
+  uint8_t currentPreset;
+
+  /** Current selected output channel, 0-7. */
+  uint8_t currentChannel;
+
+  /**
+   * The number of steps to advance when advancing through presets. Normally, this is 1. A value of
+   * -1 would be used for reversing the direction of the sequence. However, in theory, this value
+   * could be anything between -15 and 15.
+   */
+  int8_t advancePresetAddend;
+
+  /**
+   * The number of steps to advance when advancing through banks. Normally, this is 1. A value of
+   * -1 would be used for reversing the direction of the sequence. However, in theory, this value
+   * could be anything between -15 and 15.
+   */
+  int8_t advanceBankAddend;
+
   /** Flag to track whether we have recently received a gate or trigger on the ADV input. */
-  bool isAdvancing;
+  bool isAdvancingPresets;
 
   /** Flag to track whether we are receiving regular gates or triggers on the ADV input. */
   bool isClocked;
 
-  /** Flag to track whether we should respond to a clock/gate/trigger on the ADV input. */
+  /** Flag to track whether to respond to a clock/gate/trigger on the ADV input. */
   bool readyForAdvInput;
 
-  /** Flag to track whether we should respond to a clock/gate/trigger on the REC input. */
+  /** Flag to track whether to respond to a clock/gate/trigger on the REC input. */
   bool readyForRecInput;
 
-  /** Flag to track whether we should respond to key press. */
+  /** Flag to track whether to respond to a gate/trigger on the RESET input (expansion only). */
+  bool readyForResetInput;
+
+  /** Flag to track whether to respond to a gate/trigger on the REV input (expansion only). */
+  bool readyForReverseInput;
+
+  /** Flag to track whether to respond to a gate/trigger on the BANK ADV input (expansion only). */
+  bool readyForBankAdvanceInput;
+
+  /** Flag to track whether to respond to a gate/trigger on the BANK REV input (expansion only). */
+  bool readyForBankReverseInput;
+
+  /** Flag to track whether to respond to key press. */
   bool readyForKeyPress;
 
-  /** Flag to track whether we should respond to MOD press. */
+  /** Flag to track whether to respond to MOD press. */
   bool readyForModPress;
 
   /** Flag for the alternate preset selection flow in EDIT_CHANNEL_VOLTAGES and GLOBAL_EDIT */
@@ -125,15 +160,6 @@ typedef struct State {
    * This is used to calculate the gate length when a channel is configured to send gates.
    */
   unsigned long gateMillis;
-
-  /** Current bank, 0-15. */
-  uint8_t currentBank;
-
-  /** Current preset, 0-15. */
-  uint8_t currentPreset;
-
-  /** Current selected output channel, 0-7. */
-  uint8_t currentChannel;
 
   /**
    * Current selected preset for recording, 0-15. This is used to continually record while a key is
@@ -250,8 +276,8 @@ typedef struct State {
   static State recordVoltageOnSelectedChannel(State state);
 
   /**
-   * @brief Paste the voltages from one bank to a number of other banks, across all 16 presets and all
-   * 8 channels.
+   * @brief Paste the voltages from one bank to a number of other banks, across all 16 presets and
+   * all 8 channels.
    *
    * @param state
    * @return State
