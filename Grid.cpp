@@ -100,28 +100,42 @@ State Grid::handleEditChannelSelectKeyEvent(uint8_t key, State state) {
     state.currentChannel = key;
   }
   else { // MOD button is being held
-    state.randomOutputChannels[state.currentBank][key] = 0;
-
-    // Update mod + key tracking.
+    Serial.println("key pressed during MOD");
     if (state.initialModHoldKey < 0) {
       state.initialModHoldKey = key;
     }
-    state = Grid::updateModKeyCombinationTracking(key, state);
+
+    // If we changed this key previously, reset the state.
+    // Otherwise, update the mod + key tracking to enter the cycle of functionality.
+    if (
+      state.keyPressesSinceModHold == 0 &&
+      (
+        state.randomOutputChannels[state.currentBank][key] == 1 ||
+        state.gateChannels[bank][key] == 1
+      )
+    ) {
+      state.randomOutputChannels[state.currentBank][key] = 0;
+      state.gateChannels[bank][key] = 0;
+      Serial.println("key was changed, updated to default");
+    } else {
+      Serial.println("key was not changed, moving forward");
+      state = Grid::updateModKeyCombinationTracking(key, state);
+    }
 
     // copy-paste
     if (state.keyPressesSinceModHold == 1) {
       state = Grid::addKeyToCopyPasteData(key, state);
     }
 
-    // toggle as gate channel
+    // set as gate channel
     else if (state.keyPressesSinceModHold == 2) {
       state = State::quitCopyPasteFlowPriorToPaste(state);
-      state.gateChannels[bank][key] = !state.gateChannels[bank][key];
+      state.gateChannels[bank][key] = 1;
     }
 
-    // set as random channel
+    // set as random CV channel
     else if (state.keyPressesSinceModHold == 3) {
-      state.gateChannels[bank][key] = !state.gateChannels[bank][key];
+      state.gateChannels[bank][key] = 0;
       state.randomOutputChannels[state.currentBank][key] = 1;
     }
 
@@ -156,7 +170,6 @@ State Grid::handleEditChannelVoltagesKeyEvent(uint8_t key, State state) {
     }
     // MOD button is being held
     else {
-      // Update mod + key tracking.
       if (state.initialModHoldKey < 0) {
         state.initialModHoldKey = key;
       }
@@ -169,7 +182,6 @@ State Grid::handleEditChannelVoltagesKeyEvent(uint8_t key, State state) {
       }
       // Recurse
       else if (state.keyPressesSinceModHold == 2) {
-        // TODO: restore to previous gate length value?
         state.keyPressesSinceModHold = 0;
         return Grid::handleEditChannelVoltagesKeyEvent(key, state);
       }
@@ -186,21 +198,26 @@ State Grid::handleEditChannelVoltagesKeyEvent(uint8_t key, State state) {
     }
     // MOD button is being held
     else {
-      // TODO: this can be improved to avoid going into copy-paste when we actually want to clear
-      // the alternate state (locked, inactive, random). I think the solution here is to clear
-      // states if they have been modified, and to only update keyPressesSinceModHold if we are both
-      // at zero for keyPressesSinceModHold and no state needs to be cleared.
-      if (state.keyPressesSinceModHold == 0) {
-        state.lockedVoltages[currentBank][key][currentChannel] = 0;
-        state.activeVoltages[currentBank][key][currentChannel] = 1;
-        state.randomVoltages[currentBank][key][currentChannel] = 0;
-      }
-
-      // Update mod + key tracking.
       if (state.initialModHoldKey < 0) {
         state.initialModHoldKey = key;
       }
-      state = Grid::updateModKeyCombinationTracking(key, state);
+
+      // If we changed this key previously, reset the state.
+      // Otherwise, update the mod + key tracking to enter the cycle of functionality.
+      if (
+        state.keyPressesSinceModHold == 0 &&
+        (
+          state.lockedVoltages[currentBank][key][currentChannel] == 1 ||
+          state.activeVoltages[currentBank][key][currentChannel] == 0 ||
+          state.randomVoltages[currentBank][key][currentChannel] == 1
+        )
+      ) {
+        state.lockedVoltages[currentBank][key][currentChannel] = 0;
+        state.activeVoltages[currentBank][key][currentChannel] = 1;
+        state.randomVoltages[currentBank][key][currentChannel] = 0;
+      } else {
+        state = Grid::updateModKeyCombinationTracking(key, state);
+      }
 
       // Copy-paste voltage value
       if (state.keyPressesSinceModHold == 1) {
@@ -263,18 +280,32 @@ State Grid::handleGlobalEditKeyEvent(uint8_t key, State state) {
 
   // MOD button is being held
   else {
-    // Clear states for faster work flow -- is this actually needed?
-    if (state.keyPressesSinceModHold == 0) {
-      for (uint8_t i = 0; i < 8; i++) {
-        state.lockedVoltages[currentBank][key][i] = 0;
-        state.activeVoltages[currentBank][key][i] = 1;
-      }
-    }
-
-    // Update mod + key tracking.
     if (state.initialModHoldKey < 0) {
       state.initialModHoldKey = key;
     }
+
+    // If we changed this key previously, reset the state.
+    // Otherwise, update the mod + key tracking to enter the cycle of functionality.
+    if (state.keyPressesSinceModHold == 0) {
+      bool allChannelVoltagesLocked = 1;
+      bool allChannelVoltagesInactive = 1;
+      for (uint8_t i = 0; i < 8; i++) {
+        if (!state.lockedVoltages[state.currentBank][key][i]) {
+          allChannelVoltagesLocked = 0;
+        }
+        if (state.activeVoltages[state.currentBank][key][i]) {
+          allChannelVoltagesInactive = 0;
+        }
+      }
+      if (allChannelVoltagesLocked || allChannelVoltagesInactive) {
+        for (uint8_t i = 0; i < 8; i++) {
+          state.lockedVoltages[currentBank][key][i] = 0;
+          state.activeVoltages[currentBank][key][i] = 1;
+        }
+        return state;
+      }
+    }
+
     state = Grid::updateModKeyCombinationTracking(key, state);
 
     // Copy-paste
@@ -323,6 +354,8 @@ State Grid::handleRecordChannelSelectKeyEvent(uint8_t key, State state) {
 
   // MOD button is being held
   if (!state.readyForModPress) {
+    // TODO: update this to be more similar to the other cycles of mod + key functionality in other
+    // key event handlers.
     state = Grid::updateModKeyCombinationTracking(key, state);
     if (state.initialModHoldKey != key) {
       return state;
