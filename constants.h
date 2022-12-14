@@ -13,29 +13,36 @@
 #ifndef VOLTAGE_MEMORY_CONSTANTS_H_
 #define VOLTAGE_MEMORY_CONSTANTS_H_
 
+// ----------------------------------- Bit Depth ---------------------------------------------------
+
 #define MAX_UNSIGNED_12_BIT 4095
 #define MAX_UNSIGNED_10_BIT 1023
 #define MAX_UNSIGNED_8_BIT 255
+
+// These value are based on 10-bit, because the resolution of the ADC is 10-bit.
+// These are stepped up to 12-bit for output in real time.
+#define VOLTAGE_VALUE_MAX 1023
+#define VOLTAGE_VALUE_MID 511
+
+#define PERCENTAGE_MULTIPLIER_10_BIT 0.000977517106549 // 1/1023 for 10-bit
+#define PERCENTAGE_MULTIPLIER_32_BIT 0.0000000004656613 // 1/2147483647 for 32-bit
+
+// ---------------------------------- Neotrellis ---------------------------------------------------
 
 #define DEFAULT_BRIGHTNESS 100
 #define COLOR_VALUE_MAX 255 // max brightness, relative to brightness setting
 #define DIMMED_COLOR_MULTIPLIER 0.15
 
-// All of these value are based on 10-bit, because the resolution of the ADC is 10-bit.
-// These are stepped up to 12-bit for output in real time.
-#define VOLTAGE_VALUE_MAX 1023
-#define VOLTAGE_VALUE_MID 511
-#define PERCENTAGE_MULTIPLIER_10_BIT 0.000977517106549 // 1/1023 for 10-bit
+// ------------------------------ Timing and Flashing ----------------------------------------------
 
-#define PERCENTAGE_MULTIPLIER_32_BIT 0.0000000004656613 // 1/2147483647 for 32-bit
-
-#define MOD_DEBOUNCE_TIME 200
+#define MOD_DEBOUNCE_TIME 300
 #define FLASH_TIME 120
 #define LONG_PRESS_TIME 1500
-
 #define DEFAULT_TRIGGER_LENGTH 20
 
 #define SAVE_CONFIRMATION_MAX_FLASHES 4
+
+// ------------------------------------- SD Card ---------------------------------------------------
 
 // Calculated with https://arduinojson.org/v6/assistant
 #define BANK_JSON_DOC_DESERIALIZATION_SIZE 16384 // 14639 required
