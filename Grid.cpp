@@ -63,6 +63,7 @@ State Grid::handleKeyEvent(keyEvent evt, State state) {
 State Grid::addKeyToCopyPasteData(uint8_t key, State state) {
   if (state.selectedKeyForCopying == key) {
     Serial.println("Somehow began copy/paste incorrectly. This should never happen.");
+    return state;
   }
   if (state.selectedKeyForCopying < 0) { // No key selected yet, initiate copy of the pressed key.
     state.selectedKeyForCopying = key;
@@ -100,7 +101,6 @@ State Grid::handleEditChannelSelectKeyEvent(uint8_t key, State state) {
     state.currentChannel = key;
   }
   else { // MOD button is being held
-    Serial.println("key pressed during MOD");
     if (state.initialModHoldKey < 0) {
       state.initialModHoldKey = key;
     }
@@ -116,9 +116,7 @@ State Grid::handleEditChannelSelectKeyEvent(uint8_t key, State state) {
     ) {
       state.randomOutputChannels[state.currentBank][key] = 0;
       state.gateChannels[bank][key] = 0;
-      Serial.println("key was changed, updated to default");
     } else {
-      Serial.println("key was not changed, moving forward");
       state = Grid::updateModKeyCombinationTracking(key, state);
     }
 

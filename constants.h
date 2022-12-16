@@ -72,6 +72,14 @@
 // Different ways to open files on the SD card
 uint8_t const SD_READ_CREATE = (uint8_t)(O_READ | O_CREAT);
 
+// ------------------------------ Hardware Environment ---------------------------------------------
+
+// The version of the hardware expressed as a semver. See https://semver.org/
+std::string const HARDWARE_SEMVER = "0.3.0";
+
+// Whether we are powering the microcontroller through USB for the sake of development or debugging
+bool const USB_POWERED = false;
+
 // --------------------------- Microcontroller Board Pins ------------------------------------------
 
 // Analog inputs

@@ -207,9 +207,10 @@ bool Hardware::renderBankSelect(State state) {
 bool Hardware::renderEditChannelSelect(State state) {
   for (uint8_t i = 0; i < 16; i++) {
     // non-illuminated keys
-    if (
-      i > 7 || (!state.flash && (i == state.selectedKeyForCopying || state.pasteTargetKeys[i]))
-    ) {
+    if (i > 7) {
+      Hardware::prepareRenderingOfKey(state, i, state.config.colors.black);
+    }
+    else if (!state.flash && (state.selectedKeyForCopying == i || state.pasteTargetKeys[i])) {
       Hardware::prepareRenderingOfKey(state, i, state.config.colors.black);
     }
     // illuminated keys
@@ -256,15 +257,18 @@ bool Hardware::renderError(State state) {
 
 bool Hardware::renderGlobalEdit(State state) {
   for (uint8_t i = 0; i < 16; i++) {
+    // removed presets
     if (state.removedPresets[i]) {
       Hardware::prepareRenderingOfKey(state, i, state.config.colors.black);
     }
+    // copy-paste flashing
     else if (
       (state.selectedKeyForCopying == i || state.pasteTargetKeys[i]) &&
       !state.flash
     ) {
       Hardware::prepareRenderingOfKey(state, i, state.config.colors.black);
     }
+    // current preset (white) and flashing for alternate select preset flow (black)
     else if (state.currentPreset == i && state.initialModHoldKey != i) {
       Hardware::prepareRenderingOfKey(
         state,
@@ -461,10 +465,15 @@ bool Hardware::setOutput(State state, const int8_t channel, const uint16_t volta
 bool Hardware::setOutputsAll(State state) {
   // TODO: revise to use dac.fastWrite().
   // See https://adafruit.github.io/Adafruit_MCP4728/html/class_adafruit___m_c_p4728.html
-  for (uint8_t channel = 0; channel < 8; channel++) {
-    uint16_t voltageValue = Utils::voltageValue(state, state.currentPreset, channel);
-    if(!Hardware::setOutput(state, channel, voltageValue)) {
-      return 0;
+  //
+  // In hardware before version 0.4.0, the USB is only accessible by removing dac1. Thus, we will
+  // not send voltage to the outputs while doing development or debugging on these hardware versions.
+  if (!(USB_POWERED && HARDWARE_SEMVER.compare("0.4.0") < 0)) {
+    for (uint8_t channel = 0; channel < 8; channel++) {
+      uint16_t voltageValue = Utils::voltageValue(state, state.currentPreset, channel);
+      if(!Hardware::setOutput(state, channel, voltageValue)) {
+        return 0;
+      }
     }
   }
   return 1;

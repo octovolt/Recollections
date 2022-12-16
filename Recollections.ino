@@ -453,11 +453,14 @@ bool setupPeripheralHardware() {
 
   // DACs
   Serial.println("set up hardware");
-  if (state.config.dac1.begin(MCP4728_I2CADDR_DEFAULT)) { // 0x60
-    Serial.println("dac1 began successfully");
-  } else {
-    Serial.println("dac1 did not begin successfully");
-    return false;
+  // In hardware before version 0.4.0, the USB is only accessible by removing dac1.
+  if (!(USB_POWERED && HARDWARE_SEMVER.compare("0.4.0") < 0)) {
+    if (state.config.dac1.begin(MCP4728_I2CADDR_DEFAULT)) { // 0x60
+      Serial.println("dac1 began successfully");
+    } else {
+      Serial.println("dac1 did not begin successfully");
+      return false;
+    }
   }
   if (state.config.dac2.begin(0x61)) {
     Serial.println("dac2 began successfully");
@@ -525,7 +528,7 @@ bool setupState() {
     if (i < 4) {
       state.navHistory[i] = SCREEN.PRESET_SELECT;
     }
-    state.pasteTargetKeys[i] = true;
+    state.pasteTargetKeys[i] = false;
   }
   Serial.println("Successfully set up transient state");
 
