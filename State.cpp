@@ -84,7 +84,7 @@ State State::pasteBanks(State state) {
           state.voltages[i][j][k] = state.voltages[selectedKeyForCopying][j][k];
         }
       }
-      state.pasteTargetKeys[i] = 0;
+      state.pasteTargetKeys[i] = false;
     }
   }
   state.selectedKeyForCopying = -1;
@@ -103,7 +103,7 @@ State State::pasteChannels(State state) {
   for (uint8_t i = 0; i < 8; i++) { // channels
     if (state.pasteTargetKeys[i]) {
       if (state.gateChannels[currentBank][selectedKeyForCopying]) {
-        state.gateChannels[state.currentBank][i] = 1;
+        state.gateChannels[state.currentBank][i] = true;
         for (uint8_t j = 0; j < 16; j++) {
           state.gateVoltages[currentBank][j][i] =
             state.gateVoltages[currentBank][j][selectedKeyForCopying];
@@ -118,7 +118,7 @@ State State::pasteChannels(State state) {
         }
       }
     }
-    state.pasteTargetKeys[i] = 0;
+    state.pasteTargetKeys[i] = false;
   }
   state.selectedKeyForCopying = -1;
   return state;
@@ -137,7 +137,7 @@ State State::pasteVoltages(State state) {
       state.voltages[state.currentBank][i][state.currentChannel] =
         state.voltages[state.currentBank][state.selectedKeyForCopying][state.currentChannel];
     }
-    state.pasteTargetKeys[i] = 0;
+    state.pasteTargetKeys[i] = false;
   }
   state.selectedKeyForCopying = -1;
   return state;
@@ -157,7 +157,7 @@ State State::pastePresets(State state) {
           state.voltages[state.currentBank][state.selectedKeyForCopying][j];
       }
     }
-    state.pasteTargetKeys[i] = 0;
+    state.pasteTargetKeys[i] = false;
   }
   state.selectedKeyForCopying = -1;
   return state;
@@ -166,7 +166,7 @@ State State::pastePresets(State state) {
 State State::quitCopyPasteFlowPriorToPaste(State state) {
   state.selectedKeyForCopying = -1;
   for (uint8_t i = 0; i < 16; i++) {
-    state.pasteTargetKeys[i] = 0;
+    state.pasteTargetKeys[i] = false;
   }
   return state;
 }
@@ -198,7 +198,7 @@ State State::readModuleFromSDCard(State state) {
   state.currentBank = 0;
   state.currentChannel = 0;
   for (uint8_t i = 0; i < 16; i++) {
-    state.removedPresets[i] = 0;
+    state.removedPresets[i] = false;
   }
 
   // Bank data -- preserved in Bank_<bank-index>.txt
@@ -213,14 +213,14 @@ State State::readModuleFromSDCard(State state) {
   for (uint8_t i = 0; i < 16; i++) {
     for (uint8_t j = 0; j < 16; j++) {
       for (uint8_t k = 0; k < 8; k++) {
-        state.activeVoltages[i][j][k] = 1;
-        state.autoRecordChannels[i][k] = 0;
-        state.gateChannels[i][k] = 0;
-        state.gateVoltages[i][j][k] = 0;
-        state.lockedVoltages[i][j][k] = 0;
-        state.randomInputChannels[i][k] = 0;
-        state.randomOutputChannels[i][k] = 0;
-        state.randomVoltages[i][j][k] = 0;
+        state.activeVoltages[i][j][k] = true;
+        state.autoRecordChannels[i][k] = false;
+        state.gateChannels[i][k] = false;
+        state.gateVoltages[i][j][k] = false;
+        state.lockedVoltages[i][j][k] = false;
+        state.randomInputChannels[i][k] = false;
+        state.randomOutputChannels[i][k] = false;
+        state.randomVoltages[i][j][k] = false;
         state.voltages[i][j][k] = VOLTAGE_VALUE_MID;
       }
     }

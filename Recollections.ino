@@ -43,7 +43,7 @@
 // State instance. Initial values provided in setup().
 State state;
 
-bool initialLoop = 1;
+bool initialLoop = true;
 
 ////////////////////////////////////////// KEY EVENTS //////////////////////////////////////////////
 
@@ -73,7 +73,7 @@ void handleModButton(unsigned long loopStartTime) {
       state.screen == SCREEN.EDIT_CHANNEL_VOLTAGES ||
       state.screen == SCREEN.GLOBAL_EDIT
     ) {
-      state.readyForPresetSelection = 1;
+      state.readyForPresetSelection = true;
     }
     return;
   }
@@ -82,7 +82,7 @@ void handleModButton(unsigned long loopStartTime) {
   // We have a debounce scheme here with the readyForModPress flag. Once the button is pressed, we
   // say we are not readyForModPress until the button is released and the debounce time has elapsed.
   if (state.readyForModPress && !digitalRead(MOD_INPUT)) {
-    state.readyForModPress = 0;
+    state.readyForModPress = false;
     state.lastModPressTime = loopStartTime;
     return;
   }
@@ -108,18 +108,18 @@ void handleModButton(unsigned long loopStartTime) {
       }
     }
     else if (state.screen == SCREEN.SECTION_SELECT && state.readyToSave) {
-      state.readyToSave = 0;
+      state.readyToSave = false;
     }
     else if (state.screen == SCREEN.PRESET_SELECT) {
       state = Nav::goForward(state, SCREEN.SECTION_SELECT);
     }
-    else if (state.readyForPresetSelection == 1) {
-      state.readyForPresetSelection = 0;
+    else if (state.readyForPresetSelection) {
+      state.readyForPresetSelection = false;
     }
     else {
       state = Nav::goBack(state);
     }
-    state.readyForModPress = 1;
+    state.readyForModPress = true;
   }
 }
 
@@ -154,7 +154,7 @@ void handleAdvInput(unsigned long loopStartTime) {
     }
 
     if (state.readyForAdvInput && !digitalRead(ADV_INPUT)) {
-      state.readyForAdvInput = 0;
+      state.readyForAdvInput = false;
 
       if (state.config.randomOutputOverwrites) {
         // set random output voltages of next preset before advancing
@@ -181,43 +181,43 @@ void handleAdvInput(unsigned long loopStartTime) {
       updateStateAfterAdvancing(loopStartTime);
     }
     else if (!state.readyForAdvInput && digitalRead(ADV_INPUT)) {
-      state.readyForAdvInput = 1;
+      state.readyForAdvInput = true;
     }
   }
 }
 
 void handleRecInput() {
   if (state.readyForRecInput && !digitalRead(REC_INPUT)) {
-    state.readyForRecInput = 0;
+    state.readyForRecInput = false;
   }
   else if (!state.readyForRecInput && digitalRead(REC_INPUT)) {
-    state.readyForRecInput = 1;
+    state.readyForRecInput = true;
   }
 }
 
 void handleResetInput() {
   if (state.readyForResetInput && !digitalRead(RESET_INPUT)) {
-    state.readyForResetInput = 0;
+    state.readyForResetInput = false;
     state.currentPreset = 0;
   }
   else if (!state.readyForResetInput && digitalRead(RESET_INPUT)) {
-    state.readyForResetInput = 1;
+    state.readyForResetInput = true;
   }
 }
 
 void handleReverseInput() {
   if (state.readyForReverseInput && !digitalRead(REV_INPUT)) {
-    state.readyForReverseInput = 0;
+    state.readyForReverseInput = false;
     state.advancePresetAddend = state.advancePresetAddend * -1;
   }
   else if (!state.readyForReverseInput && digitalRead(REV_INPUT)) {
-    state.readyForReverseInput = 1;
+    state.readyForReverseInput = true;
   }
 }
 
 void handleBankAdvanceInput() {
   if (state.readyForBankAdvanceInput && !digitalRead(BANK_ADV_INPUT)) {
-    state.readyForBankAdvanceInput = 0;
+    state.readyForBankAdvanceInput = false;
     if (-15 > state.advanceBankAddend || state.advanceBankAddend > 15) {
       Serial.println("advanceBankAddend out of range, resetting it to 1");
       state.advanceBankAddend = 1;
@@ -231,17 +231,17 @@ void handleBankAdvanceInput() {
           : advancedBank;
   }
   else if (!state.readyForBankAdvanceInput && digitalRead(BANK_ADV_INPUT)) {
-    state.readyForBankAdvanceInput = 1;
+    state.readyForBankAdvanceInput = true;
   }
 }
 
 void handleBankReverseInput() {
   if (state.readyForBankReverseInput && !digitalRead(BANK_REV_INPUT)) {
-    state.readyForBankReverseInput = 0;
+    state.readyForBankReverseInput = false;
     state.advanceBankAddend = state.advanceBankAddend * -1;
   }
   else if (!state.readyForBankReverseInput && digitalRead(BANK_REV_INPUT)) {
-    state.readyForBankReverseInput = 1;
+    state.readyForBankReverseInput = true;
   }
 }
 
@@ -290,10 +290,10 @@ void changePreset(int8_t newPreset, unsigned long loopStartTime) {
   //
   // Make sure to prevent an infinite loop before calling advancePreset()! We cannot allow all
   // presets to be removed, but if somehow they are, do not call advancePreset().
-  bool allPresetsRemoved = 1;
+  bool allPresetsRemoved = true;
   for (u_int8_t i = 0; i < 16; i++) {
     if (!state.removedPresets[i]) {
-      allPresetsRemoved = 0;
+      allPresetsRemoved = false;
       break;
     }
   }
@@ -588,18 +588,18 @@ void loop() {
   unsigned long loopStartTime = millis();
 
   // flash timing
-  state.randomColorShouldChange = 0;
+  state.randomColorShouldChange = false;
   if (
     loopStartTime - state.lastFlashToggle > FLASH_TIME
   ) {
     state.flashesSinceRandomColorChange += 1;
     if (state.flashesSinceRandomColorChange > 1) {
       state.flashesSinceRandomColorChange = 0;
-      state.randomColorShouldChange = 1;
+      state.randomColorShouldChange = true;
     }
     if (state.confirmingSave) {
       if (state.flashesSinceSave > SAVE_CONFIRMATION_MAX_FLASHES) {
-        state.confirmingSave = 0;
+        state.confirmingSave = false;
       }
       else {
         state.flashesSinceSave += 1;
@@ -636,5 +636,5 @@ void loop() {
   if (initialLoop) {
     Serial.println("initial loop completed");
   }
-  initialLoop = 0;
+  initialLoop = false;
 }

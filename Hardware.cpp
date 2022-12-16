@@ -155,7 +155,7 @@ bool Hardware::prepareRenderingOfKey(State state, uint8_t key, RGBColorArray_t r
     ? key
     : 15 - key;
   state.config.trellis.pixels.setPixelColor(displayKey, rgbColor[0], rgbColor[1], rgbColor[2]);
-  return 1;
+  return true;
 }
 
 /**
@@ -177,7 +177,7 @@ bool Hardware::prepareRenderingOfRandomizedKey(State state, uint8_t key) {
     return Hardware::prepareRenderingOfKey(state, key, color);
   }
   // else no op
-  return 1;
+  return true;
 }
 
 bool Hardware::renderBankSelect(State state) {
@@ -201,7 +201,7 @@ bool Hardware::renderBankSelect(State state) {
     }
   }
   state.config.trellis.pixels.show();
-  return 1;
+  return true;
 }
 
 bool Hardware::renderEditChannelSelect(State state) {
@@ -227,7 +227,7 @@ bool Hardware::renderEditChannelSelect(State state) {
     }
   }
   state.config.trellis.pixels.show();
-  return 1;
+  return true;
 }
 
 bool Hardware::renderEditChannelVoltages(State state) {
@@ -241,7 +241,7 @@ bool Hardware::renderEditChannelVoltages(State state) {
     }
   }
   pixels.show();
-  return 1;
+  return true;
 }
 
 bool Hardware::renderError(State state) {
@@ -252,7 +252,7 @@ bool Hardware::renderError(State state) {
     );
   }
   state.config.trellis.pixels.show();
-  return 0; // stay in error screen
+  return false; // stay in error screen
 }
 
 bool Hardware::renderGlobalEdit(State state) {
@@ -280,14 +280,14 @@ bool Hardware::renderGlobalEdit(State state) {
     }
     else {
       // global states reflected back into global edit screen
-      bool allChannelVoltagesLocked = 1;
-      bool allChannelVoltagesInactive = 1;
+      bool allChannelVoltagesLocked = true;
+      bool allChannelVoltagesInactive = true;
       for (uint8_t j = 0; j < 8; j++) {
         if (!state.lockedVoltages[state.currentBank][i][j]) {
-          allChannelVoltagesLocked = 0;
+          allChannelVoltagesLocked = false;
         }
         if (state.activeVoltages[state.currentBank][i][j]) {
-          allChannelVoltagesInactive = 0;
+          allChannelVoltagesInactive = false;
         }
       }
 
@@ -303,7 +303,7 @@ bool Hardware::renderGlobalEdit(State state) {
     }
   }
   state.config.trellis.pixels.show();
-  return 1;
+  return true;
 }
 
 bool Hardware::renderModuleSelect(State state) {
@@ -319,7 +319,7 @@ bool Hardware::renderModuleSelect(State state) {
     );
   }
   state.config.trellis.pixels.show();
-  return 1;
+  return true;
 }
 
 bool Hardware::renderSectionSelect(State state) {
@@ -330,7 +330,7 @@ bool Hardware::renderSectionSelect(State state) {
     else {
       switch (Utils::keyQuadrant(i)) {
         case QUADRANT.INVALID:
-          return 0;
+          return false;
         case QUADRANT.NW: // EDIT_CHANNEL_SELECT
           Hardware::prepareRenderingOfKey(state, i, state.config.colors.yellow);
           break;
@@ -352,7 +352,7 @@ bool Hardware::renderSectionSelect(State state) {
     }
   }
   state.config.trellis.pixels.show();
-  return 1;
+  return true;
 }
 
 bool Hardware::renderRecordChannelSelect(State state) {
@@ -389,7 +389,7 @@ bool Hardware::renderRecordChannelSelect(State state) {
     }
   }
   state.config.trellis.pixels.show();
-  return 1;
+  return true;
 }
 
 bool Hardware::renderPresetChannelSelect(State state) {
@@ -407,7 +407,7 @@ bool Hardware::renderPresetChannelSelect(State state) {
     );
   }
   state.config.trellis.pixels.show();
-  return 1;
+  return true;
 }
 
 bool Hardware::renderPresetSelect(State state) {
@@ -430,7 +430,7 @@ bool Hardware::renderPresetSelect(State state) {
     }
   }
   state.config.trellis.pixels.show();
-  return 1;
+  return true;
 }
 
 /**
@@ -442,20 +442,20 @@ bool Hardware::renderPresetSelect(State state) {
 bool Hardware::setOutput(State state, const int8_t channel, const uint16_t voltageValue) {
   if (channel > 7) {
     Serial.printf("%s %u \n", "invalid channel", channel);
-    return 0;
+    return false;
   }
   if (0 > voltageValue || voltageValue > MAX_UNSIGNED_10_BIT) {
     Serial.printf("%s %u \n", "invalid 10-bit voltage value", voltageValue);
-    return 0;
+    return false;
   }
   Adafruit_MCP4728 dac = channel < 4 ? state.config.dac1 : state.config.dac2;
   int dacChannel = channel < 4 ? channel : channel - 4; // normalize to output indexes 0 to 3.
   bool writeSuccess = dac.setChannelValue(DAC_CHANNELS[dacChannel], Utils::tenBitToTwelveBit(voltageValue));
   if (!writeSuccess) {
     Serial.println("setOutput unsuccessful; setChannelValue error");
-    return 0;
+    return false;
   }
-  return 1;
+  return true;
 }
 
 /**
@@ -472,9 +472,9 @@ bool Hardware::setOutputsAll(State state) {
     for (uint8_t channel = 0; channel < 8; channel++) {
       uint16_t voltageValue = Utils::voltageValue(state, state.currentPreset, channel);
       if(!Hardware::setOutput(state, channel, voltageValue)) {
-        return 0;
+        return false;
       }
     }
   }
-  return 1;
+  return true;
 }
