@@ -92,54 +92,58 @@ State Grid::handleBankSelectKeyEvent(uint8_t key, State state) {
 }
 
 State Grid::handleEditChannelSelectKeyEvent(uint8_t key, State state) {
-  uint8_t bank = state.currentBank;
-  if (state.readyForModPress) { // MOD button is not being held, select channel and navigate
-    state = Nav::goForward(state, SCREEN.EDIT_CHANNEL_VOLTAGES);
-    if (key > 7) {
-      return state;
-    }
-    state.currentChannel = key;
+  // Invalid key
+  if (key > 7) {
+    return state;
   }
-  else { // MOD button is being held
-    if (state.initialModHoldKey < 0) {
-      state.initialModHoldKey = key;
-    }
 
-    // If we changed this key previously, reset the state.
-    // Otherwise, update the mod + key tracking to enter the cycle of functionality.
-    if (
-      state.keyPressesSinceModHold == 0 &&
-      (state.randomOutputChannels[state.currentBank][key] || state.gateChannels[bank][key])
-    ) {
-      state.randomOutputChannels[state.currentBank][key] = false;
-      state.gateChannels[bank][key] = false;
-    } else {
-      state = Grid::updateModKeyCombinationTracking(key, state);
-    }
+  // MOD button is not being held, select channel and navigate
+  if (state.readyForModPress) {
+    state.currentChannel = key;
+    state = Nav::goForward(state, SCREEN.EDIT_CHANNEL_VOLTAGES);
+    return state;
+  }
 
-    // copy-paste
-    if (state.keyPressesSinceModHold == 1) {
-      state = Grid::addKeyToCopyPasteData(key, state);
-    }
+  // MOD button is being held
+  uint8_t currentBank = state.currentBank;
+  if (state.initialModHoldKey < 0) {
+    state.initialModHoldKey = key;
+  }
 
-    // set as gate channel
-    else if (state.keyPressesSinceModHold == 2) {
-      state = State::quitCopyPasteFlowPriorToPaste(state);
-      state.gateChannels[bank][key] = true;
-    }
+  // If we changed this key previously, reset the state.
+  // Otherwise, update the mod + key tracking to enter the cycle of functionality.
+  if (
+    state.keyPressesSinceModHold == 0 &&
+    (state.randomOutputChannels[currentBank][key] || state.gateChannels[currentBank][key])
+  ) {
+    state.randomOutputChannels[currentBank][key] = false;
+    state.gateChannels[currentBank][key] = false;
+  } else {
+    state = Grid::updateModKeyCombinationTracking(key, state);
+  }
 
-    // set as random CV channel
-    else if (state.keyPressesSinceModHold == 3) {
-      state.gateChannels[bank][key] = false;
-      state.randomOutputChannels[state.currentBank][key] = true;
-    }
+  // copy-paste
+  if (state.keyPressesSinceModHold == 1) {
+    state = Grid::addKeyToCopyPasteData(key, state);
+  }
 
-    // recurse
-    else if (state.keyPressesSinceModHold == 4) {
-      state.randomOutputChannels[state.currentBank][key] = false;
-      state.keyPressesSinceModHold = 0;
-      return Grid::handleEditChannelSelectKeyEvent(key, state);
-    }
+  // set as gate channel
+  else if (state.keyPressesSinceModHold == 2) {
+    state = State::quitCopyPasteFlowPriorToPaste(state);
+    state.gateChannels[currentBank][key] = true;
+  }
+
+  // set as random CV channel
+  else if (state.keyPressesSinceModHold == 3) {
+    state.gateChannels[currentBank][key] = false;
+    state.randomOutputChannels[currentBank][key] = true;
+  }
+
+  // recurse
+  else if (state.keyPressesSinceModHold == 4) {
+    state.randomOutputChannels[currentBank][key] = false;
+    state.keyPressesSinceModHold = 0;
+    return Grid::handleEditChannelSelectKeyEvent(key, state);
   }
 
   return state;
@@ -339,6 +343,37 @@ State Grid::handleModuleSelectKeyEvent(uint8_t key, State state) {
   return state;
 }
 
+State Grid::handlePresetChannelSelectKeyEvent(uint8_t key, State state) {
+  if (key > 7) {
+    return state;
+  }
+  state.currentChannel = key;
+  state = Nav::goBack(state);
+  return state;
+}
+
+State Grid::handlePresetSelectKeyEvent(uint8_t key, State state) {
+  if (!state.readyForModPress) { // MOD button is being held
+    state.initialModHoldKey = key;
+    state.selectedKeyForRecording = key;
+    if (
+      state.randomInputChannels[state.currentBank][state.currentChannel] ||
+      (state.randomVoltages[state.currentBank][state.currentPreset][state.currentBank] &&
+        state.config.randomOutputOverwrites)
+    ) {
+      state.voltages[state.currentBank][key][state.currentChannel] =
+        Entropy.random(MAX_UNSIGNED_10_BIT);
+    }
+    else {
+      state.voltages[state.currentBank][key][state.currentChannel] = analogRead(CV_INPUT);
+    }
+  }
+  else {
+    state.currentPreset = key;
+  }
+  return state;
+}
+
 State Grid::handleRecordChannelSelectKeyEvent(uint8_t key, State state) {
   uint8_t currentBank = state.currentBank;
   uint8_t currentPreset = state.currentPreset;
@@ -347,80 +382,71 @@ State Grid::handleRecordChannelSelectKeyEvent(uint8_t key, State state) {
     return state;
   }
 
-  // MOD button is being held
-  if (!state.readyForModPress) {
-    // TODO: update this to be more similar to the other cycles of mod + key functionality in other
-    // key event handlers.
-    state = Grid::updateModKeyCombinationTracking(key, state);
-    if (state.initialModHoldKey != key) {
-      return state;
-    }
-
-    // Toggle automatic recording
-    // If autorecord is already on, turn off both autorecord and random
-    if (state.keyPressesSinceModHold == 1) {
-      state.autoRecordChannels[currentBank][key] =
-        !state.autoRecordChannels[currentBank][key];
-      if (
-        state.randomInputChannels[currentBank][key] &&
-        !state.autoRecordChannels[currentBank][key]
-      ) {
-        state.randomInputChannels[currentBank][key] = true;
-      }
-    }
-
-    // Turn on randomly generated input.
-    // Note: this does not turn off automatic recording, as we want to use random voltage as part of
-    // automatic recording in this case.
-    else if (state.keyPressesSinceModHold == 2) {
-      // If we are back to the beginning, recurse. That is, if we started with autorecording on, and
-      // we just turned it off in the block above with the first key press, with the second key
-      // press we want to recurse and turn it back on again.
-      if (
-        !state.autoRecordChannels[currentBank][key] &&
-        !state.randomInputChannels[currentBank][key]
-      ) {
-        state.keyPressesSinceModHold = 0;
-        return Grid::handleRecordChannelSelectKeyEvent(key, state);
-
-      // else if we are pressing a key that is not yet random, make it random.
-      } else if (!state.randomInputChannels[currentBank][key]) {
-        state.autoRecordChannels[currentBank][key] = true;
-        state.randomInputChannels[currentBank][key] = true;
-        // if not advancing, sample random voltage immediately
-        if (!state.isAdvancingPresets) {
-          state.cachedVoltage = state.voltages[currentBank][currentPreset][currentChannel];
-          state.voltages[currentBank][currentPreset][currentChannel] =
-            Entropy.random(MAX_UNSIGNED_10_BIT);
-        }
-
-      // else if we are pressing any random key other than the first, turn off random and return
-      // the key to the autorecord state.
-      } else if (state.initialModHoldKey != key) {
-        state.randomInputChannels[currentBank][key] = false;
-      }
-    }
-
-    // Recurse
-    else if (state.keyPressesSinceModHold == 3) {
-      state.autoRecordChannels[currentBank][key] = false;
-      state.randomInputChannels[currentBank][key] = false;
-      state.keyPressesSinceModHold = 0;
-      return Grid::handleRecordChannelSelectKeyEvent(key, state);
-    }
-  }
-
   // MOD button is not being held
-  else {
+  if (state.readyForModPress) {
     state.selectedKeyForRecording = key;
     state.currentChannel = key;
     if (!state.isAdvancingPresets) {
-      // This is only the initial sample when pressing the key. When isAdvancingPresets is true, we do not
-      // record immediately upon pressing the key here, but rather when the preset changes.
+      // This is only the initial sample when pressing the key. When isAdvancingPresets is true, we
+      // do not record immediately upon pressing the key here, but rather when the preset changes.
       // See updateStateAfterAdvancing() within Recollections.ino.
-      state.voltages[state.currentBank][state.currentPreset][key] = analogRead(CV_INPUT);
+      state.voltages[currentBank][currentPreset][key] = analogRead(CV_INPUT);
+    }
+    return state;
+  }
+
+  // MOD button is being held
+  if (state.initialModHoldKey < 0) {
+    state.initialModHoldKey = key;
+  }
+
+  // Allow auto recording only on one channel at a time
+  if (state.initialModHoldKey != key) {
+    return state;
+  }
+
+  // If we changed this key previously, reset the state.
+  // Otherwise, update the mod + key tracking to enter the cycle of functionality.
+  if (
+    state.keyPressesSinceModHold == 0 &&
+    (state.autoRecordChannels[currentBank][key] || state.randomInputChannels[currentBank][key])
+  ) {
+    state.autoRecordChannels[currentBank][key] = false;
+    state.randomInputChannels[currentBank][key] = false;
+  }
+  else {
+    state = Grid::updateModKeyCombinationTracking(key, state);
+  }
+
+  // Automatic recording
+  if (state.keyPressesSinceModHold == 1) {
+    state.autoRecordChannels[currentBank][key] = true;
+  }
+
+  // Randomly generated input.
+  // Note: this does not turn off automatic recording, as we want to use random voltage as part of
+  // automatic recording in this case.
+  else if (state.keyPressesSinceModHold == 2) {
+    state.randomInputChannels[currentBank][key] = true;
+    // if not advancing, sample random voltage immediately
+    if (!state.isAdvancingPresets) {
+      state.cachedVoltage = state.voltages[currentBank][currentPreset][currentChannel];
+      state.voltages[currentBank][currentPreset][currentChannel] =
+        Entropy.random(MAX_UNSIGNED_10_BIT);
     }
   }
+
+  // Recurse
+  else if (state.keyPressesSinceModHold == 3) {
+    state.autoRecordChannels[currentBank][key] = false;
+    state.randomInputChannels[currentBank][key] = false;
+    if (!state.isAdvancingPresets) {
+      state.voltages[currentBank][currentPreset][currentChannel] = state.cachedVoltage;
+    }
+    state.keyPressesSinceModHold = 0;
+    return Grid::handleRecordChannelSelectKeyEvent(key, state);
+  }
+
   return state;
 }
 
@@ -480,37 +506,6 @@ State Grid::handleSectionSelectKeyEvent(uint8_t key, State state) {
         state = Nav::goForward(state, SCREEN.BANK_SELECT);
       }
       break;
-  }
-  return state;
-}
-
-State Grid::handlePresetChannelSelectKeyEvent(uint8_t key, State state) {
-  if (key > 7) {
-    return state;
-  }
-  state.currentChannel = key;
-  state = Nav::goBack(state);
-  return state;
-}
-
-State Grid::handlePresetSelectKeyEvent(uint8_t key, State state) {
-  if (!state.readyForModPress) { // MOD button is being held
-    state.initialModHoldKey = key;
-    state.selectedKeyForRecording = key;
-    if (
-      state.randomInputChannels[state.currentBank][state.currentChannel] ||
-      (state.randomVoltages[state.currentBank][state.currentPreset][state.currentBank] &&
-        state.config.randomOutputOverwrites)
-    ) {
-      state.voltages[state.currentBank][key][state.currentChannel] =
-        Entropy.random(MAX_UNSIGNED_10_BIT);
-    }
-    else {
-      state.voltages[state.currentBank][key][state.currentChannel] = analogRead(CV_INPUT);
-    }
-  }
-  else {
-    state.currentPreset = key;
   }
   return state;
 }
