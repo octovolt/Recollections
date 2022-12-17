@@ -468,7 +468,7 @@ bool Hardware::setOutputsAll(State state) {
   //
   // In hardware before version 0.4.0, the USB is only accessible by removing dac1. Thus, we will
   // not send voltage to the outputs while doing development or debugging on these hardware versions.
-  if (!(USB_POWERED && HARDWARE_SEMVER.compare("0.4.0") < 0)) {
+  if (!(USB_POWERED && (HARDWARE_SEMVER.compare("0.4.0") < 0))) {
     for (uint8_t channel = 0; channel < 8; channel++) {
       uint16_t voltageValue = Utils::voltageValue(state, state.currentPreset, channel);
       if(!Hardware::setOutput(state, channel, voltageValue)) {

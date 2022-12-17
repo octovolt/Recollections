@@ -454,7 +454,7 @@ bool setupPeripheralHardware() {
   // DACs
   Serial.println("set up hardware");
   // In hardware before version 0.4.0, the USB is only accessible by removing dac1.
-  if (!(USB_POWERED && HARDWARE_SEMVER.compare("0.4.0") < 0)) {
+  if (!(USB_POWERED && (HARDWARE_SEMVER.compare("0.4.0") < 0))) {
     if (state.config.dac1.begin(MCP4728_I2CADDR_DEFAULT)) { // 0x60
       Serial.println("dac1 began successfully");
     } else {
