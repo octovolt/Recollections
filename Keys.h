@@ -1,5 +1,5 @@
 /**
- * Recollections: Grid
+ * Recollections: Keys
  *
  * Copyright 2022 William Edward Fisher.
  */
@@ -7,10 +7,10 @@
 #include "State.h"
 #include "typedefs.h"
 
-#ifndef VOLTAGE_MEMORY_GRID_H_
-#define VOLTAGE_MEMORY_GRID_H_
+#ifndef VOLTAGE_MEMORY_KEYS_H_
+#define VOLTAGE_MEMORY_KEYS_H_
 
-typedef struct Grid {
+typedef struct Keys {
   static State handleKeyEvent(keyEvent evt, State state);
   private:
   static State addKeyToCopyPasteData(uint8_t key, State state);
@@ -24,6 +24,6 @@ typedef struct Grid {
   static State handlePresetChannelSelectKeyEvent(uint8_t key, State state);
   static State handlePresetSelectKeyEvent(uint8_t key, State state);
   static State updateModKeyCombinationTracking(uint8_t key, State state);
-} Grid;
+} Keys;
 
 #endif

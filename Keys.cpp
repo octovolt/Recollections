@@ -1,7 +1,7 @@
 /**
  * Copyright 2022 William Edward Fisher.
  */
-#include "Grid.h"
+#include "Keys.h"
 
 #include <Adafruit_NeoTrellis.h>
 #include <Entropy.h>
@@ -11,7 +11,7 @@
 #include "Utils.h"
 #include "constants.h"
 
-State Grid::handleKeyEvent(keyEvent evt, State state) {
+State Keys::handleKeyEvent(keyEvent evt, State state) {
   if (evt.bit.EDGE == SEESAW_KEYPAD_EDGE_RISING && state.readyForKeyPress) {
     uint8_t key = state.config.controllerOrientation
       ? evt.bit.NUM
@@ -19,34 +19,34 @@ State Grid::handleKeyEvent(keyEvent evt, State state) {
     state.readyForKeyPress = false;
     switch (state.screen) {
       case SCREEN.BANK_SELECT:
-        state = Grid::handleBankSelectKeyEvent(key, state);
+        state = Keys::handleBankSelectKeyEvent(key, state);
         break;
       case SCREEN.EDIT_CHANNEL_SELECT:
-        state = Grid::handleEditChannelSelectKeyEvent(key, state);
+        state = Keys::handleEditChannelSelectKeyEvent(key, state);
         break;
       case SCREEN.EDIT_CHANNEL_VOLTAGES:
-        state = Grid::handleEditChannelVoltagesKeyEvent(key, state);
+        state = Keys::handleEditChannelVoltagesKeyEvent(key, state);
         break;
       case SCREEN.ERROR:
         SCB_AIRCR = 0x05FA0004; // Do a soft reboot of Teensy
         break;
       case SCREEN.GLOBAL_EDIT:
-        state = Grid::handleGlobalEditKeyEvent(key, state);
+        state = Keys::handleGlobalEditKeyEvent(key, state);
         break;
       case SCREEN.MODULE_SELECT:
-        state = Grid::handleModuleSelectKeyEvent(key, state);
+        state = Keys::handleModuleSelectKeyEvent(key, state);
         break;
       case SCREEN.PRESET_CHANNEL_SELECT:
-        state = Grid::handlePresetChannelSelectKeyEvent(key, state);
+        state = Keys::handlePresetChannelSelectKeyEvent(key, state);
         break;
       case SCREEN.PRESET_SELECT:
-        state = Grid::handlePresetSelectKeyEvent(key, state);
+        state = Keys::handlePresetSelectKeyEvent(key, state);
         break;
       case SCREEN.RECORD_CHANNEL_SELECT:
-        state = Grid::handleRecordChannelSelectKeyEvent(key, state);
+        state = Keys::handleRecordChannelSelectKeyEvent(key, state);
         break;
       case SCREEN.SECTION_SELECT:
-        state = Grid::handleSectionSelectKeyEvent(key, state);
+        state = Keys::handleSectionSelectKeyEvent(key, state);
         break;
     }
   }
@@ -60,7 +60,7 @@ State Grid::handleKeyEvent(keyEvent evt, State state) {
 
 //--------------------------------------- PRIVATE --------------------------------------------------
 
-State Grid::addKeyToCopyPasteData(uint8_t key, State state) {
+State Keys::addKeyToCopyPasteData(uint8_t key, State state) {
   if (state.selectedKeyForCopying == key) {
     Serial.println("Somehow began copy/paste incorrectly. This should never happen.");
     return state;
@@ -75,11 +75,11 @@ State Grid::addKeyToCopyPasteData(uint8_t key, State state) {
   return state;
 }
 
-State Grid::handleBankSelectKeyEvent(uint8_t key, State state) {
+State Keys::handleBankSelectKeyEvent(uint8_t key, State state) {
   if (!state.readyForModPress) { // MOD button is being held
-    state = Grid::updateModKeyCombinationTracking(key, state);
+    state = Keys::updateModKeyCombinationTracking(key, state);
     if (state.selectedKeyForCopying != key) {
-      state = Grid::addKeyToCopyPasteData(key, state);
+      state = Keys::addKeyToCopyPasteData(key, state);
     }
     else { // Pressed the original bank again, quit copy-paste and clear the paste banks.
       state = State::quitCopyPasteFlowPriorToPaste(state);
@@ -91,7 +91,7 @@ State Grid::handleBankSelectKeyEvent(uint8_t key, State state) {
   return state;
 }
 
-State Grid::handleEditChannelSelectKeyEvent(uint8_t key, State state) {
+State Keys::handleEditChannelSelectKeyEvent(uint8_t key, State state) {
   // Invalid key
   if (key > 7) {
     return state;
@@ -119,12 +119,12 @@ State Grid::handleEditChannelSelectKeyEvent(uint8_t key, State state) {
     state.randomOutputChannels[currentBank][key] = false;
     state.gateChannels[currentBank][key] = false;
   } else {
-    state = Grid::updateModKeyCombinationTracking(key, state);
+    state = Keys::updateModKeyCombinationTracking(key, state);
   }
 
   // copy-paste
   if (state.keyPressesSinceModHold == 1) {
-    state = Grid::addKeyToCopyPasteData(key, state);
+    state = Keys::addKeyToCopyPasteData(key, state);
   }
 
   // set as gate channel
@@ -143,13 +143,13 @@ State Grid::handleEditChannelSelectKeyEvent(uint8_t key, State state) {
   else if (state.keyPressesSinceModHold == 4) {
     state.randomOutputChannels[currentBank][key] = false;
     state.keyPressesSinceModHold = 0;
-    return Grid::handleEditChannelSelectKeyEvent(key, state);
+    return Keys::handleEditChannelSelectKeyEvent(key, state);
   }
 
   return state;
 }
 
-State Grid::handleEditChannelVoltagesKeyEvent(uint8_t key, State state) {
+State Keys::handleEditChannelVoltagesKeyEvent(uint8_t key, State state) {
   uint8_t currentBank = state.currentBank;
   uint8_t currentChannel = state.currentChannel;
 
@@ -172,7 +172,7 @@ State Grid::handleEditChannelVoltagesKeyEvent(uint8_t key, State state) {
       if (state.initialModHoldKey < 0) {
         state.initialModHoldKey = key;
       }
-      state = Grid::updateModKeyCombinationTracking(key, state);
+      state = Keys::updateModKeyCombinationTracking(key, state);
 
       // Voltage is a random coin-flip between gate on or gate off
       if (state.keyPressesSinceModHold == 1) {
@@ -182,7 +182,7 @@ State Grid::handleEditChannelVoltagesKeyEvent(uint8_t key, State state) {
       // Recurse
       else if (state.keyPressesSinceModHold == 2) {
         state.keyPressesSinceModHold = 0;
-        return Grid::handleEditChannelVoltagesKeyEvent(key, state);
+        return Keys::handleEditChannelVoltagesKeyEvent(key, state);
       }
     }
   }
@@ -215,12 +215,12 @@ State Grid::handleEditChannelVoltagesKeyEvent(uint8_t key, State state) {
         state.activeVoltages[currentBank][key][currentChannel] = true;
         state.randomVoltages[currentBank][key][currentChannel] = false;
       } else {
-        state = Grid::updateModKeyCombinationTracking(key, state);
+        state = Keys::updateModKeyCombinationTracking(key, state);
       }
 
       // Copy-paste voltage value
       if (state.keyPressesSinceModHold == 1) {
-        state = Grid::addKeyToCopyPasteData(key, state);
+        state = Keys::addKeyToCopyPasteData(key, state);
       }
       // Voltage is locked
       else if (state.keyPressesSinceModHold == 2) {
@@ -241,7 +241,7 @@ State Grid::handleEditChannelVoltagesKeyEvent(uint8_t key, State state) {
       else if (state.keyPressesSinceModHold == 5) {
         state.randomVoltages[currentBank][key][currentChannel] = false;
         state.keyPressesSinceModHold = 0;
-        return Grid::handleEditChannelVoltagesKeyEvent(key, state);
+        return Keys::handleEditChannelVoltagesKeyEvent(key, state);
       }
     }
   }
@@ -249,7 +249,7 @@ State Grid::handleEditChannelVoltagesKeyEvent(uint8_t key, State state) {
   return state;
 }
 
-State Grid::handleGlobalEditKeyEvent(uint8_t key, State state) {
+State Keys::handleGlobalEditKeyEvent(uint8_t key, State state) {
   uint8_t currentBank = state.currentBank;
 
   if (state.readyForModPress) { // MOD button is not being held
@@ -305,11 +305,11 @@ State Grid::handleGlobalEditKeyEvent(uint8_t key, State state) {
       }
     }
 
-    state = Grid::updateModKeyCombinationTracking(key, state);
+    state = Keys::updateModKeyCombinationTracking(key, state);
 
     // Copy-paste
     if (state.keyPressesSinceModHold == 1) {
-      state = Grid::addKeyToCopyPasteData(key, state);
+      state = Keys::addKeyToCopyPasteData(key, state);
     }
     // Toggle locked voltages
     else if (state.keyPressesSinceModHold == 2) {
@@ -331,19 +331,19 @@ State Grid::handleGlobalEditKeyEvent(uint8_t key, State state) {
         state.activeVoltages[currentBank][key][i] = true;
       }
       state.keyPressesSinceModHold = 0;
-      return Grid::handleGlobalEditKeyEvent(key, state);
+      return Keys::handleGlobalEditKeyEvent(key, state);
     }
   }
   return state;
 }
 
-State Grid::handleModuleSelectKeyEvent(uint8_t key, State state) {
+State Keys::handleModuleSelectKeyEvent(uint8_t key, State state) {
   state.config.currentModule = key;
   state = State::readModuleFromSDCard(state);
   return state;
 }
 
-State Grid::handlePresetChannelSelectKeyEvent(uint8_t key, State state) {
+State Keys::handlePresetChannelSelectKeyEvent(uint8_t key, State state) {
   if (key > 7) {
     return state;
   }
@@ -352,7 +352,7 @@ State Grid::handlePresetChannelSelectKeyEvent(uint8_t key, State state) {
   return state;
 }
 
-State Grid::handlePresetSelectKeyEvent(uint8_t key, State state) {
+State Keys::handlePresetSelectKeyEvent(uint8_t key, State state) {
   if (!state.readyForModPress) { // MOD button is being held
     state.initialModHoldKey = key;
     state.selectedKeyForRecording = key;
@@ -374,7 +374,7 @@ State Grid::handlePresetSelectKeyEvent(uint8_t key, State state) {
   return state;
 }
 
-State Grid::handleRecordChannelSelectKeyEvent(uint8_t key, State state) {
+State Keys::handleRecordChannelSelectKeyEvent(uint8_t key, State state) {
   uint8_t currentBank = state.currentBank;
   uint8_t currentPreset = state.currentPreset;
   uint8_t currentChannel = state.currentChannel;
@@ -415,7 +415,7 @@ State Grid::handleRecordChannelSelectKeyEvent(uint8_t key, State state) {
     state.randomInputChannels[currentBank][key] = false;
   }
   else {
-    state = Grid::updateModKeyCombinationTracking(key, state);
+    state = Keys::updateModKeyCombinationTracking(key, state);
   }
 
   // Automatic recording
@@ -444,13 +444,13 @@ State Grid::handleRecordChannelSelectKeyEvent(uint8_t key, State state) {
       state.voltages[currentBank][currentPreset][currentChannel] = state.cachedVoltage;
     }
     state.keyPressesSinceModHold = 0;
-    return Grid::handleRecordChannelSelectKeyEvent(key, state);
+    return Keys::handleRecordChannelSelectKeyEvent(key, state);
   }
 
   return state;
 }
 
-State Grid::handleSectionSelectKeyEvent(uint8_t key, State state) {
+State Keys::handleSectionSelectKeyEvent(uint8_t key, State state) {
   bool const modButtonIsBeingHeld = !state.readyForModPress;
   Quadrant_t quadrant = Utils::keyQuadrant(key);
 
@@ -519,7 +519,7 @@ State Grid::handleSectionSelectKeyEvent(uint8_t key, State state) {
  * @param state
  * @return State
  */
-State Grid::updateModKeyCombinationTracking(uint8_t key, State state) {
+State Keys::updateModKeyCombinationTracking(uint8_t key, State state) {
   // MOD button is being held
   if (!state.readyForModPress) {
     // this is the first key to be pressed

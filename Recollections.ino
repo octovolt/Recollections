@@ -33,7 +33,7 @@
 #include <SPI.h>
 
 #include "Config.h"
-#include "Grid.h"
+#include "Keys.h"
 #include "Hardware.h"
 #include "Nav.h"
 #include "State.h"
@@ -53,7 +53,7 @@ bool initialLoop = true;
  * @param evt The key event, a struct.
  */
 TrellisCallback handleKeyEvent(keyEvent evt) {
-  state = Grid::handleKeyEvent(evt, state);
+  state = Keys::handleKeyEvent(evt, state);
   return 0;
 }
 
