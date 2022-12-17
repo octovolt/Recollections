@@ -10,8 +10,8 @@
 
 #include "typedefs.h"
 
-#ifndef VOLTAGE_MEMORY_CONSTANTS_H_
-#define VOLTAGE_MEMORY_CONSTANTS_H_
+#ifndef RECOLLECTIONS_CONSTANTS_H_
+#define RECOLLECTIONS_CONSTANTS_H_
 
 // ----------------------------------- Bit Depth ---------------------------------------------------
 

@@ -11,8 +11,8 @@
 #include "constants.h"
 #include "typedefs.h"
 
-#ifndef VOLTAGE_MEMORY_STATE_H_
-#define VOLTAGE_MEMORY_STATE_H_
+#ifndef RECOLLECTIONS_STATE_H_
+#define RECOLLECTIONS_STATE_H_
 
 /**
  * The sole state object. All state goes here, nowhere else.

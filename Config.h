@@ -11,8 +11,8 @@
 
 #include "typedefs.h"
 
-#ifndef VOLTAGE_MEMORY_CONFIG_H_
-#define VOLTAGE_MEMORY_CONFIG_H_
+#ifndef RECOLLECTIONS_CONFIG_H_
+#define RECOLLECTIONS_CONFIG_H_
 
 typedef struct Colors {
   RGBColorArray_t white;

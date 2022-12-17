@@ -7,8 +7,8 @@
 #include "State.h"
 #include "typedefs.h"
 
-#ifndef VOLTAGE_MEMORY_KEYS_H_
-#define VOLTAGE_MEMORY_KEYS_H_
+#ifndef RECOLLECTIONS_KEYS_H_
+#define RECOLLECTIONS_KEYS_H_
 
 typedef struct Keys {
   static State handleKeyEvent(keyEvent evt, State state);

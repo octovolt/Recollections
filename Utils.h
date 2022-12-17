@@ -8,8 +8,8 @@
 #include "State.h"
 #include "typedefs.h"
 
-#ifndef VOLTAGE_MEMORY_UTILS_H_
-#define VOLTAGE_MEMORY_UTILS_H_
+#ifndef RECOLLECTIONS_UTILS_H_
+#define RECOLLECTIONS_UTILS_H_
 
 typedef struct Utils {
   static Quadrant_t keyQuadrant(uint8_t key);

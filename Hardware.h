@@ -7,8 +7,8 @@
 #include "State.h"
 #include "typedefs.h"
 
-#ifndef VOLTAGE_MEMORY_HARDWARE_H_
-#define VOLTAGE_MEMORY_HARDWARE_H_
+#ifndef RECOLLECTIONS_HARDWARE_H_
+#define RECOLLECTIONS_HARDWARE_H_
 
 typedef struct Hardware {
   static bool reflectState(State state);

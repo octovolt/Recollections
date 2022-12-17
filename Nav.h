@@ -7,8 +7,8 @@
 #include "State.h"
 #include "typedefs.h"
 
-#ifndef VOLTAGE_MEMORY_NAV_H_
-#define VOLTAGE_MEMORY_NAV_H_
+#ifndef RECOLLECTIONS_NAV_H_
+#define RECOLLECTIONS_NAV_H_
 
 typedef struct Nav {
   static State goBack(State state);

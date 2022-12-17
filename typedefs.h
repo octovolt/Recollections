@@ -6,8 +6,8 @@
 
 #include <inttypes.h>
 
-#ifndef VOLTAGE_MEMORY_TYPEDEFS_H_
-#define VOLTAGE_MEMORY_TYPEDEFS_H_
+#ifndef RECOLLECTIONS_TYPEDEFS_H_
+#define RECOLLECTIONS_TYPEDEFS_H_
 
 /**
  * The screens of the module. See constants.h.
