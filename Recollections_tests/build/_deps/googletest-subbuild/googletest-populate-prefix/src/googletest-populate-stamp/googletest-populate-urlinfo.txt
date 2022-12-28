@@ -1,0 +1,12 @@
+# This is a generated file and its contents are an internal implementation detail.
+# The download step will be re-executed if anything in this file changes.
+# No other meaning or use of this file is supported.
+
+method=url
+command=/usr/local/Cellar/cmake/3.25.1/bin/cmake;-P;/Users/bfisher/Documents/Arduino/Recollections/Recollections_tests/build/_deps/googletest-subbuild/googletest-populate-prefix/src/googletest-populate-stamp/download-googletest-populate.cmake;COMMAND;/usr/local/Cellar/cmake/3.25.1/bin/cmake;-P;/Users/bfisher/Documents/Arduino/Recollections/Recollections_tests/build/_deps/googletest-subbuild/googletest-populate-prefix/src/googletest-populate-stamp/verify-googletest-populate.cmake;COMMAND;/usr/local/Cellar/cmake/3.25.1/bin/cmake;-P;/Users/bfisher/Documents/Arduino/Recollections/Recollections_tests/build/_deps/googletest-subbuild/googletest-populate-prefix/src/googletest-populate-stamp/extract-googletest-populate.cmake
+source_dir=/Users/bfisher/Documents/Arduino/Recollections/Recollections_tests/build/_deps/googletest-src
+work_dir=/Users/bfisher/Documents/Arduino/Recollections/Recollections_tests/build/_deps
+url(s)=https://github.com/google/googletest/archive/3fa7f983c69f780378b4d1ad44d36030ca951ba6.zip
+hash=
+no_extract=
+
