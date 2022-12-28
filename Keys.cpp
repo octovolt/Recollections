@@ -58,6 +58,30 @@ State Keys::handleKeyEvent(keyEvent evt, State state) {
   return state;
 }
 
+State Keys::updateFlashTiming(unsigned long loopStartTime, State state) {
+  state.randomColorShouldChange = false;
+  if (
+    loopStartTime - state.lastFlashToggle > FLASH_TIME
+  ) {
+    state.flashesSinceRandomColorChange += 1;
+    if (state.flashesSinceRandomColorChange > 1) {
+      state.flashesSinceRandomColorChange = 0;
+      state.randomColorShouldChange = true;
+    }
+    if (state.confirmingSave) {
+      if (state.flashesSinceSave > SAVE_CONFIRMATION_MAX_FLASHES) {
+        state.confirmingSave = false;
+      }
+      else {
+        state.flashesSinceSave += 1;
+      }
+    }
+    state.flash = !state.flash;
+    state.lastFlashToggle = loopStartTime;
+  }
+  return state;
+}
+
 //--------------------------------------- PRIVATE --------------------------------------------------
 
 State Keys::addKeyToCopyPasteData(uint8_t key, State state) {
@@ -389,7 +413,7 @@ State Keys::handleRecordChannelSelectKeyEvent(uint8_t key, State state) {
     if (!state.isAdvancingPresets) {
       // This is only the initial sample when pressing the key. When isAdvancingPresets is true, we
       // do not record immediately upon pressing the key here, but rather when the preset changes.
-      // See updateStateAfterAdvancing() within Recollections.ino.
+      // See Advance::updateStateAfterAdvancing().
       state.voltages[currentBank][currentPreset][key] = analogRead(CV_INPUT);
     }
     return state;

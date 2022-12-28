@@ -249,6 +249,9 @@ typedef struct State {
    */
   uint16_t cachedVoltage;
 
+  /** For debugging */
+  bool initialLoopCompleted;
+
   // ------------------------------- static methods ------------------------------------------------
 
   /**
@@ -260,7 +263,7 @@ typedef struct State {
   static State autoRecord(State state);
 
   /**
-   * @brief Edit voltage for key selected by hand.
+   * @brief Edit voltage for preset selected by hand.
    *
    * @param state
    * @return State
@@ -268,12 +271,28 @@ typedef struct State {
   static State editVoltageOnSelectedPreset(State state);
 
   /**
-   * @brief Record voltage for a key selected by hand.
+   * @brief Record new voltage
+   *
+   * @param state
+   * @return State
+   */
+  static State recordContinuously(State state);
+
+  /**
+   * @brief Record voltage for a channel selected by hand.
    *
    * @param state
    * @return State
    */
   static State recordVoltageOnSelectedChannel(State state);
+
+  /**
+   * @brief Universal entry point for all pastes.
+   *
+   * @param state
+   * @return State
+   */
+  static State paste(State state);
 
   /**
    * @brief Paste the voltages from one bank to a number of other banks, across all 16 presets and

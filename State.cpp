@@ -1,6 +1,7 @@
 /**
  * Copyright 2022 William Edward Fisher.
  */
+
 #include "State.h"
 
 #include <SD.h>
@@ -47,6 +48,24 @@ State State::editVoltageOnSelectedPreset(State state) {
   return state;
 }
 
+State State::recordContinuously(State state) {
+  if (state.selectedKeyForRecording >= 0) {
+    if (
+      (state.screen == SCREEN.EDIT_CHANNEL_VOLTAGES || state.screen == SCREEN.PRESET_SELECT) &&
+      !state.randomInputChannels[state.currentBank][state.currentChannel]
+    ) {
+      state = State::editVoltageOnSelectedPreset(state);
+    }
+    else if (state.screen == SCREEN.RECORD_CHANNEL_SELECT && !state.isAdvancingPresets) {
+      state = State::recordVoltageOnSelectedChannel(state);
+    }
+  }
+  else if (!state.readyForRecInput && !state.isAdvancingPresets) {
+    state = State::autoRecord(state);
+  }
+  return state;
+}
+
 /**
  * @brief Capture voltage in the current loop for a user flow within Recording. This function will
  * record voltage on the selected CHANNEL for the current preset. Note this could be continuous
@@ -63,6 +82,29 @@ State State::recordVoltageOnSelectedChannel(State state) {
     state.voltages[state.currentBank][state.currentPreset][state.selectedKeyForRecording] =
       analogRead(CV_INPUT);
   }
+  return state;
+}
+
+State State::paste(State state) {
+  if (state.selectedKeyForCopying < 0) {
+    Serial.printf("%s %u \n", "selectedKeyForCopying is unexpectedly", state.selectedKeyForCopying);
+    return state;
+  }
+  switch (state.screen) {
+    case SCREEN.BANK_SELECT:
+      state = State::pasteBanks(state);
+      break;
+    case SCREEN.EDIT_CHANNEL_SELECT:
+      state = State::pasteChannels(state);
+      break;
+    case SCREEN.EDIT_CHANNEL_VOLTAGES:
+      state = State::pasteVoltages(state);
+      break;
+    case SCREEN.GLOBAL_EDIT:
+      state = State::pastePresets(state);
+      break;
+  }
+  state.selectedKeyForCopying = -1;
   return state;
 }
 

@@ -12,6 +12,7 @@
 
 typedef struct Keys {
   static State handleKeyEvent(keyEvent evt, State state);
+  static State updateFlashTiming(unsigned long loopStartTime, State state);
   private:
   static State addKeyToCopyPasteData(uint8_t key, State state);
   static State handleBankSelectKeyEvent(uint8_t key, State state);

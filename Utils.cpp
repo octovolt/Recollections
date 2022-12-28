@@ -1,6 +1,7 @@
 /**
  * Copyright 2022 William Edward Fisher.
  */
+
 #include "Utils.h"
 
 #include <Entropy.h>
