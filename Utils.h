@@ -4,7 +4,6 @@
  * Copyright 2022 William Edward Fisher.
  */
 
-#include <Adafruit_NeoTrellis.h>
 #include "State.h"
 #include "typedefs.h"
 
