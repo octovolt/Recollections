@@ -552,7 +552,7 @@ void setup() {
   pinMode(MOD_INPUT, INPUT);
   pinMode(REC_INPUT, INPUT);
   pinMode(TRELLIS_INTERRUPT_INPUT, INPUT);
-  pinMode(TEENSY_LED, OUTPUT);
+  pinMode(BOARD_LED, OUTPUT);
 
   bool setUpSDCardSuccessfully = setupSDCard();
   if (!setUpSDCardSuccessfully) {
@@ -574,7 +574,7 @@ void setup() {
     state.screen = SCREEN.ERROR;
   }
 
-  digitalWrite(TEENSY_LED, 1); // to indicate that the teensy is alive and well
+  digitalWrite(BOARD_LED, 1); // to indicate that the teensy is alive and well
 
   Serial.println("Completed set up");
 }

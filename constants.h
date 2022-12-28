@@ -42,6 +42,14 @@
 
 #define SAVE_CONFIRMATION_MAX_FLASHES 4
 
+// ------------------------------ Hardware Environment ---------------------------------------------
+
+// The version of the hardware expressed as a semver. See https://semver.org/
+std::string const HARDWARE_SEMVER = "0.3.0";
+
+// Whether we are powering the microcontroller through USB for the sake of development or debugging
+bool const USB_POWERED = false;
+
 // ------------------------------------- SD Card ---------------------------------------------------
 
 // Calculated with https://arduinojson.org/v6/assistant
@@ -72,46 +80,101 @@
 // Different ways to open files on the SD card
 uint8_t const SD_READ_CREATE = (uint8_t)(O_READ | O_CREAT);
 
-// ------------------------------ Hardware Environment ---------------------------------------------
-
-// The version of the hardware expressed as a semver. See https://semver.org/
-std::string const HARDWARE_SEMVER = "0.3.0";
-
-// Whether we are powering the microcontroller through USB for the sake of development or debugging
-bool const USB_POWERED = false;
-
 // --------------------------- Microcontroller Board Pins ------------------------------------------
 
-// Analog inputs
-/** Control voltage input to be recorded. */
-uint8_t const CV_INPUT = A6; // (originally A0? pin "14" on Teensy 3.6)
+#if defined(ARDUINO_TEENSY41) || defined(ARDUINO_TEENSY36)
 
-// Digital inputs - REMEMBER that pins on the left side of Teensy start with GND and only then begin
-// counting from 0, so the second pin is 0, the third pin is 1, etc.
-/** Button (gate) that acts as a modifier for keys or as an escape to quit the current screen */
-uint8_t const MOD_INPUT = 4; // could be 2 in the future?
-/** Gate to advance the current preset to the next preset. */
-uint8_t const ADV_INPUT = 3;
-/** Gate to start/stop automatic recording. Recording occurs when the gate is high. */
-uint8_t const REC_INPUT = 0; // could be 4 in the future ?
-/** Gate that determines if a key is being pressed. Avoids unnecessary polling. */
-uint8_t const TRELLIS_INTERRUPT_INPUT = 5;
-/** [EXPANSION ONLY] Gate to reverse the direction of preset advancement. */
-uint8_t const REV_INPUT = 6;
-/** [EXPANSION ONLY] Gate to reset the preset advancement to the first preset. */
-uint8_t const RESET_INPUT = 7;
-/** [EXPANSION ONLY] Gate to advance the current bank to the next bank. */
-uint8_t const BANK_ADV_INPUT = 16;
-/** [EXPANSION ONLY] Gate to reverse the direction of bank advancement. */
-uint8_t const BANK_REV_INPUT = 17;
+  // REMEMBER that pins on the left side of Teensy start with GND and only then
+  // begin counting from 0, so the second pin is 0, the third pin is 1, etc.
 
-// Digital outputs
-uint8_t const TEENSY_LED = 13;
+  // Analog inputs
+  /** Control voltage input to be recorded. */
+  uint8_t const CV_INPUT = A6; // (originally A0? pin "14" on Teensy 3.6)
 
-// Digital i2c outputs
-// SDA is pin 18 on Teensy 3.x and 4.x
-// SCL is pin 19 on Teensy 3.x and 4.x
-// Please note that we need pull up resistors of about 2k to 5k Ohms for the i2C bus (usually 2.2k).
+  // Digital inputs
+  /** Gate to start/stop automatic recording. Recording occurs when the gate is high. */
+  uint8_t const REC_INPUT = 0;
+  /** Gate to advance the current preset to the next preset. */
+  uint8_t const ADV_INPUT = 3;
+  /** Button (gate) that acts as a modifier for keys or as an escape to quit the current screen */
+  uint8_t const MOD_INPUT = 4;
+  /** Gate that determines if a key is being pressed. Avoids unnecessary polling. */
+  uint8_t const TRELLIS_INTERRUPT_INPUT = 5;
+  /** [EXPANSION] Gate to reverse the direction of preset advancement. */
+  uint8_t const REV_INPUT = 6;
+  /** [EXPANSION] Gate to reset the preset advancement to the first preset. */
+  uint8_t const RESET_INPUT = 7;
+  /** [EXPANSION] Gate to advance the current bank to the next bank. */
+  uint8_t const BANK_ADV_INPUT = 14;
+  /** [EXPANSION] Gate to reverse the direction of bank advancement. */
+  uint8_t const BANK_REV_INPUT = 15;
+
+  // Digital outputs
+  uint8_t const BOARD_LED = 13;
+
+  // Digital i2c pins - leader
+  uint8_t const SCL0 = 19;
+  uint8_t const SDA0 = 18;
+
+  // Digital i2c pins - follower
+  // NOTE: On hardware v.0.3.0, in an attempt at multi-platform design, pins 16 & 37 are tied
+  // together as are pins 17 & 38. Not sure if this will work.
+  #ifdef ARDUINO_TEENSY41
+    uint8_t const SCL1 = 16;
+    uint8_t const SDA1 = 17;
+  #else
+    uint8_t const SCL1 = 37;
+    uint8_t const SDA1 = 38;
+  #endif
+
+  // Digital SPI pins - SD card - unused on Teensy but defining to be consistent for the compiler
+  uint8_t const SPI_RX = 255;
+  uint8_t const SPI_CSN = 255;
+  uint8_t const SPI_SCK = 255;
+  uint8_t const SPI_TX = 255;
+
+#else // assume Raspberry Pi Pico
+
+  // Analog inputs
+  /** Control voltage input to be recorded. */
+  uint8_t const CV_INPUT = 31;
+
+  // Digital inputs
+  /** Gate to start/stop automatic recording. Recording occurs when the gate is high. */
+  uint8_t const REC_INPUT = 1;
+  /** Gate to advance the current preset to the next preset. */
+  uint8_t const ADV_INPUT = 2;
+  /** Button (gate) that acts as a modifier for keys or as an escape to quit the current screen */
+  uint8_t const MOD_INPUT = 4;
+  /** Gate that determines if a key is being pressed. Avoids unnecessary polling. */
+  uint8_t const TRELLIS_INTERRUPT_INPUT = 5;
+  /** [EXPANSION] Gate to reverse the direction of preset advancement. */
+  uint8_t const REV_INPUT = 6;
+  /** [EXPANSION] Gate to reset the preset advancement to the first preset. */
+  uint8_t const RESET_INPUT = 7;
+  /** [EXPANSION] Gate to advance the current bank to the next bank. */
+  uint8_t const BANK_ADV_INPUT = 9;
+  /** [EXPANSION] Gate to reverse the direction of bank advancement. */
+  uint8_t const BANK_REV_INPUT = 10;
+
+  // Digital outputs
+  uint8_t const BOARD_LED = GP25; // does this have a normal pin number? will this work?
+
+  // Digital i2c pins - leader
+  uint8_t const SCL0 = 27;
+  uint8_t const SDA0 = 26;
+
+  // Digital i2c pins - follower
+  uint8_t const SCL1 = 25;
+  uint8_t const SDA1 = 24;
+
+  // Digital SPI pins - SD card
+  uint8_t const SPI_RX = 16;
+  uint8_t const SPI_CSN = 17;
+  uint8_t const SPI_SCK = 19;
+  uint8_t const SPI_TX = 20;
+
+#endif
 
 // ------------------------------------- Screens ---------------------------------------------------
 
