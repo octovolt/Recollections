@@ -62,6 +62,9 @@ std::string const HARDWARE_SEMVER = "0.3.0";
 // Whether we are powering the microcontroller through USB for the sake of development or debugging
 bool const USB_POWERED = false;
 
+// Whether the SD card is required to boot up the module. Used for development and debugging.
+bool const REQUIRE_SD_CARD = true;
+
 // ------------------------------------- SD Card ---------------------------------------------------
 
 // Calculated with https://arduinojson.org/v6/assistant

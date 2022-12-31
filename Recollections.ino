@@ -250,7 +250,7 @@ void setup() {
   pinMode(BOARD_LED, OUTPUT);
 
   bool setUpSDCardSuccessfully = setupSDCard();
-  if (!setUpSDCardSuccessfully) {
+  if (REQUIRE_SD_CARD && !setUpSDCardSuccessfully) {
     state.screen = SCREEN.ERROR;
   }
 
