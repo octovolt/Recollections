@@ -282,7 +282,7 @@ void setup() {
 void loop() {
   unsigned long loopStartTime = millis();
 
-  state = Keys::updateFlashTiming(loopStartTime, state);
+  state = Hardware::updateFlashTiming(loopStartTime, state);
 
   // error screen returns early
   if (state.screen == SCREEN.ERROR) {
@@ -290,7 +290,8 @@ void loop() {
     return;
   }
 
-  // handle inputs and record -- these drive all of the state changes other than flash timing.
+  // Handle key events, inputs and recording.
+  // These drive all of the state changes other than flash timing.
   if (!digitalRead(TRELLIS_INTERRUPT_INPUT)) {
     state.config.trellis.read(false);
   }

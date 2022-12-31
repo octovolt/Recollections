@@ -1,5 +1,8 @@
 /**
  * Copyright 2022 William Edward Fisher.
+ *
+ * This file should be about Key events and their effect on state, and nothing else. Other drivers
+ * of state changes or code for key color display should be elsewhere.
  */
 #include "Keys.h"
 
@@ -59,30 +62,6 @@ State Keys::handleKeyEvent(keyEvent evt, State state) {
     state.selectedKeyForRecording = -1;
   }
 
-  return state;
-}
-
-State Keys::updateFlashTiming(unsigned long loopStartTime, State state) {
-  state.randomColorShouldChange = false;
-  if (
-    loopStartTime - state.lastFlashToggle > FLASH_TIME
-  ) {
-    state.flashesSinceRandomColorChange += 1;
-    if (state.flashesSinceRandomColorChange > 1) {
-      state.flashesSinceRandomColorChange = 0;
-      state.randomColorShouldChange = true;
-    }
-    if (state.confirmingSave) {
-      if (state.flashesSinceSave > SAVE_CONFIRMATION_MAX_FLASHES) {
-        state.confirmingSave = false;
-      }
-      else {
-        state.flashesSinceSave += 1;
-      }
-    }
-    state.flash = !state.flash;
-    state.lastFlashToggle = loopStartTime;
-  }
   return state;
 }
 

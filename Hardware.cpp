@@ -477,3 +477,27 @@ bool Hardware::setOutputsAll(State state) {
   }
   return true;
 }
+
+State Hardware::updateFlashTiming(unsigned long loopStartTime, State state) {
+  state.randomColorShouldChange = false;
+  if (
+    loopStartTime - state.lastFlashToggle > FLASH_TIME
+  ) {
+    state.flashesSinceRandomColorChange += 1;
+    if (state.flashesSinceRandomColorChange > 1) {
+      state.flashesSinceRandomColorChange = 0;
+      state.randomColorShouldChange = true;
+    }
+    if (state.confirmingSave) {
+      if (state.flashesSinceSave > SAVE_CONFIRMATION_MAX_FLASHES) {
+        state.confirmingSave = false;
+      }
+      else {
+        state.flashesSinceSave += 1;
+      }
+    }
+    state.flash = !state.flash;
+    state.lastFlashToggle = loopStartTime;
+  }
+  return state;
+}
