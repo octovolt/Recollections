@@ -15,8 +15,7 @@ Please see the [Octopus Arts YouTube channel](https://www.youtube.com/@octopus-a
 User Manual
 -----------
 A user manual may be found here:
-[https://docs.google.com/document/d/1RPAPcG-z0c8NyQLCnBXKaI8nIInMwIazlKRt4L1SheU]
-(https://docs.google.com/document/d/1RPAPcG-z0c8NyQLCnBXKaI8nIInMwIazlKRt4L1SheU)
+[https://docs.google.com/document/d/1RPAPcG-z0c8NyQLCnBXKaI8nIInMwIazlKRt4L1SheU](https://docs.google.com/document/d/1RPAPcG-z0c8NyQLCnBXKaI8nIInMwIazlKRt4L1SheU)
 
 Project Status
 --------------
