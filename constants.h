@@ -31,13 +31,12 @@
 #define MAX_UNSIGNED_10_BIT 1023
 #define MAX_UNSIGNED_8_BIT 255
 
-// These value are based on 10-bit, because the resolution of the ADC is 10-bit.
-// These are stepped up to 12-bit for output in real time.
-#define VOLTAGE_VALUE_MAX 1023
-#define VOLTAGE_VALUE_MID 511
-
 #define PERCENTAGE_MULTIPLIER_10_BIT 0.000977517106549 // 1/1023 for 10-bit
+#define PERCENTAGE_MULTIPLIER_12_BIT 0.0002442002442002 // 1/4095 for 12-bit
 #define PERCENTAGE_MULTIPLIER_32_BIT 0.0000000004656613 // 1/2147483647 for 32-bit
+
+#define VOLTAGE_VALUE_MAX 4095
+#define VOLTAGE_VALUE_MID 2047
 
 // ---------------------------------- Neotrellis ---------------------------------------------------
 

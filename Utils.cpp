@@ -99,7 +99,7 @@ uint16_t Utils::outputControlVoltageValue(State state, uint8_t preset, uint8_t c
     (state.randomOutputChannels[currentBank][channel] ||
       state.randomVoltages[currentBank][preset][channel])
   ) {
-    return Utils::random(MAX_UNSIGNED_10_BIT);
+    return Utils::random(MAX_UNSIGNED_12_BIT);
   }
   return state.voltages[currentBank][preset][channel];
 }

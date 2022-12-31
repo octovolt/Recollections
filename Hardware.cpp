@@ -135,9 +135,9 @@ bool Hardware::prepareRenderingOfChannelEditVoltageKey(State state, uint8_t key)
 
   int16_t voltage = state.voltages[state.currentBank][key][state.currentChannel];
   RGBColorArray_t yellowShade = {
-    static_cast<uint8_t>(state.config.colors.yellow[0] * voltage * PERCENTAGE_MULTIPLIER_10_BIT),
-    static_cast<uint8_t>(state.config.colors.yellow[1] * voltage * PERCENTAGE_MULTIPLIER_10_BIT),
-    static_cast<uint8_t>(state.config.colors.yellow[2] * voltage * PERCENTAGE_MULTIPLIER_10_BIT),
+    static_cast<uint8_t>(state.config.colors.yellow[0] * voltage * PERCENTAGE_MULTIPLIER_12_BIT),
+    static_cast<uint8_t>(state.config.colors.yellow[1] * voltage * PERCENTAGE_MULTIPLIER_12_BIT),
+    static_cast<uint8_t>(state.config.colors.yellow[2] * voltage * PERCENTAGE_MULTIPLIER_12_BIT),
   };
   return Hardware::prepareRenderingOfKey(state, key, yellowShade);
 }
@@ -384,9 +384,9 @@ bool Hardware::renderRecordChannelSelect(State state) {
         Hardware::prepareRenderingOfKey(state, key, state.config.colors.red);
       } else {
         RGBColorArray_t redShade = {
-          static_cast<uint8_t>(state.config.colors.red[0] * voltage * PERCENTAGE_MULTIPLIER_10_BIT),
-          static_cast<uint8_t>(state.config.colors.red[1] * voltage * PERCENTAGE_MULTIPLIER_10_BIT),
-          static_cast<uint8_t>(state.config.colors.red[2] * voltage * PERCENTAGE_MULTIPLIER_10_BIT)
+          static_cast<uint8_t>(state.config.colors.red[0] * voltage * PERCENTAGE_MULTIPLIER_12_BIT),
+          static_cast<uint8_t>(state.config.colors.red[1] * voltage * PERCENTAGE_MULTIPLIER_12_BIT),
+          static_cast<uint8_t>(state.config.colors.red[2] * voltage * PERCENTAGE_MULTIPLIER_12_BIT)
         };
         Hardware::prepareRenderingOfKey(state, key, redShade);
       }
@@ -420,9 +420,9 @@ bool Hardware::renderPresetSelect(State state) {
       uint16_t voltage =
         state.voltages[state.currentBank][state.selectedKeyForRecording][state.currentChannel];
       RGBColorArray_t redShade = {
-        static_cast<uint8_t>(state.config.colors.red[0] * voltage * PERCENTAGE_MULTIPLIER_10_BIT),
-        static_cast<uint8_t>(state.config.colors.red[1] * voltage * PERCENTAGE_MULTIPLIER_10_BIT),
-        static_cast<uint8_t>(state.config.colors.red[2] * voltage * PERCENTAGE_MULTIPLIER_10_BIT)
+        static_cast<uint8_t>(state.config.colors.red[0] * voltage * PERCENTAGE_MULTIPLIER_12_BIT),
+        static_cast<uint8_t>(state.config.colors.red[1] * voltage * PERCENTAGE_MULTIPLIER_12_BIT),
+        static_cast<uint8_t>(state.config.colors.red[2] * voltage * PERCENTAGE_MULTIPLIER_12_BIT)
       };
       Hardware::prepareRenderingOfKey(state, state.selectedKeyForRecording, redShade);
     }
@@ -441,15 +441,15 @@ bool Hardware::renderPresetSelect(State state) {
  * @brief Set the output of a channel.
  * @param state The app-wide state struct. See State.h.
  * @param channel The channel to set, 0-7.
- * @param voltageValue The stored voltage value, a 10-bit integer.
+ * @param voltageValue The stored voltage value, a 12-bit integer.
  */
 bool Hardware::setOutput(State state, const int8_t channel, const uint16_t voltageValue) {
   if (channel > 7) {
     Serial.printf("%s %u \n", "invalid channel", channel);
     return false;
   }
-  if (0 > voltageValue || voltageValue > MAX_UNSIGNED_10_BIT) {
-    Serial.printf("%s %u \n", "invalid 10-bit voltage value", voltageValue);
+  if (0 > voltageValue || voltageValue > MAX_UNSIGNED_12_BIT) {
+    Serial.printf("%s %u \n", "invalid 12-bit voltage value", voltageValue);
     return false;
   }
   Adafruit_MCP4728 dac = channel < 4 ? state.config.dac1 : state.config.dac2;

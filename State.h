@@ -234,7 +234,7 @@ typedef struct State {
   bool lockedVoltages[16][16][8];
 
   /**
-   * 10-bit stored voltage values for channels per preset per bank (max value is 1023).
+   * 12-bit stored voltage values for channels per preset per bank (max value is 1023).
    * Indices are [bank][preset][channel].
    */
   uint16_t voltages[16][16][8];

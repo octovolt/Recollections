@@ -69,9 +69,9 @@ State Input::handleAdvInput(unsigned long loopStartTime, State state) {
       if (state.config.randomOutputOverwrites) {
         // set random output voltages of next preset before advancing
         for (uint8_t i = 0; i < 7; i++) {
-          // random channels, random 32-bit converted to 10-bit
+          // random channels, random 32-bit converted to 12-bit
           if (state.randomOutputChannels[currentBank][i]) {
-            state.voltages[currentBank][currentPreset + 1][i] = Utils::random(MAX_UNSIGNED_10_BIT);
+            state.voltages[currentBank][currentPreset + 1][i] = Utils::random(MAX_UNSIGNED_12_BIT);
           }
 
           if (state.randomVoltages[currentBank][currentPreset + 1][i]) {
@@ -81,8 +81,8 @@ State Input::handleAdvInput(unsigned long loopStartTime, State state) {
                 ? VOLTAGE_VALUE_MAX
                 : 0;
             }
-            // random CV presets, random 32-bit converted to 10-bit
-            state.voltages[currentBank][currentPreset + 1][i] = Utils::random(MAX_UNSIGNED_10_BIT);
+            // random CV presets, random 32-bit converted to 12-bit
+            state.voltages[currentBank][currentPreset + 1][i] = Utils::random(MAX_UNSIGNED_12_BIT);
           }
         }
       }

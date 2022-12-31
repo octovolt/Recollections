@@ -53,12 +53,21 @@ State Advance::updateStateAfterAdvancing(unsigned long loopStartTime, State stat
   }
   // Autorecord while advancing: sample new voltage
   else if (!state.readyForRecInput) {
+    uint8_t currentBank = state.currentBank;
+    uint8_t currentPreset = state.currentPreset;
     for (uint8_t i = 0; i < 8; i++) {
-      if (state.autoRecordChannels[state.currentPreset][i]) {
-        state.voltages[state.currentBank][state.currentPreset][i] =
-          state.randomInputChannels[state.currentPreset][i]
-          ? Utils::random(MAX_UNSIGNED_10_BIT)
-          : analogRead(CV_INPUT);
+      if (state.autoRecordChannels[currentPreset][i]) {
+        if (state.randomInputChannels[currentPreset][i]) {
+          state.voltages[currentBank][currentPreset][i] = Utils::random(MAX_UNSIGNED_12_BIT);
+        }
+        else {
+          #if defined(ARDUINO_TEENSY36) || defined(ARDUINO_TEENSY41)
+            state.voltages[currentBank][currentPreset][i] =
+              Utils::tenBitToTwelveBit(analogRead(CV_INPUT));
+          #else
+            state.voltages[currentBank][currentPreset][i] = analogRead(CV_INPUT);
+          #endif
+        }
       }
     }
   }

@@ -19,7 +19,12 @@ State State::autoRecord(State state) {
       !state.lockedVoltages[currentBank][currentPreset][i] &&
       !state.randomInputChannels[currentBank][i]
     ) {
-      state.voltages[currentBank][currentPreset][i] = analogRead(CV_INPUT);
+      #if defined(ARDUINO_TEENSY36) || defined(ARDUINO_TEENSY41)
+        state.voltages[currentBank][currentPreset][i] =
+          Utils::tenBitToTwelveBit(analogRead(CV_INPUT));
+      #else
+        state.voltages[currentBank][currentPreset][i] = analogRead(CV_INPUT);
+      #endif
     }
   }
   return state;
@@ -35,8 +40,13 @@ State State::autoRecord(State state) {
  */
 State State::editVoltageOnSelectedPreset(State state) {
   if (state.screen == SCREEN.EDIT_CHANNEL_VOLTAGES || state.screen == SCREEN.PRESET_SELECT) {
-    state.voltages[state.currentBank][state.selectedKeyForRecording][state.currentChannel] =
-      analogRead(CV_INPUT);
+    #if defined(ARDUINO_TEENSY36) || defined(ARDUINO_TEENSY41)
+      state.voltages[state.currentBank][state.selectedKeyForRecording][state.currentChannel] =
+        Utils::tenBitToTwelveBit(analogRead(CV_INPUT));
+    #else
+      state.voltages[state.currentBank][state.selectedKeyForRecording][state.currentChannel] =
+        analogRead(CV_INPUT);
+    #endif
   }
   return state;
 }
@@ -68,12 +78,19 @@ State State::recordContinuously(State state) {
  * @return State
  */
 State State::recordVoltageOnSelectedChannel(State state) {
+  uint8_t currentBank = state.currentBank;
+  uint8_t currentPreset = state.currentPreset;
+  uint8_t channel = state.selectedKeyForRecording;
   if (
     state.screen == SCREEN.RECORD_CHANNEL_SELECT &&
-    !state.lockedVoltages[state.currentBank][state.currentPreset][state.selectedKeyForRecording]
+    !state.lockedVoltages[currentBank][currentPreset][channel]
   ) {
-    state.voltages[state.currentBank][state.currentPreset][state.selectedKeyForRecording] =
-      analogRead(CV_INPUT);
+    #if defined(ARDUINO_TEENSY36) || defined(ARDUINO_TEENSY41)
+      state.voltages[currentBank][currentPreset][channel] =
+        Utils::tenBitToTwelveBit(analogRead(CV_INPUT));
+    #else
+      state.voltages[currentBank][currentPreset][channel] = analogRead(CV_INPUT);
+    #endif
   }
   return state;
 }

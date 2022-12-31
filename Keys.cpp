@@ -113,9 +113,10 @@ State Keys::handleEditChannelSelectKeyEvent(uint8_t key, State state) {
     return state;
   }
 
+  state.currentChannel = key;
+
   // MOD button is not being held, select channel and navigate
   if (state.readyForModPress) {
-    state.currentChannel = key;
     state = Nav::goForward(state, SCREEN.EDIT_CHANNEL_VOLTAGES);
     return state;
   }
@@ -212,7 +213,12 @@ State Keys::handleEditChannelVoltagesKeyEvent(uint8_t key, State state) {
     if (state.readyForModPress) {
       state.selectedKeyForRecording = key;
       // See also continual recording in loop().
-      state.voltages[currentBank][key][currentChannel] = analogRead(CV_INPUT);
+      #if defined(ARDUINO_TEENSY36) || defined(ARDUINO_TEENSY41)
+        state.voltages[currentBank][key][currentChannel] =
+          Utils::tenBitToTwelveBit(analogRead(CV_INPUT));
+      #else
+        state.voltages[currentBank][key][currentChannel] = analogRead(CV_INPUT);
+      #endif
     }
     // MOD button is being held
     else {
@@ -372,19 +378,27 @@ State Keys::handlePresetChannelSelectKeyEvent(uint8_t key, State state) {
 }
 
 State Keys::handlePresetSelectKeyEvent(uint8_t key, State state) {
+  uint8_t currentBank = state.currentBank;
+  uint8_t currentChannel = state.currentChannel;
+
   if (!state.readyForModPress) { // MOD button is being held
     state.initialModHoldKey = key;
     state.selectedKeyForRecording = key;
     if (
-      state.randomInputChannels[state.currentBank][state.currentChannel] ||
-      (state.randomVoltages[state.currentBank][state.currentPreset][state.currentBank] &&
+      state.randomInputChannels[currentBank][currentChannel] ||
+      (state.randomVoltages[currentBank][state.currentPreset][currentBank] &&
         state.config.randomOutputOverwrites)
     ) {
-      state.voltages[state.currentBank][key][state.currentChannel] =
-        Utils::random(MAX_UNSIGNED_10_BIT);
+      state.voltages[currentBank][key][currentChannel] =
+        Utils::random(MAX_UNSIGNED_12_BIT);
     }
     else {
-      state.voltages[state.currentBank][key][state.currentChannel] = analogRead(CV_INPUT);
+      #if defined(ARDUINO_TEENSY36) || defined(ARDUINO_TEENSY41)
+        state.voltages[currentBank][key][currentChannel] =
+          Utils::tenBitToTwelveBit(analogRead(CV_INPUT));
+      #else
+        state.voltages[currentBank][key][currentChannel] = analogRead(CV_INPUT);
+      #endif
     }
   }
   else {
@@ -394,22 +408,27 @@ State Keys::handlePresetSelectKeyEvent(uint8_t key, State state) {
 }
 
 State Keys::handleRecordChannelSelectKeyEvent(uint8_t key, State state) {
-  uint8_t currentBank = state.currentBank;
-  uint8_t currentPreset = state.currentPreset;
-  uint8_t currentChannel = state.currentChannel;
   if (key > 7) {
     return state;
   }
 
+  state.currentChannel = key;
+  uint8_t currentBank = state.currentBank;
+  uint8_t currentPreset = state.currentPreset;
+
   // MOD button is not being held
   if (state.readyForModPress) {
     state.selectedKeyForRecording = key;
-    state.currentChannel = key;
     if (!state.isAdvancingPresets) {
       // This is only the initial sample when pressing the key. When isAdvancingPresets is true, we
       // do not record immediately upon pressing the key here, but rather when the preset changes.
       // See Advance::updateStateAfterAdvancing().
-      state.voltages[currentBank][currentPreset][key] = analogRead(CV_INPUT);
+      #if defined(ARDUINO_TEENSY36) || defined(ARDUINO_TEENSY41)
+        state.voltages[currentBank][currentPreset][key] =
+          Utils::tenBitToTwelveBit(analogRead(CV_INPUT));
+      #else
+        state.voltages[currentBank][currentPreset][key] = analogRead(CV_INPUT);
+      #endif
     }
     return state;
   }
@@ -449,9 +468,9 @@ State Keys::handleRecordChannelSelectKeyEvent(uint8_t key, State state) {
     state.randomInputChannels[currentBank][key] = true;
     // if not advancing, sample random voltage immediately
     if (!state.isAdvancingPresets) {
-      state.cachedVoltage = state.voltages[currentBank][currentPreset][currentChannel];
-      state.voltages[currentBank][currentPreset][currentChannel] =
-        Utils::random(MAX_UNSIGNED_10_BIT);
+      state.cachedVoltage = state.voltages[currentBank][currentPreset][key];
+      state.voltages[currentBank][currentPreset][key] =
+        Utils::random(MAX_UNSIGNED_12_BIT);
     }
   }
 
@@ -460,7 +479,7 @@ State Keys::handleRecordChannelSelectKeyEvent(uint8_t key, State state) {
     state.autoRecordChannels[currentBank][key] = false;
     state.randomInputChannels[currentBank][key] = false;
     if (!state.isAdvancingPresets) {
-      state.voltages[currentBank][currentPreset][currentChannel] = state.cachedVoltage;
+      state.voltages[currentBank][currentPreset][key] = state.cachedVoltage;
     }
     state.keyPressesSinceModHold = 0;
     return Keys::handleRecordChannelSelectKeyEvent(key, state);
