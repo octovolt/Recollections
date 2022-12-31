@@ -82,6 +82,15 @@ State Keys::addKeyToCopyPasteData(uint8_t key, State state) {
   return state;
 }
 
+State Keys::carryRestsToInactiveVoltages(uint8_t key, State state) {
+  for (uint8_t i = 0; i < 15; i++) {
+    if (!state.gateVoltages[state.currentBank][i][key]) {
+      state.activeVoltage[state.currentBank][i][key] = false;
+    }
+  }
+  return state;
+}
+
 State Keys::handleBankSelectKeyEvent(uint8_t key, State state) {
   if (!state.readyForModPress) { // MOD button is being held
     state = Keys::updateModKeyCombinationTracking(key, state);
@@ -124,7 +133,10 @@ State Keys::handleEditChannelSelectKeyEvent(uint8_t key, State state) {
     (state.randomOutputChannels[currentBank][key] || state.gateChannels[currentBank][key])
   ) {
     state.randomOutputChannels[currentBank][key] = false;
-    state.gateChannels[currentBank][key] = false;
+    if (state.gateChannels[currentBank][key]) {
+      state = Keys::carryRestsToInactiveVoltages(key, state);
+      state.gateChannels[currentBank][key] = false;
+    }
   } else {
     state = Keys::updateModKeyCombinationTracking(key, state);
   }

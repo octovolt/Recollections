@@ -14,6 +14,7 @@ typedef struct Keys {
   static State handleKeyEvent(keyEvent evt, State state);
   private:
   static State addKeyToCopyPasteData(uint8_t key, State state);
+  static State carryRestsToInactivePresets(uint8_t key, State state);
   static State handleBankSelectKeyEvent(uint8_t key, State state);
   static State handleEditChannelSelectKeyEvent(uint8_t key, State state);
   static State handleEditChannelVoltagesKeyEvent(uint8_t key, State state);
