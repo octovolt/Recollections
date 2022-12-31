@@ -14,16 +14,18 @@ Please see the [Octopus Arts YouTube channel](https://www.youtube.com/@octopus-a
 
 User Manual
 -----------
-A user manual may be found here: [https://docs.google.com/document/d/1RPAPcG-z0c8NyQLCnBXKaI8nIInMwIazlKRt4L1SheU](https://docs.google.com/document/d/1RPAPcG-z0c8NyQLCnBXKaI8nIInMwIazlKRt4L1SheU)
+A user manual may be found here:
+[https://docs.google.com/document/d/1RPAPcG-z0c8NyQLCnBXKaI8nIInMwIazlKRt4L1SheU]
+(https://docs.google.com/document/d/1RPAPcG-z0c8NyQLCnBXKaI8nIInMwIazlKRt4L1SheU)
 
 Project Status
 --------------
-Recollections is currently work in progress, with a goal date of January 15, 2023. I am currently
+Recollections is currently a work in progress, with a goal date of January 15, 2023. I am currently
 switching from the Teensy microcontroller board to the Raspberry Pi Pico board, primarily due to the
-difference in price. Teensy-based PCB/panel sets are available now, but you can save $25 (or more)
-in parts if you are patient enough to let me get the costs down. I will be offering kits that will
-bring the price down even further due to the need to source parts from multiple companies and pay
-the shipping fees.
+difference in price. Teensy-based PCB/panel sets are available now, but you can save $25 or more
+in parts if you are patient enough to let me get the costs down. Also, I will be offering kits that
+will bring the price down even further due to the need to source parts from multiple companies and
+pay the shipping fees.
 
 How to Compile for RP2040 / Raspberry Pi Pico
 ---------------------------------------------
@@ -38,7 +40,7 @@ see [SDCard.h](https://github.com/octopus-arts/Recollections/blob/main/SDCard.h)
 
 How to Compile for Teensy
 -------------------------
-Teensy has the benefit of increased speed, an onboard SD card reader and true random number
+Teensy has the benefits of increased speed, an onboard SD card reader and true random number
 generation. Unfortunately, it also has a 10-bit ADC rather than Pico's 12-bit, and it is about $25
 USD more than the Pico. For this reason, the Pico is now the main target of this project. However,
 you might care about the aforementioned benefits, or you might simply have a Teensy lying around
@@ -47,7 +49,9 @@ waiting for a project.
 The following hacks are required for Teensy:
 * Teensy 3.6 requires the [i2c_t3]() library to be included instead of the more standard `Wire`
 library, so a few external libraries need to be changed to include `i2c_t3` instead. Please see
-details at the top of [Recollections.ino](https://github.com/octopus-arts/Recollections/blob/main/Recollections.ino).
+details at the top of
+[Recollections.ino](https://github.com/octopus-arts/Recollections/blob/main/Recollections.ino).
+This is not an issue for Teensy 4.1, which can use `Wire` instead.
 * The `SD` library used for Teensy must be the Teensy-specific one. You may need to rename other
 `SD.h` files to something like `SD-disabled.h` to get the compiler to use the correct library.
 
