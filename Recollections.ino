@@ -17,25 +17,40 @@
 // Adafruit_I2CDevice.h <- this also needs the following at the top for 3.6: typedef i2c_t3 TwoWire;
 // Adafruit_MCP4728.h
 // Adafruit_MCP4728.cpp
-#if defined(ARDUINO_TEENSY32) || defined(ARDUINO_TEENSY35) || defined(ARDUINO_TEENSY36)
+#if defined(ARDUINO_TEENSY36)
   #include <i2c_t3.h> // ~/Documents/Arduino/libraries/
 #else
   // for Teensy 4.x
   #include <Wire.h> // /Applications/Teensyduino.app/Contents/Java/hardware/teensy/avr/libraries/
 #endif
 
-#include <Adafruit_MCP4728.h> // ~/Documents/Arduino/libraries/
-#include <Adafruit_NeoTrellis.h>  // ~/Documents/Arduino/libraries/
-#include <ArduinoJson.h> // ~/Documents/Arduino/libraries/
-#include <Entropy.h> // /Applications/Teensyduino.app/Contents/Java/hardware/teensy/avr/libraries/
-#include <SD.h> // /Applications/Teensyduino.app/Contents/Java/hardware/teensy/avr/libraries/
-#include <SPI.h> // /Applications/Teensyduino.app/Contents/Java/hardware/teensy/avr/libraries/
+// Without Adafruit, this project never would have happened. Please buy things from Adafruit.
+#include <Adafruit_MCP4728.h>
+#include <Adafruit_NeoTrellis.h>
+
+// JSON is used to store data on the SD card
+// https://arduinojson.org/
+#include <ArduinoJson.h>
+
+#if defined(ARDUINO_TEENSY36) || defined(ARDUINO_TEENSY41)
+  // Random number generation:
+  // On Teensy (or any AVR processor), we will use the Entropy library. On RP2040, we will need to
+  // settle for the pseudorandomness of Arduino's randomSeed() seeded from a noisy unconnected pin
+  // and random().
+  // Entropy is included with Teenyduino and is found in
+  // /Applications/Teensyduino.app/Contents/Java/hardware/teensy/avr/libraries/
+  // Entropy source code: https://code.google.com/archive/p/avr-hardware-random-number-generation/
+  #include <Entropy.h>
+#endif
+
+#include <SPI.h>
 
 #include "Config.h"
 #include "Keys.h"
 #include "Hardware.h"
 #include "Input.h"
 #include "Nav.h"
+#include "SDCard.h"
 #include "State.h"
 #include "Utils.h"
 #include "constants.h"
@@ -67,7 +82,16 @@ TrellisCallback handleKeyEvent(keyEvent evt) {
 bool setupSDCard() {
   delay(200); // Seems to work better, not sure why
   Serial.println("Attempting to open SD card");
-  if (!SD.begin(SD_CS_PIN)) { // update if not using a built-in SD card on a Teensy
+  bool success = false;
+  #if defined(ARDUINO_TEENSY36) || defined(ARDUINO_TEENSY41)
+    success = SD.begin(SD_CS_PIN);
+  #else
+    SDFSConfig cfg;
+    cfg.setCSPin(13); // TODO update to use constant. SD_CS_PIN? SPI_CSN?
+    SDFS.setConfig(cfg);
+    success = SDFS.begin();
+  #endif
+  if (!success) {
     Serial.println("SD card failed, or not present");
     return false;
   } else {
@@ -103,7 +127,7 @@ bool setupConfig() {
   state.config.randomOutputOverwrites = 1;
 
   // overwrite defaults if anything is in the Config.txt file
-  state.config = Config::readConfigFromSDCard(state.config);
+  state.config = SDCard::readConfigFile(state.config);
   return true;
 }
 
@@ -200,7 +224,7 @@ bool setupState() {
   Serial.println("Successfully set up transient state");
 
   // persisted state
-  state = State::readModuleFromSDCard(state);
+  state = SDCard::readModuleDirectory(state);
   Serial.println("Successfully set up persisted state");
 
   return true;
@@ -213,7 +237,11 @@ void setup() {
   Serial.begin(9600);
   // while (!Serial);
 
-  Entropy.Initialize();
+  #if defined(ARDUINO_TEENSY36) || defined(ARDUINO_TEENSY41)
+    Entropy.Initialize();
+  #else
+    randomSeed(analogRead(UNCONNECTED_ANALOG_PIN));
+  #endif
 
   pinMode(ADV_INPUT, INPUT);
   pinMode(MOD_INPUT, INPUT);

@@ -4,9 +4,6 @@
  * Copyright 2022 William Edward Fisher.
  */
 
-#include <ArduinoJson.h>
-#include <StreamUtils.h>
-
 #include "Config.h"
 #include "constants.h"
 #include "typedefs.h"
@@ -245,7 +242,10 @@ typedef struct State {
   /**
    * Ephemeral cached voltage value for when we need to be able to get back to a voltage value
    * instead of overwriting it permanently. Note there is only one of these -- this is truly
-   * ephemeral, and the ephemerality should be enforced.
+   * ephemeral, and the ephemerality should be enforced. This is used in the situation where we have
+   * navigated to random input but actually did not want to overwrite. The MOD button is still being
+   * pressed so pressing the key again will navigate forward in the functionality cycle and restore
+   * the cached voltage to the preset. TODO: check if this is needed for random output as well.
    */
   uint16_t cachedVoltage;
 
@@ -334,53 +334,6 @@ typedef struct State {
    * @return State
    */
   static State quitCopyPasteFlowPriorToPaste(State state);
-
-  /**
-   * @brief Make sure we have the correct path of directories set up on the SD card, or else create
-   * these directories. This is required to create a file.
-   *
-   * @param state
-   */
-  static void confirmOrCreatePathOnSDCard(State state);
-
-  /**
-   * @brief Read an entirely new module from the SD card, reading from both Module.txt and all the
-   * Bank_n.txt files within a new Module_n directory, so an entirely new set of 16 banks becomes
-   * available. Creat the directory structure and files if they do not yet exist.
-   *
-   * @param state
-   * @return State
-   */
-  static State readModuleFromSDCard(State state);
-
-  /**
-   * @brief Read the persisted state values from the Module.txt file on the SD card. Create the
-   * file if it does not yet exist.
-   *
-   * @param state
-   * @return State
-   */
-  static State readModuleFileFromSDCard(State state);
-
-  /**
-   * @brief Read the persisted state values from one of the Bank_n.txt fils the SD card. Create the
-   * file if it does not yet exist.
-   *
-   * @param state
-   * @param bank
-   * @return State
-   */
-  static State readBankFileFromSDCard(State state, uint8_t bank);
-
-  /**
-   * @brief Get the persisted state values from the state struct and write them to the SD card.
-   * Returns a bool value denoting whether the write was successful.
-   *
-   * @param state
-   * @return true
-   * @return false
-   */
-  static bool writeCurrentModuleAndBankToSDCard(State state);
  } State;
 
  #endif

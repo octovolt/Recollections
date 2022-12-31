@@ -4,10 +4,9 @@
 
 #include "Input.h"
 
-#include <Entropy.h>
-
 #include "Advance.h"
 #include "Nav.h"
+#include "Utils.h"
 #include "constants.h"
 
 State Input::handleInput(unsigned long loopStartTime, State state) {
@@ -72,18 +71,18 @@ State Input::handleAdvInput(unsigned long loopStartTime, State state) {
         for (uint8_t i = 0; i < 7; i++) {
           // random channels, random 32-bit converted to 10-bit
           if (state.randomOutputChannels[currentBank][i]) {
-            state.voltages[currentBank][currentPreset + 1][i] = Entropy.random(MAX_UNSIGNED_10_BIT);
+            state.voltages[currentBank][currentPreset + 1][i] = Utils::random(MAX_UNSIGNED_10_BIT);
           }
 
           if (state.randomVoltages[currentBank][currentPreset + 1][i]) {
             // random gate presets
             if (state.gateChannels[currentBank][i]) {
-              state.voltages[currentBank][currentPreset + 1][i] = Entropy.random(2)
+              state.voltages[currentBank][currentPreset + 1][i] = Utils::random(2)
                 ? VOLTAGE_VALUE_MAX
                 : 0;
             }
             // random CV presets, random 32-bit converted to 10-bit
-            state.voltages[currentBank][currentPreset + 1][i] = Entropy.random(MAX_UNSIGNED_10_BIT);
+            state.voltages[currentBank][currentPreset + 1][i] = Utils::random(MAX_UNSIGNED_10_BIT);
           }
         }
       }

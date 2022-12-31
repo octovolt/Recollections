@@ -6,8 +6,15 @@
 
 #include <Adafruit_MCP4728.h>
 #include <Adafruit_NeoTrellis.h>
-#include <SD.h>
 #include <SPI.h>
+
+// Included for File
+#if defined(ARDUINO_TEENSY36) || defined(ARDUINO_TEENSY41)
+  // This needs to be the Teensy-specific version of this. Rename others to disambiguate.
+  #include <SD.h>
+#else
+  #include <SDFS.h>
+#endif
 
 #include "typedefs.h"
 
@@ -102,13 +109,6 @@ typedef struct Config {
    * which is the case when using randomized input on the Recording screen.
    */
   bool randomOutputOverwrites;
-
-  /** Get the config data from the config file */
-  static Config readConfigFromSDCard(Config config);
-
-  private:
-
-  static Config readConfigFromFile(Config config, File configFile);
 
 } Config;
 

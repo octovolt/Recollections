@@ -4,7 +4,9 @@
 
 #include "Utils.h"
 
-#include <Entropy.h>
+#if defined(ARDUINO_TEENSY36) || defined(ARDUINO_TEENSY41)
+  #include <Entropy.h>
+#endif
 
 #include "constants.h"
 
@@ -22,6 +24,14 @@ Quadrant_t Utils::keyQuadrant(uint8_t key) {
   } else {
     return QUADRANT.SE;
   }
+}
+
+uint32_t Utils::random(uint32_t max) {
+  #if defined(ARDUINO_TEENSY36) || defined(ARDUINO_TEENSY41)
+    return Entropy.random(max); // True random number generation
+  #else
+    return random(max); // Arduino pseudorandom, similar to stdlib's rand()
+  #endif
 }
 
 uint16_t Utils::tenBitToTwelveBit(uint16_t n) {
@@ -44,9 +54,10 @@ uint16_t Utils::voltageValue(State state, uint8_t preset, uint8_t channel) {
 
   // Gate channels
   if (state.gateChannels[currentBank][channel]) {
+    // TODO - this should work regardless of randomOutputOverwrites, but also respect randomOutputOverwrites
     if (!state.config.randomOutputOverwrites && state.randomVoltages[currentBank][preset][channel]) {
       return
-        Entropy.random(2) &&
+        Utils::random(2) &&
         millis() - state.lastAdvReceivedTime[0] < state.gateMillis
         ? VOLTAGE_VALUE_MAX
         : 0;
@@ -88,7 +99,7 @@ uint16_t Utils::outputControlVoltageValue(State state, uint8_t preset, uint8_t c
     (state.randomOutputChannels[currentBank][channel] ||
       state.randomVoltages[currentBank][preset][channel])
   ) {
-    return Entropy.random(MAX_UNSIGNED_10_BIT);
+    return Utils::random(MAX_UNSIGNED_10_BIT);
   }
   return state.voltages[currentBank][preset][channel];
 }

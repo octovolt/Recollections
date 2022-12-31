@@ -4,7 +4,6 @@
 #include "Hardware.h"
 
 #include <Adafruit_MCP4728.h>
-#include <Entropy.h>
 
 #include "Utils.h"
 #include "constants.h"
@@ -170,9 +169,9 @@ bool Hardware::prepareRenderingOfKey(State state, uint8_t key, RGBColorArray_t r
  */
 bool Hardware::prepareRenderingOfRandomizedKey(State state, uint8_t key) {
   if (state.randomColorShouldChange) {
-    uint8_t red = Entropy.random(MAX_UNSIGNED_8_BIT);
-    uint8_t green = Entropy.random(MAX_UNSIGNED_8_BIT);
-    uint8_t blue = Entropy.random(MAX_UNSIGNED_8_BIT);
+    uint8_t red = Utils::random(MAX_UNSIGNED_8_BIT);
+    uint8_t green = Utils::random(MAX_UNSIGNED_8_BIT);
+    uint8_t blue = Utils::random(MAX_UNSIGNED_8_BIT);
     RGBColorArray_t color = {red, green, blue};
     return Hardware::prepareRenderingOfKey(state, key, color);
   }

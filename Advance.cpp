@@ -4,7 +4,7 @@
 
 #include "Advance.h"
 
-#include <Entropy.h>
+#include "Utils.h"
 
 /**
  * @brief Change the current preset to the next preset and calculate the expected gate length.
@@ -57,7 +57,7 @@ State Advance::updateStateAfterAdvancing(unsigned long loopStartTime, State stat
       if (state.autoRecordChannels[state.currentPreset][i]) {
         state.voltages[state.currentBank][state.currentPreset][i] =
           state.randomInputChannels[state.currentPreset][i]
-          ? Entropy.random(MAX_UNSIGNED_10_BIT)
+          ? Utils::random(MAX_UNSIGNED_10_BIT)
           : analogRead(CV_INPUT);
       }
     }

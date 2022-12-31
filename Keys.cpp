@@ -4,10 +4,10 @@
 #include "Keys.h"
 
 #include <Adafruit_NeoTrellis.h>
-#include <Entropy.h>
 
 #include "Hardware.h"
 #include "Nav.h"
+#include "SDCard.h"
 #include "Utils.h"
 #include "constants.h"
 
@@ -28,7 +28,11 @@ State Keys::handleKeyEvent(keyEvent evt, State state) {
         state = Keys::handleEditChannelVoltagesKeyEvent(key, state);
         break;
       case SCREEN.ERROR:
-        SCB_AIRCR = 0x05FA0004; // Do a soft reboot of Teensy
+        #if defined(ARDUINO_TEENSY36) || defined(ARDUINO_TEENSY41)
+          SCB_AIRCR = 0x05FA0004; // Do a soft reboot of Teensy
+        #else
+          rp2040.reboot();
+        #endif
         break;
       case SCREEN.GLOBAL_EDIT:
         state = Keys::handleGlobalEditKeyEvent(key, state);
@@ -363,7 +367,7 @@ State Keys::handleGlobalEditKeyEvent(uint8_t key, State state) {
 
 State Keys::handleModuleSelectKeyEvent(uint8_t key, State state) {
   state.config.currentModule = key;
-  state = State::readModuleFromSDCard(state);
+  state = SDCard::readModuleDirectory(state);
   return state;
 }
 
@@ -386,7 +390,7 @@ State Keys::handlePresetSelectKeyEvent(uint8_t key, State state) {
         state.config.randomOutputOverwrites)
     ) {
       state.voltages[state.currentBank][key][state.currentChannel] =
-        Entropy.random(MAX_UNSIGNED_10_BIT);
+        Utils::random(MAX_UNSIGNED_10_BIT);
     }
     else {
       state.voltages[state.currentBank][key][state.currentChannel] = analogRead(CV_INPUT);
@@ -456,7 +460,7 @@ State Keys::handleRecordChannelSelectKeyEvent(uint8_t key, State state) {
     if (!state.isAdvancingPresets) {
       state.cachedVoltage = state.voltages[currentBank][currentPreset][currentChannel];
       state.voltages[currentBank][currentPreset][currentChannel] =
-        Entropy.random(MAX_UNSIGNED_10_BIT);
+        Utils::random(MAX_UNSIGNED_10_BIT);
     }
   }
 
@@ -517,7 +521,7 @@ State Keys::handleSectionSelectKeyEvent(uint8_t key, State state) {
           state.readyToSave = true;
         }
         else {
-          bool const writeSuccess = State::writeCurrentModuleAndBankToSDCard(state);
+          bool const writeSuccess = SDCard::writeCurrentModuleAndBank(state);
           if (writeSuccess) {
             state.readyToSave = false;
             state.confirmingSave = true;

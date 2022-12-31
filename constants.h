@@ -5,13 +5,25 @@
  */
 
 #include <Adafruit_MCP4728.h>
-#include <SD.h>
 #include <SPI.h>
+#include <string>
+
+// Included for SD/FS constants
+#if defined(ARDUINO_TEENSY36) || defined(ARDUINO_TEENSY41)
+  // This needs to be the Teensy-specific version of this. Rename others to disambiguate.
+  #include <SD.h>
+#else
+  #include <SDFS.h>
+#endif
 
 #include "typedefs.h"
 
 #ifndef RECOLLECTIONS_CONSTANTS_H_
 #define RECOLLECTIONS_CONSTANTS_H_
+
+#ifndef FILE_WRITE_BEGIN
+  #define FILE_WRITE_BEGIN 2 // only defined in Teensy's SD library, apparently
+#endif
 
 // ----------------------------------- Bit Depth ---------------------------------------------------
 
@@ -65,16 +77,18 @@ bool const USB_POWERED = false;
 
 #ifdef ARDUINO_TEENSY41
   const uint8_t SD_CS_PIN = BUILTIN_SDCARD;
-  #else
-    // Use built-in SD for SPI on Teensy 3.5/3.6
-    // Teensy 4.0 use first SPI port.
-    // SDCARD_SS_PIN is defined for the built-in SD on some boards.
-    #ifndef SDCARD_SS_PIN
-    const uint8_t SD_CS_PIN = SS;
-    #else  // SDCARD_SS_PIN
-    // Assume built-in SD is used.
-    const uint8_t SD_CS_PIN = SDCARD_SS_PIN;
-    #endif  // SDCARD_SS_PIN
+#elif defined(ARDUINO_TEENSY36)
+  // // Use built-in SD for SPI on Teensy 3.5/3.6
+  // // Teensy 4.0 use first SPI port.
+  // // SDCARD_SS_PIN is defined for the built-in SD on some boards.
+  // #ifndef SDCARD_SS_PIN
+  //   const uint8_t SD_CS_PIN = SS;
+  // #else
+  //   // Assume built-in SD is used.
+  const uint8_t SD_CS_PIN = SDCARD_SS_PIN;
+  // #endif
+#else
+  const uint8_t SD_CS_PIN = 13;
 #endif
 
 // Different ways to open files on the SD card
@@ -82,7 +96,7 @@ uint8_t const SD_READ_CREATE = (uint8_t)(O_READ | O_CREAT);
 
 // --------------------------- Microcontroller Board Pins ------------------------------------------
 
-#if defined(ARDUINO_TEENSY41) || defined(ARDUINO_TEENSY36)
+#if defined(ARDUINO_TEENSY36) || defined(ARDUINO_TEENSY41)
 
   // REMEMBER that pins on the left side of Teensy start with GND and only then
   // begin counting from 0, so the second pin is 0, the third pin is 1, etc.
@@ -90,6 +104,7 @@ uint8_t const SD_READ_CREATE = (uint8_t)(O_READ | O_CREAT);
   // Analog inputs
   /** Control voltage input to be recorded. */
   uint8_t const CV_INPUT = A6; // (originally A0? pin "14" on Teensy 3.6)
+  uint8_t const UNCONNECTED_ANALOG_PIN = 255; // not used on Teensy
 
   // Digital inputs
   /** Gate to start/stop automatic recording. Recording occurs when the gate is high. */
@@ -137,42 +152,43 @@ uint8_t const SD_READ_CREATE = (uint8_t)(O_READ | O_CREAT);
 
   // Analog inputs
   /** Control voltage input to be recorded. */
-  uint8_t const CV_INPUT = 31;
+  uint8_t const CV_INPUT = 26;
+  uint8_t const UNCONNECTED_ANALOG_PIN = 27; // noise for randomSeed()
 
   // Digital inputs
   /** Gate to start/stop automatic recording. Recording occurs when the gate is high. */
-  uint8_t const REC_INPUT = 1;
+  uint8_t const REC_INPUT = 0;
   /** Gate to advance the current preset to the next preset. */
-  uint8_t const ADV_INPUT = 2;
+  uint8_t const ADV_INPUT = 1;
   /** Button (gate) that acts as a modifier for keys or as an escape to quit the current screen */
-  uint8_t const MOD_INPUT = 4;
+  uint8_t const MOD_INPUT = 2;
   /** Gate that determines if a key is being pressed. Avoids unnecessary polling. */
-  uint8_t const TRELLIS_INTERRUPT_INPUT = 5;
+  uint8_t const TRELLIS_INTERRUPT_INPUT = 3;
   /** [EXPANSION] Gate to reverse the direction of preset advancement. */
-  uint8_t const REV_INPUT = 6;
+  uint8_t const REV_INPUT = 4;
   /** [EXPANSION] Gate to reset the preset advancement to the first preset. */
-  uint8_t const RESET_INPUT = 7;
+  uint8_t const RESET_INPUT = 5;
   /** [EXPANSION] Gate to advance the current bank to the next bank. */
-  uint8_t const BANK_ADV_INPUT = 9;
+  uint8_t const BANK_ADV_INPUT = 6;
   /** [EXPANSION] Gate to reverse the direction of bank advancement. */
-  uint8_t const BANK_REV_INPUT = 10;
+  uint8_t const BANK_REV_INPUT = 7;
 
   // Digital outputs
-  uint8_t const BOARD_LED = GP25; // does this have a normal pin number? will this work?
+  uint8_t const BOARD_LED = 25; // does this have a normal pin number? will this work?
 
   // Digital i2c pins - leader
-  uint8_t const SCL0 = 27;
-  uint8_t const SDA0 = 26;
+  uint8_t const SCL0 = 21;
+  uint8_t const SDA0 = 20;
 
   // Digital i2c pins - follower
-  uint8_t const SCL1 = 25;
-  uint8_t const SDA1 = 24;
+  uint8_t const SCL1 = 19;
+  uint8_t const SDA1 = 18;
 
   // Digital SPI pins - SD card
-  uint8_t const SPI_RX = 16;
-  uint8_t const SPI_CSN = 17;
-  uint8_t const SPI_SCK = 19;
-  uint8_t const SPI_TX = 20;
+  uint8_t const SPI_RX = 12;
+  uint8_t const SPI_CSN = 13;
+  uint8_t const SPI_SCK = 14;
+  uint8_t const SPI_TX = 15;
 
 #endif
 
