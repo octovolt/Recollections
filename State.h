@@ -245,7 +245,8 @@ typedef struct State {
    * ephemeral, and the ephemerality should be enforced. This is used in the situation where we have
    * navigated to random input but actually did not want to overwrite. The MOD button is still being
    * pressed so pressing the key again will navigate forward in the functionality cycle and restore
-   * the cached voltage to the preset. TODO: check if this is needed for random output as well.
+   * the cached voltage to the preset.
+   * TODO: check if this is needed for random output as well.
    */
   uint16_t cachedVoltage;
 

@@ -1,5 +1,10 @@
 /**
  * Copyright 2022 William Edward Fisher.
+ *
+ * This file should be about the display of colors on the keys and the production of voltage on the
+ * outputs, nothing else.
+ *
+ * TODO: split this struct into two new ones: Display and Output.
  */
 #include "Hardware.h"
 
