@@ -10,25 +10,15 @@
 #include "constants.h"
 
 State Input::handleInput(unsigned long loopStartTime, State state) {
-  // note the order of operations, which starts with the MOD button
-  return
-    Input::handleRecInput(
-      Input::handleAdvInput(
-        loopStartTime,
-        Input::handleReverseInput(
-          Input::handleBankAdvanceInput(
-            Input::handleBankReverseInput(
-              Input::handleResetInput(
-                Input::handleModButton(
-                  loopStartTime,
-                  state
-                )
-              )
-            )
-          )
-        )
-      )
-    );
+  // hmmmm... why doesn't a function composition approach work here? pointers or something?
+  state = Input::handleModButton(loopStartTime, state);
+  state = Input::handleResetInput(state);
+  state = Input::handleBankReverseInput(state);
+  state = Input::handleBankAdvanceInput(state);
+  state = Input::handleReverseInput(state);
+  state = Input::handleAdvInput(loopStartTime, state);
+  state = Input::handleRecInput(state);
+  return state;
 }
 
 State Input::handleAdvInput(unsigned long loopStartTime, State state) {

@@ -267,6 +267,12 @@ Quadrant constexpr QUADRANT;
 // --------------------------------- DAC Channels --------------------------------------------------
 
 /**
+ * The i2C addresses of the two 4-channel digital to analog converters.
+ */
+uint8_t const DAC_1_I2C_ADDRESS = 0x60;
+uint8_t const DAC_2_I2C_ADDRESS = 0x61;
+
+/**
  * The four channels of an MCP4728 DAC arranged as an array for the sake of syntactic sugar.
  * Do not use this array directly. Use setChannel() instead.
  * Worth noting that these are just constants that are reused across the two DAC instqnces.

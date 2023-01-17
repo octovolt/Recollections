@@ -4,6 +4,8 @@
 
 #include "State.h"
 
+#include "Utils.h"
+
 /**
  * @brief Capture voltage while automatically recording.
  *

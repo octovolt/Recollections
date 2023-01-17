@@ -12,6 +12,7 @@
 
 typedef struct Hardware {
   static bool reflectState(State state);
+  static State updateFlashTiming(unsigned long loopStartTime, State state);
 
   private:
   static bool prepareRenderingOfChannelEditGateKey(State state, uint8_t preset);
@@ -30,7 +31,6 @@ typedef struct Hardware {
   static bool renderPresetSelect(State state);
   static bool setOutput(State state, const int8_t channel, const uint16_t voltageValue);
   static bool setOutputsAll(State state);
-  static State updateFlashTiming(unsigned long loopStartTime, State state);
 } Hardware;
 
 #endif

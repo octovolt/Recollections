@@ -85,7 +85,7 @@ State Keys::addKeyToCopyPasteData(uint8_t key, State state) {
 State Keys::carryRestsToInactiveVoltages(uint8_t key, State state) {
   for (uint8_t i = 0; i < 15; i++) {
     if (!state.gateVoltages[state.currentBank][i][key]) {
-      state.activeVoltage[state.currentBank][i][key] = false;
+      state.activeVoltages[state.currentBank][i][key] = false;
     }
   }
   return state;

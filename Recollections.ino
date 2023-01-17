@@ -142,17 +142,16 @@ bool setupPeripheralHardware() {
   delay(100);
 
   // DACs
-  Serial.println("set up hardware");
-  // In hardware before version 0.4.0, the USB is only accessible by removing dac1.
+  // In hardware before version 0.4.0, the USB port is only accessible by removing dac1.
   if (!(USB_POWERED && (HARDWARE_SEMVER.compare("0.4.0") < 0))) {
-    if (state.config.dac1.begin(MCP4728_I2CADDR_DEFAULT)) { // 0x60
+    if (state.config.dac1.begin(DAC_1_I2C_ADDRESS)) {
       Serial.println("dac1 began successfully");
     } else {
       Serial.println("dac1 did not begin successfully");
       return false;
     }
   }
-  if (state.config.dac2.begin(0x61)) {
+  if (state.config.dac2.begin(DAC_2_I2C_ADDRESS)) {
     Serial.println("dac2 began successfully");
   } else {
     Serial.println("dac2 did not begin successfully");
@@ -188,8 +187,6 @@ bool setupPeripheralHardware() {
  * @return false
  */
 bool setupState() {
-  Serial.println("set up state");
-
   // ephemeral state
   if (state.screen != SCREEN.ERROR) {
     state.screen = SCREEN.PRESET_SELECT;
@@ -269,7 +266,7 @@ void setup() {
     state.screen = SCREEN.ERROR;
   }
 
-  digitalWrite(BOARD_LED, 1); // to indicate that the teensy is alive and well
+  digitalWrite(BOARD_LED, 1); // to indicate that the microcontroller is alive and well
 
   Serial.println("Completed set up");
 }
@@ -295,14 +292,15 @@ void loop() {
   if (!digitalRead(TRELLIS_INTERRUPT_INPUT)) {
     state.config.trellis.read(false);
   }
-  state = State::recordContinuously(Input::handleInput(loopStartTime, state));
+  state = Input::handleInput(loopStartTime, state);
+  state = State::recordContinuously(state);
 
   // reflect state
   if (!Hardware::reflectState(state)) {
     state.screen = SCREEN.ERROR;
   }
 
-  // initial loop completed -- this is for debugging. remove?
+  // initial loop completed -- this is for debugging only. TODO: remove.
   if (!state.initialLoopCompleted) {
     Serial.println("--- Initial loop completed ---");
     state.initialLoopCompleted = true;

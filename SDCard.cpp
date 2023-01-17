@@ -267,7 +267,7 @@ State SDCard::readBankFile(State state, uint8_t bank) {
   }
 
   if (bankFile.available()) {
-    Serial.println("Bank file is available");
+    // Serial.println("Bank file is available");
     StaticJsonDocument<BANK_JSON_DOC_DESERIALIZATION_SIZE> doc;
     DeserializationError error = deserializeJson(doc, bankFile);
     if (error == DeserializationError::EmptyInput) {
@@ -301,7 +301,7 @@ bool SDCard::writeCurrentModuleAndBank(State state) {
   // TODO: I would like to abstract a lot of this into a function, since a lot of lines are repeated
   // twice here and in the other SD card functions, but I am having trouble figuring out how to do
   // this with cstrings in a way that makes sense and actually saves lines of code. Something to
-  // improve upon later.
+    // improve upon later.
 
   // --------------------------- Module file ---------------------------------
 
