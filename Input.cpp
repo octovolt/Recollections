@@ -25,19 +25,19 @@ State Input::handleAdvInput(unsigned long loopStartTime, State state) {
   if (state.readyForAdvInput && !digitalRead(ADV_INPUT)) {
     state.readyForAdvInput = false;
 
-    // if ( // protect against overflow
-    //   !(loopStartTime > state.lastAdvReceivedTime[0] &&
-    //   state.lastAdvReceivedTime[0] > state.lastAdvReceivedTime[1] &&
-    //   state.lastAdvReceivedTime[1] > state.lastAdvReceivedTime[2])
-    // ) {
-    //   Serial.println("Overflow protection");
-    //   if (loopStartTime < 3) {
-    //     loopStartTime = 3;
-    //   }
-    //   state.lastAdvReceivedTime[0] = loopStartTime - 1;
-    //   state.lastAdvReceivedTime[1] = loopStartTime - 2;
-    //   state.lastAdvReceivedTime[2] = loopStartTime - 3;
-    // }
+    if ( // protect against overflow
+      !(loopStartTime > state.lastAdvReceivedTime[0] &&
+      state.lastAdvReceivedTime[0] > state.lastAdvReceivedTime[1] &&
+      state.lastAdvReceivedTime[1] > state.lastAdvReceivedTime[2])
+    ) {
+      Serial.println("Overflow protection");
+      if (loopStartTime < 3) {
+        loopStartTime = 3;
+      }
+      state.lastAdvReceivedTime[0] = loopStartTime - 1;
+      state.lastAdvReceivedTime[1] = loopStartTime - 2;
+      state.lastAdvReceivedTime[2] = loopStartTime - 3;
+    }
 
     uint16_t lastInterval = loopStartTime - state.lastAdvReceivedTime[0];
     state.isAdvancingPresets = lastInterval < state.config.isAdvancingPresetsMaxInterval;
