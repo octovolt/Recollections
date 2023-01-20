@@ -14,7 +14,7 @@
 //
 // Required change, in both files, to allow them to compile across platforms:
 //
-// #if defined(ARDUINO_TEENSY36) || defined(ARDUINO_TEENSY41)
+// #ifdef CORE_TEENSY
 //   #include <WString.h>
 // #else
 //   #include <api/String.h>
@@ -22,7 +22,7 @@
 #include <StreamUtils.h>
 #include <string>
 
-#if defined(ARDUINO_TEENSY36) || defined(ARDUINO_TEENSY41)
+#ifdef CORE_TEENSY
   // This needs to be the Teensy-specific version of this. Rename others to disambiguate.
   #include <SD.h>
 #else

@@ -21,7 +21,7 @@ State State::autoRecord(State state) {
       !state.lockedVoltages[currentBank][currentPreset][i] &&
       !state.randomInputChannels[currentBank][i]
     ) {
-      #if defined(ARDUINO_TEENSY36) || defined(ARDUINO_TEENSY41)
+      #ifdef CORE_TEENSY
         state.voltages[currentBank][currentPreset][i] =
           Utils::tenBitToTwelveBit(analogRead(CV_INPUT));
       #else
@@ -42,7 +42,7 @@ State State::autoRecord(State state) {
  */
 State State::editVoltageOnSelectedPreset(State state) {
   if (state.screen == SCREEN.EDIT_CHANNEL_VOLTAGES || state.screen == SCREEN.PRESET_SELECT) {
-    #if defined(ARDUINO_TEENSY36) || defined(ARDUINO_TEENSY41)
+    #ifdef CORE_TEENSY
       state.voltages[state.currentBank][state.selectedKeyForRecording][state.currentChannel] =
         Utils::tenBitToTwelveBit(analogRead(CV_INPUT));
     #else
@@ -87,7 +87,7 @@ State State::recordVoltageOnSelectedChannel(State state) {
     state.screen == SCREEN.RECORD_CHANNEL_SELECT &&
     !state.lockedVoltages[currentBank][currentPreset][channel]
   ) {
-    #if defined(ARDUINO_TEENSY36) || defined(ARDUINO_TEENSY41)
+    #ifdef CORE_TEENSY
       state.voltages[currentBank][currentPreset][channel] =
         Utils::tenBitToTwelveBit(analogRead(CV_INPUT));
     #else

@@ -4,7 +4,7 @@
 
 #include "Utils.h"
 
-#if defined(ARDUINO_TEENSY36) || defined(ARDUINO_TEENSY41)
+#ifdef CORE_TEENSY
   #include <Entropy.h>
 #endif
 
@@ -27,7 +27,7 @@ Quadrant_t Utils::keyQuadrant(uint8_t key) {
 }
 
 uint32_t Utils::random(uint32_t max) {
-  #if defined(ARDUINO_TEENSY36) || defined(ARDUINO_TEENSY41)
+  #ifdef CORE_TEENSY
     return Entropy.random(max); // True random number generation
   #else
     return random(max); // Arduino pseudorandom, similar to stdlib's rand()

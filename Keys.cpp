@@ -31,7 +31,7 @@ State Keys::handleKeyEvent(keyEvent evt, State state) {
         state = Keys::handleEditChannelVoltagesKeyEvent(key, state);
         break;
       case SCREEN.ERROR:
-        #if defined(ARDUINO_TEENSY36) || defined(ARDUINO_TEENSY41)
+        #ifdef CORE_TEENSY
           SCB_AIRCR = 0x05FA0004; // Do a soft reboot of Teensy
         #else
           rp2040.reboot();
@@ -213,7 +213,7 @@ State Keys::handleEditChannelVoltagesKeyEvent(uint8_t key, State state) {
     if (state.readyForModPress) {
       state.selectedKeyForRecording = key;
       // See also continual recording in loop().
-      #if defined(ARDUINO_TEENSY36) || defined(ARDUINO_TEENSY41)
+      #ifdef CORE_TEENSY
         state.voltages[currentBank][key][currentChannel] =
           Utils::tenBitToTwelveBit(analogRead(CV_INPUT));
       #else
@@ -393,7 +393,7 @@ State Keys::handlePresetSelectKeyEvent(uint8_t key, State state) {
         Utils::random(MAX_UNSIGNED_12_BIT);
     }
     else {
-      #if defined(ARDUINO_TEENSY36) || defined(ARDUINO_TEENSY41)
+      #ifdef CORE_TEENSY
         state.voltages[currentBank][key][currentChannel] =
           Utils::tenBitToTwelveBit(analogRead(CV_INPUT));
       #else
@@ -423,7 +423,7 @@ State Keys::handleRecordChannelSelectKeyEvent(uint8_t key, State state) {
       // This is only the initial sample when pressing the key. When isAdvancingPresets is true, we
       // do not record immediately upon pressing the key here, but rather when the preset changes.
       // See Advance::updateStateAfterAdvancing().
-      #if defined(ARDUINO_TEENSY36) || defined(ARDUINO_TEENSY41)
+      #ifdef CORE_TEENSY
         state.voltages[currentBank][currentPreset][key] =
           Utils::tenBitToTwelveBit(analogRead(CV_INPUT));
       #else

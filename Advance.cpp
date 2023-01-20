@@ -52,7 +52,7 @@ State Advance::updateStateAfterAdvancing(unsigned long loopStartTime, State stat
           state.voltages[currentBank][currentPreset][i] = Utils::random(MAX_UNSIGNED_12_BIT);
         }
         else {
-          #if defined(ARDUINO_TEENSY36) || defined(ARDUINO_TEENSY41)
+          #ifdef CORE_TEENSY
             state.voltages[currentBank][currentPreset][i] =
               Utils::tenBitToTwelveBit(analogRead(CV_INPUT));
           #else

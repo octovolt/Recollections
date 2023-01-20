@@ -9,7 +9,7 @@
 #include <SPI.h>
 
 // Included for File
-#if defined(ARDUINO_TEENSY36) || defined(ARDUINO_TEENSY41)
+#ifdef CORE_TEENSY
   // This needs to be the Teensy-specific version of this. Rename others to disambiguate.
   #include <SD.h>
 #else

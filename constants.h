@@ -9,7 +9,7 @@
 #include <string>
 
 // Included for SD/FS constants
-#if defined(ARDUINO_TEENSY36) || defined(ARDUINO_TEENSY41)
+#ifdef CORE_TEENSY
   // This needs to be the Teensy-specific version of this. Rename others to disambiguate.
   #include <SD.h>
 #else
@@ -98,7 +98,7 @@ uint8_t const SD_READ_CREATE = (uint8_t)(O_READ | O_CREAT);
 
 // --------------------------- Microcontroller Board Pins ------------------------------------------
 
-#if defined(ARDUINO_TEENSY36) || defined(ARDUINO_TEENSY41)
+#ifdef CORE_TEENSY
 
   // REMEMBER that pins on the left side of Teensy start with GND and only then
   // begin counting from 0, so the second pin is 0, the third pin is 1, etc.

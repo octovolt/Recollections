@@ -32,7 +32,7 @@
 // https://arduinojson.org/
 #include <ArduinoJson.h>
 
-#if defined(ARDUINO_TEENSY36) || defined(ARDUINO_TEENSY41)
+#ifdef CORE_TEENSY
   // Random number generation:
   // On Teensy (or any AVR processor), we will use the Entropy library. On RP2040, we will need to
   // settle for the pseudorandomness of Arduino's randomSeed() seeded from a noisy unconnected pin
@@ -83,7 +83,7 @@ bool setupSDCard() {
   delay(200); // Seems to work better, not sure why
   Serial.println("Attempting to open SD card");
   bool success = false;
-  #if defined(ARDUINO_TEENSY36) || defined(ARDUINO_TEENSY41)
+  #ifdef CORE_TEENSY
     success = SD.begin(SD_CS_PIN);
   #else
     SDFSConfig cfg;
@@ -234,7 +234,7 @@ void setup() {
   Serial.begin(9600);
   // while (!Serial);
 
-  #if defined(ARDUINO_TEENSY36) || defined(ARDUINO_TEENSY41)
+  #ifdef CORE_TEENSY
     Entropy.Initialize();
   #else
     randomSeed(analogRead(UNCONNECTED_ANALOG_PIN));

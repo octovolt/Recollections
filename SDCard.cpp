@@ -27,7 +27,7 @@ typedef struct RecollectionsFileSystem {
 } RecollectionsFileSystem;
 
 File RecollectionsFileSystem::open(const char *filepath, uint8_t mode = FILE_READ) {
-  #if defined(ARDUINO_TEENSY36) || defined(ARDUINO_TEENSY41)
+  #ifdef CORE_TEENSY
     File file = SD.open(filepath, mode);
     if (mode == FILE_WRITE_BEGIN) {
       file.truncate();
@@ -53,7 +53,7 @@ File RecollectionsFileSystem::open(const char *filepath, uint8_t mode = FILE_REA
 }
 
 bool RecollectionsFileSystem::exists(const char *filepath) {
-  #if defined(ARDUINO_TEENSY36) || defined(ARDUINO_TEENSY41)
+  #ifdef CORE_TEENSY
     return SD.exists(filepath);
   #else
     return SDFS.exists(filepath);
@@ -61,7 +61,7 @@ bool RecollectionsFileSystem::exists(const char *filepath) {
 }
 
 bool RecollectionsFileSystem::mkdir(const char *filepath) {
-  #if defined(ARDUINO_TEENSY36) || defined(ARDUINO_TEENSY41)
+  #ifdef CORE_TEENSY
     return SD.mkdir(filepath);
   #else
     return SDFS.mkdir(filepath);
