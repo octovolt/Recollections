@@ -197,8 +197,10 @@ State Input::updateIsClocked(unsigned long lastInterval, State state) {
   uint16_t avgInterval =
     ((state.lastAdvReceivedTime[0] - state.lastAdvReceivedTime[1]) +
     (state.lastAdvReceivedTime[1] - state.lastAdvReceivedTime[2])) * 0.5;
+  uint16_t toleranceMillis = avgInterval * state.config.isClockedTolerance;
+  signed long signedLastInterval = lastInterval;
   state.isClocked =
-    !(lastInterval > (avgInterval + state.config.isClockedTolerance) ||
-      lastInterval < (avgInterval - state.config.isClockedTolerance));
+    !(signedLastInterval > (avgInterval + toleranceMillis) ||
+      signedLastInterval < (avgInterval - toleranceMillis));
   return state;
 }
