@@ -54,7 +54,8 @@ uint16_t Utils::voltageValue(State state, uint8_t preset, uint8_t channel) {
 
   // Gate channels
   if (state.gateChannels[currentBank][channel]) {
-    // TODO - this should work regardless of randomOutputOverwrites, but also respect randomOutputOverwrites
+    // When randomOutputOverwrites is true, random gate voltages are set in
+    // State::setRandomVoltagesForPreset() before we advance to the next preset.
     if (!state.config.randomOutputOverwrites && state.randomVoltages[currentBank][preset][channel]) {
       return
         Utils::random(2) &&

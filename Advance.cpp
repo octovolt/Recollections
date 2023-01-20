@@ -19,27 +19,41 @@ void Advance::advancePreset(unsigned long *loopStartTime, State *state) {
     Serial.println("advancePresetAddend out of range, resetting it to 1");
     state->advancePresetAddend = 1;
   }
-  int8_t advancedPreset = state->currentPreset + state->advancePresetAddend;
-  state->currentPreset =
-    advancedPreset > 15
-      ? advancedPreset - 16
-      : advancedPreset < 0
-        ? advancedPreset + 16
-        : advancedPreset;
 
-  // WARNING! ACHTUNG! PELIGRO!
-  // Make sure to prevent an infinite loop before calling advancePreset()! We cannot allow all
-  // presets to be removed, but if somehow they are, do not call advancePreset().
-  bool allPresetsRemoved = true;
+  // WARNING! ACHTUNG! PELIGRO! We need to prevent infinite recursion.
+  // If all presets have been somehow removed, we need to prevent nextPreset() from recursing.
+  bool allowRecursion = !Advance::allPresetsRemoved(state->removedPresets);
+  state->currentPreset = Advance::nextPreset(
+    state->currentPreset,
+    state->advancePresetAddend,
+    state->removedPresets,
+    allowRecursion
+  );
+}
+
+bool Advance::allPresetsRemoved(bool removedPresets[]) {
+  bool allRemoved = true;
   for (u_int8_t i = 0; i < 16; i++) {
-    if (!state->removedPresets[i]) {
-      allPresetsRemoved = false;
+    if (!removedPresets[i]) {
+      allRemoved = false;
       break;
     }
   }
-  if (!allPresetsRemoved && state->removedPresets[state->currentPreset]) {
-    Advance::advancePreset(loopStartTime, state);
+  return allRemoved;
+}
+
+uint8_t Advance::nextPreset(uint8_t preset, uint8_t addend, bool removedPresets[], bool allowRecursion) {
+  uint8_t addendedPreset = preset + addend;
+  uint8_t nextPreset =
+    addendedPreset > 15
+      ? addendedPreset - 16
+      : addendedPreset < 0
+        ? addendedPreset + 16
+        : addendedPreset;
+  if (allowRecursion && removedPresets[nextPreset]) {
+    nextPreset = Advance::nextPreset(nextPreset, addend, removedPresets, allowRecursion);
   }
+  return nextPreset;
 }
 
 /**

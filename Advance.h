@@ -11,6 +11,8 @@
 
 typedef struct Advance {
   static void advancePreset(unsigned long *loopStartTime, State *state);
+  static bool allPresetsRemoved(bool removedPresets[]);
+  static uint8_t nextPreset(uint8_t preset, uint8_t addend, bool removedPresets[], bool allowRecursion);
   static State updateStateAfterAdvancing(unsigned long loopStartTime, State state);
 } Advance;
 

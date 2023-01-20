@@ -44,8 +44,16 @@ State Input::handleAdvInput(unsigned long loopStartTime, State state) {
     state = Input::updateIsClocked(lastInterval, state);
 
     if (state.config.randomOutputOverwrites) {
-      // set random output voltages of next preset before advancing
-      state = State::setRandomVoltagesForPreset(state.currentPreset + 1, state);
+      // Set random output voltages of next preset before advancing. Make sure to prevent infinite
+      // recursion in the case where all presets have been removed.
+      bool allowRecursion = !Advance::allPresetsRemoved(state.removedPresets);
+      uint8_t nextPreset = Advance::nextPreset(
+        state.currentPreset,
+        state.advancePresetAddend,
+        state.removedPresets,
+        allowRecursion
+      );
+      state = State::setRandomVoltagesForPreset(nextPreset, state);
     }
 
     Advance::advancePreset(&loopStartTime, &state);
