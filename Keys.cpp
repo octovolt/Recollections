@@ -159,11 +159,10 @@ State Keys::handleEditChannelSelectKeyEvent(uint8_t key, State state) {
     state.randomOutputChannels[currentBank][key] = true;
   }
 
-  // recurse
+  // Return to beginning
   else if (state.keyPressesSinceModHold == 4) {
     state.randomOutputChannels[currentBank][key] = false;
     state.keyPressesSinceModHold = 0;
-    return Keys::handleEditChannelSelectKeyEvent(key, state);
   }
 
   return state;
@@ -192,17 +191,26 @@ State Keys::handleEditChannelVoltagesKeyEvent(uint8_t key, State state) {
       if (state.initialModHoldKey < 0) {
         state.initialModHoldKey = key;
       }
-      state = Keys::updateModKeyCombinationTracking(key, state);
+
+      // If we changed this key previously, reset the state.
+      // Otherwise, update the mod + key tracking to enter the cycle of functionality.
+      if (
+        state.keyPressesSinceModHold == 0 &&
+        state.randomVoltages[currentBank][key][currentChannel]
+      ) {
+        state.randomVoltages[currentBank][key][currentChannel] = false;
+      } else {
+        state = Keys::updateModKeyCombinationTracking(key, state);
+      }
 
       // Voltage is a random coin-flip between gate on or gate off
       if (state.keyPressesSinceModHold == 1) {
-        state.randomVoltages[currentBank][key][currentChannel] =
-          !state.randomVoltages[currentBank][key][currentChannel];
+        state.randomVoltages[currentBank][key][currentChannel] = true;
       }
-      // Recurse
+      // Return to beginning
       else if (state.keyPressesSinceModHold == 2) {
+        state.randomVoltages[currentBank][key][currentChannel] = false;
         state.keyPressesSinceModHold = 0;
-        return Keys::handleEditChannelVoltagesKeyEvent(key, state);
       }
     }
   }
@@ -262,11 +270,10 @@ State Keys::handleEditChannelVoltagesKeyEvent(uint8_t key, State state) {
         state.activeVoltages[currentBank][key][currentChannel] = true;
         state.randomVoltages[currentBank][key][currentChannel] = true;
       }
-      // Recurse
+      // Return to beginning
       else if (state.keyPressesSinceModHold == 5) {
         state.randomVoltages[currentBank][key][currentChannel] = false;
         state.keyPressesSinceModHold = 0;
-        return Keys::handleEditChannelVoltagesKeyEvent(key, state);
       }
     }
   }
@@ -350,13 +357,12 @@ State Keys::handleGlobalEditKeyEvent(uint8_t key, State state) {
         state.activeVoltages[currentBank][key][i] = false;
       }
     }
-    // Recurse
+    // Return to beginning
     else if (state.keyPressesSinceModHold == 4) {
       for (uint8_t i = 0; i < 8; i++) {
         state.activeVoltages[currentBank][key][i] = true;
       }
       state.keyPressesSinceModHold = 0;
-      return Keys::handleGlobalEditKeyEvent(key, state);
     }
   }
   return state;
@@ -474,7 +480,7 @@ State Keys::handleRecordChannelSelectKeyEvent(uint8_t key, State state) {
     }
   }
 
-  // Recurse
+  // Return to beginning
   else if (state.keyPressesSinceModHold == 3) {
     state.autoRecordChannels[currentBank][key] = false;
     state.randomInputChannels[currentBank][key] = false;
@@ -482,7 +488,6 @@ State Keys::handleRecordChannelSelectKeyEvent(uint8_t key, State state) {
       state.voltages[currentBank][currentPreset][key] = state.cachedVoltage;
     }
     state.keyPressesSinceModHold = 0;
-    return Keys::handleRecordChannelSelectKeyEvent(key, state);
   }
 
   return state;
