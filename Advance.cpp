@@ -12,22 +12,34 @@
  * @param loopStartTime
  * @return State
  */
-State Advance::advancePreset(unsigned long loopStartTime, State state) {
-  state.isAdvancingPresets = true;
+void Advance::advancePreset(unsigned long *loopStartTime, State *state) {
+  state->isAdvancingPresets = true;
 
-  if (-15 > state.advancePresetAddend || state.advancePresetAddend > 15) {
+  if (-15 > state->advancePresetAddend || state->advancePresetAddend > 15) {
     Serial.println("advancePresetAddend out of range, resetting it to 1");
-    state.advancePresetAddend = 1;
+    state->advancePresetAddend = 1;
   }
-  int8_t advancedPreset = state.currentPreset + state.advancePresetAddend;
-  state.currentPreset =
+  int8_t advancedPreset = state->currentPreset + state->advancePresetAddend;
+  state->currentPreset =
     advancedPreset > 15
       ? advancedPreset - 16
       : advancedPreset < 0
         ? advancedPreset + 16
         : advancedPreset;
 
-  return Advance::skipRemovedPreset(loopStartTime, state);
+  // WARNING! ACHTUNG! PELIGRO!
+  // Make sure to prevent an infinite loop before calling advancePreset()! We cannot allow all
+  // presets to be removed, but if somehow they are, do not call advancePreset().
+  bool allPresetsRemoved = true;
+  for (u_int8_t i = 0; i < 16; i++) {
+    if (!state->removedPresets[i]) {
+      allPresetsRemoved = false;
+      break;
+    }
+  }
+  if (!allPresetsRemoved && state->removedPresets[state->currentPreset]) {
+    Advance::advancePreset(loopStartTime, state);
+  }
 }
 
 /**
@@ -77,30 +89,5 @@ State Advance::updateStateAfterAdvancing(unsigned long loopStartTime, State stat
   state.lastAdvReceivedTime[1] = state.lastAdvReceivedTime[0];
   state.lastAdvReceivedTime[0] = loopStartTime;
 
-  return state;
-}
-
-// ---------------------------------------- PRIVATE ------------------------------------------------
-
-/**
- * @brief Skip the current preset if it has been removed.
- *
- * @param loopStartTime
- * @return State
- */
-State Advance::skipRemovedPreset(unsigned long loopStartTime, State state) {
-  // WARNING! ACHTUNG! PELIGRO!
-  // Make sure to prevent an infinite loop before calling advancePreset()! We cannot allow all
-  // presets to be removed, but if somehow they are, do not call advancePreset().
-  bool allPresetsRemoved = true;
-  for (u_int8_t i = 0; i < 16; i++) {
-    if (!state.removedPresets[i]) {
-      allPresetsRemoved = false;
-      break;
-    }
-  }
-  if (!allPresetsRemoved && state.removedPresets[state.currentPreset]) {
-    state = Advance::advancePreset(loopStartTime, state);
-  }
   return state;
 }

@@ -22,33 +22,33 @@ State Input::handleInput(unsigned long loopStartTime, State state) {
 }
 
 State Input::handleAdvInput(unsigned long loopStartTime, State state) {
-  if ( // protect against overflow
-    !(loopStartTime > state.lastAdvReceivedTime[0] &&
-    state.lastAdvReceivedTime[0] > state.lastAdvReceivedTime[1] &&
-    state.lastAdvReceivedTime[1] > state.lastAdvReceivedTime[2])
-  ) {
-    if (loopStartTime < 3) {
-      loopStartTime = 3;
-    }
-    state.lastAdvReceivedTime[0] = loopStartTime - 1;
-    state.lastAdvReceivedTime[1] = loopStartTime - 2;
-    state.lastAdvReceivedTime[2] = loopStartTime - 3;
-  }
-
-  uint16_t lastInterval = loopStartTime - state.lastAdvReceivedTime[0];
-  state.isAdvancingPresets = lastInterval < state.config.isAdvancingPresetsMaxInterval;
-  state = Input::updateIsClocked(lastInterval, state);
-
   if (state.readyForAdvInput && !digitalRead(ADV_INPUT)) {
     state.readyForAdvInput = false;
+
+    // if ( // protect against overflow
+    //   !(loopStartTime > state.lastAdvReceivedTime[0] &&
+    //   state.lastAdvReceivedTime[0] > state.lastAdvReceivedTime[1] &&
+    //   state.lastAdvReceivedTime[1] > state.lastAdvReceivedTime[2])
+    // ) {
+    //   Serial.println("Overflow protection");
+    //   if (loopStartTime < 3) {
+    //     loopStartTime = 3;
+    //   }
+    //   state.lastAdvReceivedTime[0] = loopStartTime - 1;
+    //   state.lastAdvReceivedTime[1] = loopStartTime - 2;
+    //   state.lastAdvReceivedTime[2] = loopStartTime - 3;
+    // }
+
+    uint16_t lastInterval = loopStartTime - state.lastAdvReceivedTime[0];
+    state.isAdvancingPresets = lastInterval < state.config.isAdvancingPresetsMaxInterval;
+    state = Input::updateIsClocked(lastInterval, state);
 
     if (state.config.randomOutputOverwrites) {
       // set random output voltages of next preset before advancing
       state = State::setRandomVoltagesForPreset(state.currentPreset + 1, state);
     }
 
-    // TODO: figure out how to do function composition in c++
-    state = Advance::advancePreset(loopStartTime, state);
+    Advance::advancePreset(&loopStartTime, &state);
     state = Advance::updateStateAfterAdvancing(loopStartTime, state);
   }
   else if (!state.readyForAdvInput && digitalRead(ADV_INPUT)) {
@@ -59,7 +59,8 @@ State Input::handleAdvInput(unsigned long loopStartTime, State state) {
 }
 
 State Input::handleBankAdvanceInput(State state) {
-  if (state.readyForBankAdvanceInput && !digitalRead(BANK_ADV_INPUT)) {
+  if (state.readyForBankAdvanceInput && digitalRead(BANK_ADV_INPUT)) {
+    Serial.println("BANK ADV input");
     state.readyForBankAdvanceInput = false;
     if (-15 > state.advanceBankAddend || state.advanceBankAddend > 15) {
       Serial.println("advanceBankAddend out of range, resetting it to 1");
@@ -73,18 +74,19 @@ State Input::handleBankAdvanceInput(State state) {
           ? advancedBank + 16
           : advancedBank;
   }
-  else if (!state.readyForBankAdvanceInput && digitalRead(BANK_ADV_INPUT)) {
+  else if (!state.readyForBankAdvanceInput && !digitalRead(BANK_ADV_INPUT)) {
     state.readyForBankAdvanceInput = true;
   }
   return state;
 }
 
 State Input::handleBankReverseInput(State state) {
-  if (state.readyForBankReverseInput && !digitalRead(BANK_REV_INPUT)) {
+  if (state.readyForBankReverseInput && digitalRead(BANK_REV_INPUT)) {
+    Serial.println("BANK REV input");
     state.readyForBankReverseInput = false;
     state.advanceBankAddend = state.advanceBankAddend * -1;
   }
-  else if (!state.readyForBankReverseInput && digitalRead(BANK_REV_INPUT)) {
+  else if (!state.readyForBankReverseInput && !digitalRead(BANK_REV_INPUT)) {
     state.readyForBankReverseInput = true;
   }
   return state;
@@ -166,22 +168,24 @@ State Input::handleRecInput(State state) {
 }
 
 State Input::handleResetInput(State state) {
-  if (state.readyForResetInput && !digitalRead(RESET_INPUT)) {
+  if (state.readyForResetInput && digitalRead(RESET_INPUT)) {
+    Serial.println("RESET input");
     state.readyForResetInput = false;
     state.currentPreset = 0;
   }
-  else if (!state.readyForResetInput && digitalRead(RESET_INPUT)) {
+  else if (!state.readyForResetInput && !digitalRead(RESET_INPUT)) {
     state.readyForResetInput = true;
   }
   return state;
 }
 
 State Input::handleReverseInput(State state) {
-  if (state.readyForReverseInput && !digitalRead(REV_INPUT)) {
+  if (state.readyForReverseInput && digitalRead(REV_INPUT)) {
+    Serial.println("REV input");
     state.readyForReverseInput = false;
     state.advancePresetAddend = state.advancePresetAddend * -1;
   }
-  else if (!state.readyForReverseInput && digitalRead(REV_INPUT)) {
+  else if (!state.readyForReverseInput && !digitalRead(REV_INPUT)) {
     state.readyForReverseInput = true;
   }
   return state;
