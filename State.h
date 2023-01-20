@@ -335,6 +335,14 @@ typedef struct State {
    * @return State
    */
   static State quitCopyPasteFlowPriorToPaste(State state);
+
+  /**
+   * @brief Set all random voltages across channels for a specified preset
+   *
+   * @param state
+   * @return State
+   */
+  static State setRandomVoltagesForPreset(uint8_t preset, State state);
  } State;
 
  #endif

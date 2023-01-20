@@ -454,7 +454,7 @@ bool Hardware::setOutput(State state, const int8_t channel, const uint16_t volta
   }
   Adafruit_MCP4728 dac = channel < 4 ? state.config.dac1 : state.config.dac2;
   int dacChannel = channel < 4 ? channel : channel - 4; // normalize to output indexes 0 to 3.
-  bool writeSuccess = dac.setChannelValue(DAC_CHANNELS[dacChannel], Utils::tenBitToTwelveBit(voltageValue));
+  bool writeSuccess = dac.setChannelValue(DAC_CHANNELS[dacChannel], voltageValue);
   if (!writeSuccess) {
     Serial.println("setOutput unsuccessful; setChannelValue error");
     return false;

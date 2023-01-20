@@ -22,10 +22,7 @@ State Input::handleInput(unsigned long loopStartTime, State state) {
 }
 
 State Input::handleAdvInput(unsigned long loopStartTime, State state) {
-  uint8_t currentBank = state.currentBank;
-  uint8_t currentPreset = state.currentPreset;
-
-  if ( // protect against overflow because I'm paranoid. is this even necessary?
+  if ( // protect against overflow
     !(loopStartTime > state.lastAdvReceivedTime[0] &&
     state.lastAdvReceivedTime[0] > state.lastAdvReceivedTime[1] &&
     state.lastAdvReceivedTime[1] > state.lastAdvReceivedTime[2])
@@ -38,54 +35,26 @@ State Input::handleAdvInput(unsigned long loopStartTime, State state) {
     state.lastAdvReceivedTime[2] = loopStartTime - 3;
   }
 
-  else {
-    state.isAdvancingPresets =
-      (loopStartTime - state.lastAdvReceivedTime[0]) < state.config.isAdvancingPresetsMaxInterval;
+  uint16_t lastInterval = loopStartTime - state.lastAdvReceivedTime[0];
+  state.isAdvancingPresets = lastInterval < state.config.isAdvancingPresetsMaxInterval;
+  state = Input::updateIsClocked(lastInterval, state);
 
-    uint16_t avgInterval =
-      ((state.lastAdvReceivedTime[0] - state.lastAdvReceivedTime[1]) +
-      (state.lastAdvReceivedTime[1] - state.lastAdvReceivedTime[2])) * 0.5;
-    uint16_t lastInterval = state.lastAdvReceivedTime[0] - loopStartTime;
+  if (state.readyForAdvInput && !digitalRead(ADV_INPUT)) {
+    state.readyForAdvInput = false;
 
-    // If our most recent interval is above the isClockedTolerance, we are no longer being clocked.
-    // See advancePreset() for the lower bound of the tolerance.
-    if (lastInterval > avgInterval * (1 + state.config.isClockedTolerance)) {
-      state.isClocked = false;
+    if (state.config.randomOutputOverwrites) {
+      // set random output voltages of next preset before advancing
+      state = State::setRandomVoltagesForPreset(state.currentPreset + 1, state);
     }
 
-    if (state.readyForAdvInput && !digitalRead(ADV_INPUT)) {
-      state.readyForAdvInput = false;
-
-      if (state.config.randomOutputOverwrites) {
-        // set random output voltages of next preset before advancing
-        for (uint8_t i = 0; i < 7; i++) {
-          // random channels, random 32-bit converted to 12-bit
-          if (state.randomOutputChannels[currentBank][i]) {
-            state.voltages[currentBank][currentPreset + 1][i] = Utils::random(MAX_UNSIGNED_12_BIT);
-          }
-
-          if (state.randomVoltages[currentBank][currentPreset + 1][i]) {
-            // random gate presets
-            if (state.gateChannels[currentBank][i]) {
-              state.voltages[currentBank][currentPreset + 1][i] = Utils::random(2)
-                ? VOLTAGE_VALUE_MAX
-                : 0;
-            }
-            // random CV presets, random 32-bit converted to 12-bit
-            state.voltages[currentBank][currentPreset + 1][i] = Utils::random(MAX_UNSIGNED_12_BIT);
-          }
-        }
-      }
-
-      state = Advance::updateStateAfterAdvancing(
-        loopStartTime,
-        Advance::advancePreset(loopStartTime, state)
-      );
-    }
-    else if (!state.readyForAdvInput && digitalRead(ADV_INPUT)) {
-      state.readyForAdvInput = true;
-    }
+    // TODO: figure out how to do function composition in c++
+    state = Advance::advancePreset(loopStartTime, state);
+    state = Advance::updateStateAfterAdvancing(loopStartTime, state);
   }
+  else if (!state.readyForAdvInput && digitalRead(ADV_INPUT)) {
+    state.readyForAdvInput = true;
+  }
+
   return state;
 }
 
@@ -215,5 +184,17 @@ State Input::handleReverseInput(State state) {
   else if (!state.readyForReverseInput && digitalRead(REV_INPUT)) {
     state.readyForReverseInput = true;
   }
+  return state;
+}
+
+// Private
+
+State Input::updateIsClocked(unsigned long lastInterval, State state) {
+  uint16_t avgInterval =
+    ((state.lastAdvReceivedTime[0] - state.lastAdvReceivedTime[1]) +
+    (state.lastAdvReceivedTime[1] - state.lastAdvReceivedTime[2])) * 0.5;
+  state.isClocked =
+    !(lastInterval > (avgInterval + state.config.isClockedTolerance) ||
+      lastInterval < (avgInterval - state.config.isClockedTolerance));
   return state;
 }

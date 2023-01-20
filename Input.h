@@ -18,6 +18,9 @@ typedef struct Input {
   static State handleRecInput(State state);
   static State handleResetInput(State state);
   static State handleReverseInput(State state);
+
+  private:
+  static State updateIsClocked(unsigned long lastInterval, State state);
 } Input;
 
 #endif

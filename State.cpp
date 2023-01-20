@@ -224,3 +224,24 @@ State State::quitCopyPasteFlowPriorToPaste(State state) {
   }
   return state;
 }
+
+State State::setRandomVoltagesForPreset(uint8_t preset, State state) {
+  for (uint8_t i = 0; i < 7; i++) {
+    // random channels, random 32-bit converted to 12-bit
+    if (state.randomOutputChannels[state.currentBank][i]) {
+      state.voltages[state.currentBank][preset][i] = Utils::random(MAX_UNSIGNED_12_BIT);
+    }
+
+    if (state.randomVoltages[state.currentBank][preset][i]) {
+      // random gate presets
+      if (state.gateChannels[state.currentBank][i]) {
+        state.voltages[state.currentBank][preset][i] = Utils::random(2)
+          ? VOLTAGE_VALUE_MAX
+          : 0;
+      }
+      // random CV presets, random 32-bit converted to 12-bit
+      state.voltages[state.currentBank][preset][i] = Utils::random(MAX_UNSIGNED_12_BIT);
+    }
+  }
+  return state;
+}

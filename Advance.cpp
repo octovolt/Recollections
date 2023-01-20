@@ -15,16 +15,6 @@
 State Advance::advancePreset(unsigned long loopStartTime, State state) {
   state.isAdvancingPresets = true;
 
-  uint16_t avgInterval =
-    ((state.lastAdvReceivedTime[0] - state.lastAdvReceivedTime[1]) +
-    (state.lastAdvReceivedTime[1] - state.lastAdvReceivedTime[2])) * 0.5;
-  uint16_t lastInterval = state.lastAdvReceivedTime[0] - loopStartTime;
-  // If our most recent interval is below the isClockedTolerance, we are no longer being clocked.
-  // See the handling of the ADV input for the upper bound of the tolerance.
-  state.isClocked = lastInterval < avgInterval * (1 - state.config.isClockedTolerance)
-    ? false
-    : true;
-
   if (-15 > state.advancePresetAddend || state.advancePresetAddend > 15) {
     Serial.println("advancePresetAddend out of range, resetting it to 1");
     state.advancePresetAddend = 1;
@@ -42,6 +32,7 @@ State Advance::advancePreset(unsigned long loopStartTime, State state) {
 
 /**
  * @brief This function assumes it is being called when state.isAdvancingPresets is true.
+ * TODO: break this up into multiple functions that do one thing instead of this grab bag.
  *
  * @param loopStartTime
  * @return State
