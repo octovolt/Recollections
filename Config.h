@@ -91,7 +91,7 @@ typedef struct Config {
    * The number of milliseconds that can be measured between gates or triggers at the ADV input jack
    * before we say state.isAdvancingPresets is false.
    */
-  uint16_t isAdvancingPresetsMaxInterval;
+  uint16_t isAdvancingMaxInterval;
 
   /**
    * The permissible limit of variation, expressed as a percentage between 0 and 1, that gates or

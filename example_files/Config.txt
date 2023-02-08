@@ -13,7 +13,7 @@
     "black": [0, 0, 0]
   },
   "controllerOrientation": true,
-  "isAdvancingPresetsMaxInterval": 10000,
+  "isAdvancingMaxInterval": 10000,
   "isClockedTolerance": 0.1,
   "randomOutputOverwrites": true
 }

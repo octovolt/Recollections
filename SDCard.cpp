@@ -138,8 +138,8 @@ Config SDCard::readConfigFile(Config config) {
       if (doc["currentModule"] != nullptr) {
         config.currentModule = doc["currentModule"];
       }
-      if (doc["isAdvancingPresetsMaxInterval"] != nullptr) {
-        config.isAdvancingPresetsMaxInterval = doc["isAdvancingPresetsMaxInterval"];
+      if (doc["isAdvancingMaxInterval"] != nullptr) {
+        config.isAdvancingMaxInterval = doc["isAdvancingMaxInterval"];
       }
       if (doc["isClockedTolerance"] != nullptr) {
         config.isClockedTolerance = doc["isClockedTolerance"];

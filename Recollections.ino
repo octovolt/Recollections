@@ -122,7 +122,7 @@ bool setupConfig() {
   };
   state.config.controllerOrientation = 1;
   state.config.currentModule = 0;
-  state.config.isAdvancingPresetsMaxInterval = 10000;
+  state.config.isAdvancingMaxInterval = 10000;
   state.config.isClockedTolerance = 0.1;
   state.config.randomOutputOverwrites = 1;
 
