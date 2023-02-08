@@ -75,29 +75,9 @@ uint8_t Advance::nextPreset(uint8_t preset, uint8_t addend, bool removedPresets[
  * @return State
  */
 State Advance::updateStateAfterAdvancing(unsigned long loopStartTime, State state) {
-  // Press record key while advancing: sample new voltage
+  // Press record key while advancing: sample new voltage immediately after advance
   if (state.screen == SCREEN.RECORD_CHANNEL_SELECT && state.selectedKeyForRecording >= 0) {
     state = State::recordVoltageOnSelectedChannel(state);
-  }
-  // Autorecord while advancing: sample new voltage
-  else if (!state.readyForRecInput) {
-    uint8_t currentBank = state.currentBank;
-    uint8_t currentPreset = state.currentPreset;
-    for (uint8_t i = 0; i < 8; i++) {
-      if (state.autoRecordChannels[currentPreset][i]) {
-        if (state.randomInputChannels[currentPreset][i]) {
-          state.voltages[currentBank][currentPreset][i] = Utils::random(MAX_UNSIGNED_12_BIT);
-        }
-        else {
-          #ifdef CORE_TEENSY
-            state.voltages[currentBank][currentPreset][i] =
-              Utils::tenBitToTwelveBit(analogRead(CV_INPUT));
-          #else
-            state.voltages[currentBank][currentPreset][i] = analogRead(CV_INPUT);
-          #endif
-        }
-      }
-    }
   }
 
   // manage gate length

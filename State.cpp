@@ -53,6 +53,13 @@ State State::editVoltageOnSelectedPreset(State state) {
   return state;
 }
 
+/**
+ * @brief Entry point to continuous recording over time rather than a single sample. Called within
+ * the main loop() function.
+ *
+ * @param state
+ * @return State
+ */
 State State::recordContinuously(State state) {
   if (state.selectedKeyForRecording >= 0) {
     if (
@@ -66,6 +73,7 @@ State State::recordContinuously(State state) {
     }
   }
   else if (!state.readyForRecInput && !state.isAdvancingPresets) {
+    Serial.println("should auto record");
     state = State::autoRecord(state);
   }
   return state;

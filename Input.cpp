@@ -168,6 +168,27 @@ State Input::handleModButton(unsigned long loopStartTime, State state) {
 State Input::handleRecInput(State state) {
   if (state.readyForRecInput && !digitalRead(REC_INPUT)) {
     state.readyForRecInput = false;
+
+    // We perform the initial sample of voltage in response to the REC input, but other recording
+    // may happen while readyForRecInput is false, depending on the context. See autoRecord and
+    // recordContinuously.
+    uint8_t currentBank = state.currentBank;
+    uint8_t currentPreset = state.currentPreset;
+    for (uint8_t i = 0; i < 8; i++) {
+      if (state.autoRecordChannels[currentBank][i]) {
+        if (state.randomInputChannels[currentBank][i]) {
+          state.voltages[currentBank][currentPreset][i] = Utils::random(MAX_UNSIGNED_12_BIT);
+        }
+        else {
+          #ifdef CORE_TEENSY
+            uint16_t reading = analogRead(CV_INPUT);
+            state.voltages[currentBank][currentPreset][i] = Utils::tenBitToTwelveBit(reading);
+          #else
+            state.voltages[currentBank][currentPreset][i] = analogRead(CV_INPUT);
+          #endif
+        }
+      }
+    }
   }
   else if (!state.readyForRecInput && digitalRead(REC_INPUT)) {
     state.readyForRecInput = true;
