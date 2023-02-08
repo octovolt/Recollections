@@ -395,8 +395,7 @@ State Keys::handlePresetSelectKeyEvent(uint8_t key, State state) {
       (state.randomVoltages[currentBank][state.currentPreset][currentBank] &&
         state.config.randomOutputOverwrites)
     ) {
-      state.voltages[currentBank][key][currentChannel] =
-        Utils::random(MAX_UNSIGNED_12_BIT);
+      state.voltages[currentBank][key][currentChannel] = Utils::random(MAX_UNSIGNED_12_BIT);
     }
     else {
       #ifdef CORE_TEENSY

@@ -9,8 +9,16 @@
 #include "Utils.h"
 #include "constants.h"
 
+/**
+ * @brief Entry point to handling the MOD button and all inputs.
+ *
+ * @param loopStartTime
+ * @param state
+ * @return State
+ */
 State Input::handleInput(unsigned long loopStartTime, State state) {
-  // hmmmm... why doesn't a function composition approach work here? pointers or something?
+  // I would prefer to do this with function composition, but it does not seem to be working.
+  // The ordering of these functions is important.
   state = Input::handleModButton(loopStartTime, state);
   state = Input::handleResetInput(state);
   state = Input::handleBankReverseInput(state);
@@ -21,16 +29,38 @@ State Input::handleInput(unsigned long loopStartTime, State state) {
   return state;
 }
 
+// Private
+
+/**
+ * @brief Handle gates on the ADV input, or the lack thereof. Updates isAdvancingPresets and
+ * isClocked on every loop.
+ *
+ * @param loopStartTime
+ * @param state
+ * @return State
+ */
 State Input::handleAdvInput(unsigned long loopStartTime, State state) {
+  // Note that the following block, which updates isAdvancingPresets and isClocked, is executed on
+  // every loop, not just when the ADV input is high or low.
+  uint16_t lastInterval = loopStartTime - state.lastAdvReceivedTime[0];
+  state.isAdvancingPresets = lastInterval < state.config.isAdvancingMaxInterval;
+  uint16_t avgInterval =
+    ((state.lastAdvReceivedTime[0] - state.lastAdvReceivedTime[1]) +
+    (state.lastAdvReceivedTime[1] - state.lastAdvReceivedTime[2])) * 0.5;
+  uint16_t toleranceMillis = avgInterval * state.config.isClockedTolerance;
+  signed long signedLastInterval = lastInterval;
+  state.isClocked =
+    !(signedLastInterval > (avgInterval + toleranceMillis) ||
+      signedLastInterval < (avgInterval - toleranceMillis));
+
   if (state.readyForAdvInput && !digitalRead(ADV_INPUT)) {
     state.readyForAdvInput = false;
 
     if ( // protect against overflow
-      !(loopStartTime > state.lastAdvReceivedTime[0] &&
-      state.lastAdvReceivedTime[0] > state.lastAdvReceivedTime[1] &&
-      state.lastAdvReceivedTime[1] > state.lastAdvReceivedTime[2])
+      !(loopStartTime >= state.lastAdvReceivedTime[0] &&
+      state.lastAdvReceivedTime[0] >= state.lastAdvReceivedTime[1] &&
+      state.lastAdvReceivedTime[1] >= state.lastAdvReceivedTime[2])
     ) {
-      Serial.println("Overflow protection");
       if (loopStartTime < 3) {
         loopStartTime = 3;
       }
@@ -38,10 +68,6 @@ State Input::handleAdvInput(unsigned long loopStartTime, State state) {
       state.lastAdvReceivedTime[1] = loopStartTime - 2;
       state.lastAdvReceivedTime[2] = loopStartTime - 3;
     }
-
-    uint16_t lastInterval = loopStartTime - state.lastAdvReceivedTime[0];
-    state.isAdvancingPresets = lastInterval < state.config.isAdvancingPresetsMaxInterval;
-    state = Input::updateIsClocked(lastInterval, state);
 
     if (state.config.randomOutputOverwrites) {
       // Set random output voltages of next preset before advancing. Make sure to prevent infinite
@@ -217,19 +243,5 @@ State Input::handleReverseInput(State state) {
   else if (!state.readyForReverseInput && !digitalRead(REV_INPUT)) {
     state.readyForReverseInput = true;
   }
-  return state;
-}
-
-// Private
-
-State Input::updateIsClocked(unsigned long lastInterval, State state) {
-  uint16_t avgInterval =
-    ((state.lastAdvReceivedTime[0] - state.lastAdvReceivedTime[1]) +
-    (state.lastAdvReceivedTime[1] - state.lastAdvReceivedTime[2])) * 0.5;
-  uint16_t toleranceMillis = avgInterval * state.config.isClockedTolerance;
-  signed long signedLastInterval = lastInterval;
-  state.isClocked =
-    !(signedLastInterval > (avgInterval + toleranceMillis) ||
-      signedLastInterval < (avgInterval - toleranceMillis));
   return state;
 }
