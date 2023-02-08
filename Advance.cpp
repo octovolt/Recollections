@@ -24,6 +24,14 @@ void Advance::advancePreset(unsigned long *loopStartTime, State *state) {
   );
 }
 
+/**
+ * @brief Determine whether all presets have been removed. This should never occur, but we check to
+ * make sure we will not enter an infinite recursion in Advance::nextPreset().
+ *
+ * @param removedPresets
+ * @return true
+ * @return false
+ */
 bool Advance::allPresetsRemoved(bool removedPresets[]) {
   bool allRemoved = true;
   for (u_int8_t i = 0; i < 16; i++) {
@@ -35,6 +43,16 @@ bool Advance::allPresetsRemoved(bool removedPresets[]) {
   return allRemoved;
 }
 
+/**
+ * @brief Get the index of the next preset. Note that the last argument, allowRecursion, should be
+ * provided by the inverse result of Advance::allPresetsRemoved() to prevent infinite recursion.
+ *
+ * @param preset
+ * @param addend
+ * @param removedPresets
+ * @param allowRecursion
+ * @return uint8_t
+ */
 uint8_t Advance::nextPreset(uint8_t preset, uint8_t addend, bool removedPresets[], bool allowRecursion) {
   uint8_t addendedPreset = preset + addend;
   uint8_t nextPreset =
