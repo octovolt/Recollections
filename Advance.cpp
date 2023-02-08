@@ -13,13 +13,6 @@
  * @return State
  */
 void Advance::advancePreset(unsigned long *loopStartTime, State *state) {
-  state->isAdvancingPresets = true;
-
-  if (-15 > state->advancePresetAddend || state->advancePresetAddend > 15) {
-    Serial.println("advancePresetAddend out of range, resetting it to 1");
-    state->advancePresetAddend = 1;
-  }
-
   // WARNING! ACHTUNG! PELIGRO! We need to prevent infinite recursion.
   // If all presets have been somehow removed, we need to prevent nextPreset() from recursing.
   bool allowRecursion = !Advance::allPresetsRemoved(state->removedPresets);
