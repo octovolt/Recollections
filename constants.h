@@ -155,42 +155,48 @@ uint8_t const SD_READ_CREATE = (uint8_t)(O_READ | O_CREAT);
   // Analog inputs
   /** Control voltage input to be recorded. */
   uint8_t const CV_INPUT = 26;
-  uint8_t const UNCONNECTED_ANALOG_PIN = 27; // noise for randomSeed()
+  uint8_t const UNCONNECTED_ANALOG_PIN = 28; // noise for randomSeed()
 
   // Digital inputs
   /** Gate to start/stop automatic recording. Recording occurs when the gate is high. */
-  uint8_t const REC_INPUT = 0;
+  uint8_t const REC_INPUT = 14;
   /** Gate to advance the current preset to the next preset. */
-  uint8_t const ADV_INPUT = 1;
+  uint8_t const ADV_INPUT = 13;
   /** Button (gate) that acts as a modifier for keys or as an escape to quit the current screen */
-  uint8_t const MOD_INPUT = 2;
+  uint8_t const MOD_INPUT = 15;
   /** Gate that determines if a key is being pressed. Avoids unnecessary polling. */
-  uint8_t const TRELLIS_INTERRUPT_INPUT = 3;
-  /** [EXPANSION] Gate to reverse the direction of preset advancement. */
-  uint8_t const REV_INPUT = 4;
-  /** [EXPANSION] Gate to reset the preset advancement to the first preset. */
-  uint8_t const RESET_INPUT = 5;
-  /** [EXPANSION] Gate to advance the current bank to the next bank. */
-  uint8_t const BANK_ADV_INPUT = 6;
-  /** [EXPANSION] Gate to reverse the direction of bank advancement. */
-  uint8_t const BANK_REV_INPUT = 7;
+  uint8_t const TRELLIS_INTERRUPT_INPUT = 12;
+
+  // Expansion
+  /** Gate to reverse the direction of preset advancement. */
+  uint8_t const REV_INPUT = 0;
+  /** Gate to reset the preset advancement to the first preset. */
+  uint8_t const RESET_INPUT = 1;
+  /** Gate to advance the current bank to the next bank. */
+  uint8_t const BANK_ADV_INPUT = 2;
+  /** Gate to reverse the direction of bank advancement. */
+  uint8_t const BANK_REV_INPUT = 3;
+  /** Gate to toggle between two banks */
+  uint8_t const BANK_TOGGLE = 8;
+  /** Gate input reserved for future development */
+  uint8_t const RESERVED_INPUT = 9;
 
   // Digital outputs
   uint8_t const BOARD_LED = 25; // does this have a normal pin number? will this work?
 
   // Digital i2c pins - leader
-  uint8_t const SCL0 = 21;
-  uint8_t const SDA0 = 20;
+  uint8_t const SCL0 = 5;
+  uint8_t const SDA0 = 4;
 
   // Digital i2c pins - follower
-  uint8_t const SCL1 = 19;
-  uint8_t const SDA1 = 18;
+  uint8_t const SCL1 = 7;
+  uint8_t const SDA1 = 6;
 
   // Digital SPI pins - SD card
-  uint8_t const SPI_RX = 12;
-  uint8_t const SPI_CSN = 13;
-  uint8_t const SPI_SCK = 14;
-  uint8_t const SPI_TX = 15;
+  uint8_t const SPI_RX = 16;
+  uint8_t const SPI_CSN = 17;
+  uint8_t const SPI_SCK = 18;
+  uint8_t const SPI_TX = 19;
 
 #endif
 
