@@ -20,7 +20,7 @@
 #if defined(ARDUINO_TEENSY36)
   #include <i2c_t3.h> // ~/Documents/Arduino/libraries/
 #else
-  // for Teensy 4.x
+  // for Teensy 4.x and Pico
   #include <Wire.h> // /Applications/Teensyduino.app/Contents/Java/hardware/teensy/avr/libraries/
 #endif
 
@@ -144,14 +144,14 @@ bool setupPeripheralHardware() {
   // DACs
   // In hardware before version 0.4.0, the USB port is only accessible by removing dac1.
   if (!(USB_POWERED && (HARDWARE_SEMVER.compare("0.4.0") < 0))) {
-    if (state.config.dac1.begin(DAC_1_I2C_ADDRESS)) {
+    if (state.config.dac1.begin(DAC_1_I2C_ADDRESS, &Wire)) {
       Serial.println("dac1 began successfully");
     } else {
       Serial.println("dac1 did not begin successfully");
       return false;
     }
   }
-  if (state.config.dac2.begin(DAC_2_I2C_ADDRESS)) {
+  if (state.config.dac2.begin(DAC_2_I2C_ADDRESS, &Wire)) {
     Serial.println("dac2 began successfully");
   } else {
     Serial.println("dac2 did not begin successfully");
@@ -234,10 +234,15 @@ void setup() {
   Serial.begin(9600);
   // while (!Serial);
 
-  #ifdef CORE_TEENSY
-    Entropy.Initialize();
-  #else
-    randomSeed(analogRead(UNCONNECTED_ANALOG_PIN));
+  #ifndef CORE_TEENSY
+    Wire.setSDA(RECOLLECTIONS_SDA0);
+    Wire.setSCL(RECOLLECTIONS_SCL0);
+    Wire.begin();
+
+    SPI.setRX(RECOLLECTIONS_SPI_RX);
+    SPI.setTX(RECOLLECTIONS_SPI_TX);
+    SPI.setSCK(RECOLLECTIONS_SPI_SCK);
+    SPI.setCS(RECOLLECTIONS_SPI_CSN);
   #endif
 
   pinMode(ADV_INPUT, INPUT);
@@ -265,6 +270,12 @@ void setup() {
   if (!setUpStateSuccessfully) {
     state.screen = SCREEN.ERROR;
   }
+
+  #ifdef CORE_TEENSY
+    Entropy.Initialize();
+  #else
+    randomSeed(analogRead(UNCONNECTED_ANALOG_PIN));
+  #endif
 
   digitalWrite(BOARD_LED, 1); // to indicate that the microcontroller is alive and well
 

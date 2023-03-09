@@ -185,18 +185,18 @@ uint8_t const SD_READ_CREATE = (uint8_t)(O_READ | O_CREAT);
   uint8_t const BOARD_LED = 25; // does this have a normal pin number? will this work?
 
   // Digital i2c pins - leader
-  uint8_t const SCL0 = 5;
-  uint8_t const SDA0 = 4;
+  uint8_t const RECOLLECTIONS_SDA0 = 4;
+  uint8_t const RECOLLECTIONS_SCL0 = 5;
 
   // Digital i2c pins - follower
-  uint8_t const SCL1 = 7;
-  uint8_t const SDA1 = 6;
+  uint8_t const RECOLLECTIONS_SDA1 = 6;
+  uint8_t const RECOLLECTIONS_SCL1 = 7;
 
   // Digital SPI pins - SD card
-  uint8_t const SPI_RX = 16;
-  uint8_t const SPI_CSN = 17;
-  uint8_t const SPI_SCK = 18;
-  uint8_t const SPI_TX = 19;
+  uint8_t const RECOLLECTIONS_SPI_RX = 16;
+  uint8_t const RECOLLECTIONS_SPI_CSN = 17;
+  uint8_t const RECOLLECTIONS_SPI_SCK = 18;
+  uint8_t const RECOLLECTIONS_SPI_TX = 19;
 
 #endif
 
