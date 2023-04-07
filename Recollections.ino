@@ -313,8 +313,7 @@ void loop() {
   if (!digitalRead(TRELLIS_INTERRUPT_INPUT)) {
     state.config.trellis.read(false);
   }
-  state = Input::handleInput(loopStartTime, state);
-  state = State::recordContinuously(state);
+  state = State::recordContinuously(Input::handleInput(loopStartTime, state));
 
   // reflect state
   if (!Hardware::reflectState(state)) {
