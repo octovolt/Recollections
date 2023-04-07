@@ -408,6 +408,12 @@ State Keys::handlePresetSelectKeyEvent(uint8_t key, State state) {
   }
   else {
     state.currentPreset = key;
+    if (
+      state.randomVoltages[currentBank][key][currentChannel] ||
+      state.randomOutputChannels[currentBank][currentChannel]
+    ) {
+      state.voltages[currentBank][key][currentChannel] = Utils::random(MAX_UNSIGNED_12_BIT);
+    }
   }
   return state;
 }

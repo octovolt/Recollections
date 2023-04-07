@@ -35,12 +35,14 @@
 #ifdef CORE_TEENSY
   // Random number generation:
   // On Teensy (or any AVR processor), we will use the Entropy library. On RP2040, we will need to
-  // settle for the pseudorandomness of Arduino's randomSeed() seeded from a noisy unconnected pin
-  // and random().
+  // settle for the pseudorandomness of stdlib's srand() seeded from a noisy unconnected pin
+  // and rand().
   // Entropy is included with Teenyduino and is found in
   // /Applications/Teensyduino.app/Contents/Java/hardware/teensy/avr/libraries/
   // Entropy source code: https://code.google.com/archive/p/avr-hardware-random-number-generation/
   #include <Entropy.h>
+#else
+  #include <stdlib.h> // for srand()
 #endif
 
 #include <SPI.h>
@@ -274,7 +276,7 @@ void setup() {
   #ifdef CORE_TEENSY
     Entropy.Initialize();
   #else
-    randomSeed(analogRead(UNCONNECTED_ANALOG_PIN));
+    srand(analogRead(UNCONNECTED_ANALOG_PIN));
   #endif
 
   digitalWrite(BOARD_LED, 1); // to indicate that the microcontroller is alive and well

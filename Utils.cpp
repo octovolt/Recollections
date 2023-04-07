@@ -6,6 +6,8 @@
 
 #ifdef CORE_TEENSY
   #include <Entropy.h>
+#else
+  #include <stdlib.h> // for rand()
 #endif
 
 #include "constants.h"
@@ -30,7 +32,7 @@ uint32_t Utils::random(uint32_t max) {
   #ifdef CORE_TEENSY
     return Entropy.random(max); // True random number generation
   #else
-    return random(max); // Arduino pseudorandom, similar to stdlib's rand()
+    return rand() % max;
   #endif
 }
 

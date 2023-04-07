@@ -155,7 +155,7 @@ uint8_t const SD_READ_CREATE = (uint8_t)(O_READ | O_CREAT);
   // Analog inputs
   /** Control voltage input to be recorded. */
   uint8_t const CV_INPUT = 26;
-  uint8_t const UNCONNECTED_ANALOG_PIN = 28; // noise for randomSeed()
+  uint8_t const UNCONNECTED_ANALOG_PIN = 28; // noise for srand()
 
   // Digital inputs
   /** Gate to start/stop automatic recording. Recording occurs when the gate is high. */
