@@ -129,7 +129,10 @@ bool setupConfig() {
   state.config.randomOutputOverwrites = 1;
 
   // overwrite defaults if anything is in the Config.txt file
-  state.config = SDCard::readConfigFile(state.config);
+  if (REQUIRE_SD_CARD) {
+    state.config = SDCard::readConfigFile(state.config);
+  }
+
   return true;
 }
 
@@ -223,8 +226,10 @@ bool setupState() {
   Serial.println("Successfully set up transient state");
 
   // persisted state
-  state = SDCard::readModuleDirectory(state);
-  Serial.println("Successfully set up persisted state");
+  if (REQUIRE_SD_CARD) {
+    state = SDCard::readModuleDirectory(state);
+    Serial.println("Successfully set up persisted state");
+  }
 
   return true;
 }
@@ -235,6 +240,8 @@ bool setupState() {
 void setup() {
   Serial.begin(9600);
   // while (!Serial);
+
+  Serial.println("Starting set up");
 
   #ifndef CORE_TEENSY
     Wire.setSDA(RECOLLECTIONS_SDA0);
@@ -253,9 +260,10 @@ void setup() {
   pinMode(TRELLIS_INTERRUPT_INPUT, INPUT);
   pinMode(BOARD_LED, OUTPUT);
 
-  bool setUpSDCardSuccessfully = setupSDCard();
-  if (REQUIRE_SD_CARD && !setUpSDCardSuccessfully) {
-    state.screen = SCREEN.ERROR;
+  if (REQUIRE_SD_CARD) {
+    if (!setupSDCard()) {
+      state.screen = SCREEN.ERROR;
+    }
   }
 
   bool setUpConfigSuccessfully = setupConfig();
