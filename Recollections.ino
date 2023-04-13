@@ -243,7 +243,9 @@ void setup() {
 
   Serial.println("Starting set up");
 
-  #ifndef CORE_TEENSY
+  #ifndef CORE_TEENSY // Pico
+    analogReadResolution(12); // 12-bit ADC on the Pico
+
     Wire.setSDA(RECOLLECTIONS_SDA0);
     Wire.setSCL(RECOLLECTIONS_SCL0);
     Wire.begin();
