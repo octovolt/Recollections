@@ -155,45 +155,6 @@ Config SDCard::readConfigFile(Config config) {
 }
 
 State SDCard::readModuleDirectory(State state) {
-  // First we establish defaults to make sure the data is populated, then we attempt to get data
-  // from the SD card.
-
-  // Core data -- preserved in Module.txt
-  // Keep this in sync with SDCard::readModuleFile().
-  // If adding or removing anything here, please recalculate the size constants for the JSON
-  // documents required for storing the data on the SD card. See constants.h.
-  state.currentPreset = 0;
-  state.currentBank = 0;
-  state.currentChannel = 0;
-  for (uint8_t i = 0; i < 16; i++) {
-    state.removedPresets[i] = false;
-  }
-
-  // Bank data -- preserved in Bank_<bank-index>.txt
-  //
-  // Keep this in sync with State::readBankFromSDCard().
-  // If adding or removing anything here, please recalculate the size constants for the JSON
-  // documents required for storing the data on the SD card. See constants.h.
-  //
-  // Also keep this in sync with State::pasteBanks().
-  //
-  // Indices are bank, preset, channel.
-  for (uint8_t i = 0; i < 16; i++) {
-    for (uint8_t j = 0; j < 16; j++) {
-      for (uint8_t k = 0; k < 8; k++) {
-        state.activeVoltages[i][j][k] = true;
-        state.autoRecordChannels[i][k] = false;
-        state.gateChannels[i][k] = false;
-        state.gateVoltages[i][j][k] = false;
-        state.lockedVoltages[i][j][k] = false;
-        state.randomInputChannels[i][k] = false;
-        state.randomOutputChannels[i][k] = false;
-        state.randomVoltages[i][j][k] = false;
-        state.voltages[i][j][k] = VOLTAGE_VALUE_MID;
-      }
-    }
-  }
-
   state = SDCard::readModuleFile(state);
   for (uint8_t bank = 0; bank < 16; bank++) {
     state = SDCard::readBankFile(state, bank);
