@@ -99,7 +99,7 @@ Config SDCard::readConfigFile(Config config) {
 
     // not sure about this recursion strategy. the delay may be enough.
     // configFile.close();
-    // return SDCard::readConfigFile();
+    // return SDCard::readConfigFile(config);
   }
 
   if (configFile.available()) {
@@ -196,8 +196,10 @@ State SDCard::readModuleFile(State state) {
       state.currentChannel = doc["currentChannel"];
       copyArray(doc["removedPresets"], state.removedPresets);
     }
-    moduleFile.close();
+  } else {
+    Serial.println("Module.txt was opened but is not yet available.");
   }
+  moduleFile.close();
 
   return state;
 }
@@ -248,6 +250,8 @@ State SDCard::readBankFile(State state, uint8_t bank) {
       copyArray(doc["randomVoltages"], state.randomVoltages[bank]);
       copyArray(doc["voltages"], state.voltages[bank]);
     }
+  } else {
+    Serial.println("Bank file was opened but is not yet available.");
   }
   bankFile.close();
 
