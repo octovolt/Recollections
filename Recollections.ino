@@ -5,7 +5,8 @@
  *
  * Copyright 2022 William Edward Fisher.
  *
- * Target platforms: Teensy 3.6, Teensy 4.1 and Raspberry Pi Pico
+ * Target platforms: Teensy 3.6, Teensy 4.1
+ * and Raspberry Pi Pico connected to an external SD card holder.
  */
 
 // Teensy 4.x uses Wire.h, but Teensy 3.x uses i2c_t3.h.
@@ -45,7 +46,10 @@
   #include <stdlib.h> // for srand()
 #endif
 
-#include <SPI.h>
+#include <SD.h>
+#ifndef CORE_TEENSY // Not Teensy, so this is Pico
+  #include <SPI.h>
+#endif
 
 #include "Config.h"
 #include "Keys.h"
@@ -82,22 +86,22 @@ TrellisCallback handleKeyEvent(keyEvent evt) {
  * @return false
  */
 bool setupSDCard() {
-  delay(200); // Seems to work better, not sure why
+  delay(200); // Seems to work better on Teensy, not sure why
+
   Serial.println("Attempting to open SD card");
   bool success = false;
+
   #ifdef CORE_TEENSY
     success = SD.begin(SD_CS_PIN);
-  #else
-    SDFSConfig cfg;
-    cfg.setCSPin(13); // TODO update to use constant. SD_CS_PIN? SPI_CSN?
-    SDFS.setConfig(cfg);
-    success = SDFS.begin();
+  #else // Not Teensy, so this is Pico
+    success = SD.begin(RECOLLECTIONS_SPI_CSN, 24000000); // 24 MHz
   #endif
+
   if (!success) {
-    Serial.println("SD card failed, or not present");
+    Serial.println("SD card failed, or is not present");
     return false;
   } else {
-    Serial.println("SD card initialized.");
+    Serial.println("SD card is working.");
   }
   return true;
 }
@@ -283,18 +287,15 @@ void setup() {
 
   Serial.println("Starting set up");
 
-  #ifndef CORE_TEENSY // Pico
+  // Set up the local I2C bus where the MCU is the controller/leader.
+  // This communicats with the NeoTrellis elastomer keys and the MCP4728 DACs.
+  // On Teensy, I2C is on pins 18 and 19 (Wire's default), on Pico it is on pins 4 and 5.
+  #ifndef CORE_TEENSY // Not Teensy, so this is Pico
     analogReadResolution(12); // 12-bit ADC on the Pico
-
     Wire.setSDA(RECOLLECTIONS_SDA0);
     Wire.setSCL(RECOLLECTIONS_SCL0);
-    Wire.begin();
-
-    SPI.setRX(RECOLLECTIONS_SPI_RX);
-    SPI.setTX(RECOLLECTIONS_SPI_TX);
-    SPI.setSCK(RECOLLECTIONS_SPI_SCK);
-    SPI.setCS(RECOLLECTIONS_SPI_CSN);
   #endif
+  Wire.begin();
 
   pinMode(ADV_INPUT, INPUT);
   pinMode(MOD_INPUT, INPUT);
@@ -313,10 +314,10 @@ void setup() {
     state.screen = SCREEN.ERROR;
   }
 
-  bool setUpHardwareSuccessfully = setupPeripheralHardware();
-  if (!setUpHardwareSuccessfully) {
-    state.screen = SCREEN.ERROR;
-  }
+  // bool setUpHardwareSuccessfully = setupPeripheralHardware();
+  // if (!setUpHardwareSuccessfully) {
+  //   state.screen = SCREEN.ERROR;
+  // }
 
   bool setUpStateSuccessfully = setupState();
   if (!setUpStateSuccessfully) {
@@ -340,27 +341,27 @@ void setup() {
  * Please note that the order of operations here is important.
  */
 void loop() {
-  unsigned long loopStartTime = millis();
+  // unsigned long loopStartTime = millis();
 
-  state = Hardware::updateFlashTiming(loopStartTime, state);
+  // state = Hardware::updateFlashTiming(loopStartTime, state);
 
-  // error screen returns early
-  if (state.screen == SCREEN.ERROR) {
-    Hardware::reflectState(state);
-    return;
-  }
+  // // error screen returns early
+  // if (state.screen == SCREEN.ERROR) {
+  //   Hardware::reflectState(state);
+  //   return;
+  // }
 
-  // Handle key events, inputs and recording.
-  // These drive all of the state changes other than flash timing.
-  if (!digitalRead(TRELLIS_INTERRUPT_INPUT)) {
-    state.config.trellis.read(false);
-  }
-  state = State::recordContinuously(Input::handleInput(loopStartTime, state));
+  // // Handle key events, inputs and recording.
+  // // These drive all of the state changes other than flash timing.
+  // if (!digitalRead(TRELLIS_INTERRUPT_INPUT)) {
+  //   state.config.trellis.read(false);
+  // }
+  // state = State::recordContinuously(Input::handleInput(loopStartTime, state));
 
-  // reflect state
-  if (!Hardware::reflectState(state)) {
-    state.screen = SCREEN.ERROR;
-  }
+  // // reflect state
+  // if (!Hardware::reflectState(state)) {
+  //   state.screen = SCREEN.ERROR;
+  // }
 
   // initial loop completed -- this is for debugging only. TODO: remove.
   if (!state.initialLoopCompleted) {

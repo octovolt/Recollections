@@ -7,7 +7,7 @@
 #include <ArduinoJson.h>
 
 #include <SPI.h>
-#include <StackString.hpp> // I have not yet understood how to use cstrings
+#include <StackString.hpp> // I have not yet understood how to use cstrings. Why are these hard?
 using namespace Stack;
 
 #include "Config.h"
@@ -15,10 +15,6 @@ using namespace Stack;
 
 /**
  * @brief Abstraction for different SD/FS libraries across platforms.
- *
- * I wanted to make this a sub-struct of SDCard, but had trouble calling into it. I tried to make it
- * a static member (static struct FS) and call it with SDCard::FS::exists(), but kept getting this
- * error: `cannot call member function 'bool SDCard::FS::exists(const char*)' without object`
  */
 typedef struct RecollectionsFileSystem {
   static File open(const char *filepath, uint8_t mode);
@@ -33,11 +29,13 @@ File RecollectionsFileSystem::open(const char *filepath, uint8_t mode = FILE_REA
       file.truncate();
     }
     return file;
-  #else
+  #else // PICO
     switch (mode) {
       case SD_READ_CREATE: {
-        // no read + create option, so read + write + create
-        return SDFS.open(filepath, "w+");
+        // SDFS offers no read + create option where writing is forbidden, so this must be done
+        // manually. Alternatively, we could use the "a+" mode, but this would allow writes to the
+        // end of an existing file. Paranoia, again.
+        return SDFS.exists(filepath) ? SDFS.open(filepath, "r") : SDFS.open(filepath, "w");
         break;
       }
       case FILE_WRITE_BEGIN: {
@@ -55,7 +53,7 @@ File RecollectionsFileSystem::open(const char *filepath, uint8_t mode = FILE_REA
 bool RecollectionsFileSystem::exists(const char *filepath) {
   #ifdef CORE_TEENSY
     return SD.exists(filepath);
-  #else
+  #else // PICO
     return SDFS.exists(filepath);
   #endif
 }
@@ -63,7 +61,7 @@ bool RecollectionsFileSystem::exists(const char *filepath) {
 bool RecollectionsFileSystem::mkdir(const char *filepath) {
   #ifdef CORE_TEENSY
     return SD.mkdir(filepath);
-  #else
+  #else // PICO
     return SDFS.mkdir(filepath);
   #endif
 }
@@ -93,60 +91,47 @@ Config SDCard::readConfigFile(Config config) {
     Serial.println("Successfully opened Config.txt");
   }
 
-  if (!configFile.available()) {
-    Serial.println("Config.txt was opened but is not yet available.");
-    delay(500);
+  JsonDocument doc;
+  DeserializationError error = deserializeJson(doc, configFile);
 
-    // not sure about this recursion strategy. the delay may be enough.
-    // configFile.close();
-    // return SDCard::readConfigFile(config);
+  if (error == DeserializationError::EmptyInput) {
+    Serial.println("Config.txt is an empty file");
+    return config;
   }
-
-  if (configFile.available()) {
-    Serial.println("config file available");
-    StaticJsonDocument<CONFIG_JSON_DOC_DESERIALIZATION_SIZE> doc;
-    DeserializationError error = deserializeJson(doc, configFile);
-
-    if (error == DeserializationError::EmptyInput) {
-      Serial.println("Config.txt is an empty file");
-      return config;
+  else if (error) {
+    Serial.printf("%s %s \n", "deserializeJson() failed during read operation: ", error.c_str());
+    return config;
+  }
+  else {
+    Serial.println("Copying Config.txt to config struct");
+    if (doc["brightness"] != nullptr) {
+      config.brightness = doc["brightness"];
     }
-    else if (error) {
-      Serial.printf("%s %s \n", "deserializeJson() failed during read operation: ", error.c_str());
-      return config;
+    if (doc["colors"] != nullptr) {
+      copyArray(doc["colors"]["white"], config.colors.white);
+      copyArray(doc["colors"]["red"], config.colors.red);
+      copyArray(doc["colors"]["blue"], config.colors.blue);
+      copyArray(doc["colors"]["yellow"], config.colors.yellow);
+      copyArray(doc["colors"]["green"], config.colors.green);
+      copyArray(doc["colors"]["purple"], config.colors.purple);
+      copyArray(doc["colors"]["orange"], config.colors.orange);
+      copyArray(doc["colors"]["magenta"], config.colors.magenta);
+      copyArray(doc["colors"]["black"], config.colors.black);
     }
-    else {
-      Serial.println("getting config data from file");
-
-      if (doc["brightness"] != nullptr) {
-        config.brightness = doc["brightness"];
-      }
-      if (doc["colors"] != nullptr) {
-        copyArray(doc["colors"]["white"], config.colors.white);
-        copyArray(doc["colors"]["red"], config.colors.red);
-        copyArray(doc["colors"]["blue"], config.colors.blue);
-        copyArray(doc["colors"]["yellow"], config.colors.yellow);
-        copyArray(doc["colors"]["green"], config.colors.green);
-        copyArray(doc["colors"]["purple"], config.colors.purple);
-        copyArray(doc["colors"]["orange"], config.colors.orange);
-        copyArray(doc["colors"]["magenta"], config.colors.magenta);
-        copyArray(doc["colors"]["black"], config.colors.black);
-      }
-      if (doc["controllerOrientation"] != nullptr) {
-        config.controllerOrientation = doc["controllerOrientation"];
-      }
-      if (doc["currentModule"] != nullptr) {
-        config.currentModule = doc["currentModule"];
-      }
-      if (doc["isAdvancingMaxInterval"] != nullptr) {
-        config.isAdvancingMaxInterval = doc["isAdvancingMaxInterval"];
-      }
-      if (doc["isClockedTolerance"] != nullptr) {
-        config.isClockedTolerance = doc["isClockedTolerance"];
-      }
-      if (doc["randomOutputOverwrites"] != nullptr) {
-        config.randomOutputOverwrites = doc["randomOutputOverwrites"];
-      }
+    if (doc["controllerOrientation"] != nullptr) {
+      config.controllerOrientation = doc["controllerOrientation"];
+    }
+    if (doc["currentModule"] != nullptr) {
+      config.currentModule = doc["currentModule"];
+    }
+    if (doc["isAdvancingMaxInterval"] != nullptr) {
+      config.isAdvancingMaxInterval = doc["isAdvancingMaxInterval"];
+    }
+    if (doc["isClockedTolerance"] != nullptr) {
+      config.isClockedTolerance = doc["isClockedTolerance"];
+    }
+    if (doc["randomOutputOverwrites"] != nullptr) {
+      config.randomOutputOverwrites = doc["randomOutputOverwrites"];
     }
   }
   configFile.close();
@@ -180,24 +165,20 @@ State SDCard::readModuleFile(State state) {
     Serial.println("Successfully opened Module.txt");
   }
 
-  if (moduleFile.available()) {
-    Serial.println("Module file is available");
-    StaticJsonDocument<MODULE_JSON_DOC_DESERIALIZATION_SIZE> doc;
-    DeserializationError error = deserializeJson(doc, moduleFile);
-    if (error == DeserializationError::EmptyInput) {
-      Serial.println("Module.txt is an empty file");
-    }
-    else if (error) {
-      Serial.printf("%s %s \n", "deserializeJson() failed during read operation: ", error.c_str());
-    }
-    else {
-      state.currentPreset = doc["currentPreset"];
-      state.currentBank = doc["currentBank"];
-      state.currentChannel = doc["currentChannel"];
-      copyArray(doc["removedPresets"], state.removedPresets);
-    }
-  } else {
-    Serial.println("Module.txt was opened but is not yet available.");
+  JsonDocument doc;
+  DeserializationError error = deserializeJson(doc, moduleFile);
+  if (error == DeserializationError::EmptyInput) {
+    Serial.println("Module.txt is an empty file");
+  }
+  else if (error) {
+    Serial.printf("%s %s \n", "deserializeJson() failed during read operation: ", error.c_str());
+  }
+  else {
+    Serial.println("Copying Module.txt to state");
+    state.currentPreset = doc["currentPreset"];
+    state.currentBank = doc["currentBank"];
+    state.currentChannel = doc["currentChannel"];
+    copyArray(doc["removedPresets"], state.removedPresets);
   }
   moduleFile.close();
 
@@ -229,29 +210,25 @@ State SDCard::readBankFile(State state, uint8_t bank) {
     Serial.printf("%s%s%s\n", "Successfully opened Bank_", bankString, ".txt");
   }
 
-  if (bankFile.available()) {
-    // Serial.println("Bank file is available");
-    StaticJsonDocument<BANK_JSON_DOC_DESERIALIZATION_SIZE> doc;
-    DeserializationError error = deserializeJson(doc, bankFile);
-    if (error == DeserializationError::EmptyInput) {
-      Serial.println("Module.txt is an empty file");
-    }
-    else if (error) {
-      Serial.printf("%s %s \n", "deserializeJson() failed during read operation: ", error.c_str());
-    }
-    else {
-      copyArray(doc["activeVoltages"], state.activeVoltages[bank]);
-      copyArray(doc["autoRecordChannels"], state.autoRecordChannels[bank]);
-      copyArray(doc["gateChannels"], state.gateChannels[bank]);
-      copyArray(doc["gateVoltages"], state.gateVoltages[bank]);
-      copyArray(doc["lockedVoltages"], state.lockedVoltages[bank]);
-      copyArray(doc["randomInputChannels"], state.randomInputChannels[bank]);
-      copyArray(doc["randomOutputChannels"], state.randomOutputChannels[bank]);
-      copyArray(doc["randomVoltages"], state.randomVoltages[bank]);
-      copyArray(doc["voltages"], state.voltages[bank]);
-    }
-  } else {
-    Serial.println("Bank file was opened but is not yet available.");
+  JsonDocument doc;
+  DeserializationError error = deserializeJson(doc, bankFile);
+  if (error == DeserializationError::EmptyInput) {
+    Serial.printf("Bank_%s.txt is an empty file\n", bankString);
+  }
+  else if (error) {
+    Serial.printf("%s %s \n", "deserializeJson() failed during read operation: ", error.c_str());
+  }
+  else {
+    Serial.printf("Copying Bank_%s.txt to state\n", bankString);
+    copyArray(doc["activeVoltages"], state.activeVoltages[bank]);
+    copyArray(doc["autoRecordChannels"], state.autoRecordChannels[bank]);
+    copyArray(doc["gateChannels"], state.gateChannels[bank]);
+    copyArray(doc["gateVoltages"], state.gateVoltages[bank]);
+    copyArray(doc["lockedVoltages"], state.lockedVoltages[bank]);
+    copyArray(doc["randomInputChannels"], state.randomInputChannels[bank]);
+    copyArray(doc["randomOutputChannels"], state.randomOutputChannels[bank]);
+    copyArray(doc["randomVoltages"], state.randomVoltages[bank]);
+    copyArray(doc["voltages"], state.voltages[bank]);
   }
   bankFile.close();
 
@@ -266,7 +243,7 @@ bool SDCard::writeCurrentModuleAndBank(State state) {
   // TODO: I would like to abstract a lot of this into a function, since a lot of lines are repeated
   // twice here and in the other SD card functions, but I am having trouble figuring out how to do
   // this with cstrings in a way that makes sense and actually saves lines of code. Something to
-    // improve upon later.
+  // improve upon later.
 
   // --------------------------- Module file ---------------------------------
 
@@ -288,7 +265,7 @@ bool SDCard::writeCurrentModuleAndBank(State state) {
     Serial.println("Successfully opened Module.txt");
   }
 
-  StaticJsonDocument<MODULE_JSON_DOC_SERIALIZATION_SIZE> moduleDoc;
+  JsonDocument moduleDoc;
   moduleDoc["currentBank"] = state.currentBank;
   moduleDoc["currentChannel"] = state.currentChannel;
   moduleDoc["currentPreset"] = state.currentPreset;
@@ -330,29 +307,29 @@ bool SDCard::writeCurrentModuleAndBank(State state) {
     Serial.printf("%s%s%s\n", "Successfully opened Bank_", bankString, ".txt");
   }
 
-  StaticJsonDocument<BANK_JSON_DOC_SERIALIZATION_SIZE> bankDoc;
+  JsonDocument bankDoc;
   JsonObject bankRoot = bankDoc.to<JsonObject>();
-  JsonArray autoRecordChannels = bankRoot.createNestedArray("autoRecordChannels");
-  JsonArray gateChannels = bankRoot.createNestedArray("gateChannels");
-  JsonArray randomInputChannels = bankRoot.createNestedArray("randomInputChannels");
-  JsonArray randomOutputChannels = bankRoot.createNestedArray("randomOutputChannels");
+  JsonArray autoRecordChannels = bankRoot["autoRecordChannels"].to<JsonArray>();
+  JsonArray gateChannels = bankRoot["gateChannels"].to<JsonArray>();
+  JsonArray randomInputChannels = bankRoot["randomInputChannels"].to<JsonArray>();
+  JsonArray randomOutputChannels = bankRoot["randomOutputChannels"].to<JsonArray>();
   for (uint8_t i = 0; i < 8; i++) {
     autoRecordChannels.add(state.autoRecordChannels[bank][i]);
     gateChannels.add(state.gateChannels[bank][i]);
     randomInputChannels.add(state.randomInputChannels[bank][i]);
     randomOutputChannels.add(state.randomOutputChannels[bank][i]);
   }
-  JsonArray activeVoltages = bankRoot.createNestedArray("activeVoltages");
-  JsonArray gateVoltages = bankRoot.createNestedArray("gateVoltages");
-  JsonArray lockedVoltages = bankRoot.createNestedArray("lockedVoltages");
-  JsonArray randomVoltages = bankRoot.createNestedArray("randomVoltages");
-  JsonArray voltages = bankRoot.createNestedArray("voltages");
+  JsonArray activeVoltages = bankRoot["activeVoltages"].to<JsonArray>();
+  JsonArray gateVoltages = bankRoot["gateVoltages"].to<JsonArray>();
+  JsonArray lockedVoltages = bankRoot["lockedVoltages"].to<JsonArray>();
+  JsonArray randomVoltages = bankRoot["randomVoltages"].to<JsonArray>();
+  JsonArray voltages = bankRoot["voltages"].to<JsonArray>();
   for (uint8_t i = 0; i < 16; i++) {
-    JsonArray activeVoltagesChannelArray = activeVoltages.createNestedArray();
-    JsonArray gateVoltagesChannelArray = gateVoltages.createNestedArray();
-    JsonArray lockedVoltagesChannelArray = lockedVoltages.createNestedArray();
-    JsonArray randomVoltagesChannelArray = randomVoltages.createNestedArray();
-    JsonArray voltagesChannelArray = voltages.createNestedArray();
+    JsonArray activeVoltagesChannelArray = activeVoltages.add<JsonArray>();
+    JsonArray gateVoltagesChannelArray = gateVoltages.add<JsonArray>();
+    JsonArray lockedVoltagesChannelArray = lockedVoltages.add<JsonArray>();
+    JsonArray randomVoltagesChannelArray = randomVoltages.add<JsonArray>();
+    JsonArray voltagesChannelArray = voltages.add<JsonArray>();
     for (uint8_t j = 0; j < 8; j++) {
       activeVoltagesChannelArray.add(state.activeVoltages[bank][i][j]);
       gateVoltagesChannelArray.add(state.gateVoltages[bank][i][j]);

@@ -6,13 +6,22 @@
 
 #include "State.h"
 
+// The SDCard class uses SdFat to write and read files to and from the SD card. On Teensy, this is
+// done with Teensy's SD library. On RP2040, this is done with the SDFS library from arduino-pico.
+#ifdef CORE_TEENSY
+  // This needs to be the Teensy-specific version of this. Rename others to disambiguate.
+  #include <SD.h>
+#else
+  #include <SDFS.h>
+#endif
+
 // Please note that including StreamUtils will break on RP2040 compiled using arduino-pico unless
 // changes are made to the following files:
 //
 // /Arduino/libraries/StreamUtils/src/StreamUtils/Streams/StringStream.hpp
 // /Arduino/libraries/StreamUtils/src/StreamUtils/Prints/StringPrint.hpp
 //
-// Required change, in both files, to allow them to compile across platforms:
+// This is the required change, in both files, to allow them to compile across platforms:
 //
 // #ifdef CORE_TEENSY
 //   #include <WString.h>
@@ -21,13 +30,6 @@
 // #endif
 #include <StreamUtils.h>
 #include <string>
-
-#ifdef CORE_TEENSY
-  // This needs to be the Teensy-specific version of this. Rename others to disambiguate.
-  #include <SD.h>
-#else
-  #include <SDFS.h>
-#endif
 
 #ifndef RECOLLECTIONS_SDCARD_H_
 #define RECOLLECTIONS_SDCARD_H_
