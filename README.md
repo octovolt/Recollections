@@ -8,6 +8,8 @@ sample-and-hold, a random voltage generator, or all of these at the same time an
 with each other. The data is stored on an SD card for later recall, and the storage files are easy
 to read and edit.
 
+![recollections-catalog](https://github.com/octovolt/Recollections/assets/78008936/e6ed3ae6-a958-4913-9924-764b3f795558)
+
 Demo Videos
 -----------
 Please see the [Octopus Arts YouTube channel](https://www.youtube.com/@octopus-arts).
