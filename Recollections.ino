@@ -24,6 +24,7 @@
   // for Teensy 4.x and Pico
   #include <Wire.h> // /Applications/Teensyduino.app/Contents/Java/hardware/teensy/avr/libraries/
 #endif
+#include <SD.h>
 
 // Without Adafruit, this project never would have happened. Please buy things from Adafruit.
 #include <Adafruit_MCP4728.h>
@@ -44,11 +45,6 @@
   #include <Entropy.h>
 #else
   #include <stdlib.h> // for srand()
-#endif
-
-#include <SD.h>
-#ifndef CORE_TEENSY // Not Teensy, so this is Pico
-  #include <SPI.h>
 #endif
 
 #include "Config.h"
@@ -314,10 +310,10 @@ void setup() {
     state.screen = SCREEN.ERROR;
   }
 
-  // bool setUpHardwareSuccessfully = setupPeripheralHardware();
-  // if (!setUpHardwareSuccessfully) {
-  //   state.screen = SCREEN.ERROR;
-  // }
+  bool setUpHardwareSuccessfully = setupPeripheralHardware();
+  if (!setUpHardwareSuccessfully) {
+    state.screen = SCREEN.ERROR;
+  }
 
   bool setUpStateSuccessfully = setupState();
   if (!setUpStateSuccessfully) {
@@ -341,27 +337,27 @@ void setup() {
  * Please note that the order of operations here is important.
  */
 void loop() {
-  // unsigned long loopStartTime = millis();
+  unsigned long loopStartTime = millis();
 
-  // state = Hardware::updateFlashTiming(loopStartTime, state);
+  state = Hardware::updateFlashTiming(loopStartTime, state);
 
-  // // error screen returns early
-  // if (state.screen == SCREEN.ERROR) {
-  //   Hardware::reflectState(state);
-  //   return;
-  // }
+  // error screen returns early
+  if (state.screen == SCREEN.ERROR) {
+    Hardware::reflectState(state);
+    return;
+  }
 
-  // // Handle key events, inputs and recording.
-  // // These drive all of the state changes other than flash timing.
-  // if (!digitalRead(TRELLIS_INTERRUPT_INPUT)) {
-  //   state.config.trellis.read(false);
-  // }
-  // state = State::recordContinuously(Input::handleInput(loopStartTime, state));
+  // Handle key events, inputs and recording.
+  // These drive all of the state changes other than flash timing.
+  if (!digitalRead(TRELLIS_INTERRUPT_INPUT)) {
+    state.config.trellis.read(false);
+  }
+  state = State::recordContinuously(Input::handleInput(loopStartTime, state));
 
-  // // reflect state
-  // if (!Hardware::reflectState(state)) {
-  //   state.screen = SCREEN.ERROR;
-  // }
+  // reflect state
+  if (!Hardware::reflectState(state)) {
+    state.screen = SCREEN.ERROR;
+  }
 
   // initial loop completed -- this is for debugging only. TODO: remove.
   if (!state.initialLoopCompleted) {
