@@ -21,17 +21,21 @@ A user manual may be found here:
 
 Project Status
 --------------
-Recollections is currently a work in progress, with a goal date of February 14, 2024. The code was 
+Recollections is currently a work in progress, with a goal date of December 31, 2024. The code was 
 originally written for Teensy 3.6, then for Teensy 4.1, but due to the high cost of those 
 microcontroller boards, I chose to switch to the Raspberry Pi Pico. The Pico is about $30 cheaper, 
-but it's slower, most notably with reading and writing to the SD Card. On the plus side, beyond the 
+but it's slower, most notably when reading and writing to the SD Card. On the plus side, beyond the 
 cheaper price, the Pico supports 12-bit data on its ADC, so the resolution of the voltages is truly 
-4096 steps rather than the 1024 steps of Teensy's 10-bit ADC. However, I will continue to make 
-Teensy-based PCB/panel sets available for the hard core DIYer who wants faster SD Card writes and
+4096 steps rather than the 1024 steps of Teensy's 10-bit ADC. I will continue to make Teensy-based 
+PCB/panel sets available, however, for the hard core DIYer who wants faster SD Card writes and
 does not care about the various benefits of the Pico. Please [contact me](https://octovolt.xyz/contact) 
-if you are interested in using a Teensy 3.6 or 4.1. I will also be offering both PCB/panel sets and 
-full kits for the Pico. While the kits are more expensive than the boards, they are much more convenient
-and avoid the shipping costs that would be incurred by ordering parts from multiple suppliers.
+if you are interested in using a Teensy 3.6 or 4.1. I will also offer both PCB/panel sets and 
+full kits for the Pico. While the kits are more expensive than the PCB/panel sets, they are much more 
+convenient and avoid the shipping costs that would be incurred by ordering parts from multiple suppliers.
+
+The main blocking issue at the moment is the external SD card I am using with the Pico. The reads are
+working, but not the writes. As soon as this problem is solved, Recollections will be released and kits
+will be available.
 
 Compiling the Code
 ------------------
